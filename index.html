@@ -1,210 +1,50 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Trade Risk Manager</title>
-<style>
-    /* ===== General Reset & Body Styling ===== */
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Trade Risk Manager" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+  <title>Trade Risk Manager</title>
+  <style>
     body {
-        margin: 0;
-        padding: 0;
-        font-family: Arial, sans-serif;
-        background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
-        background-size: 300% 300%;
-        animation: gradientBG 12s ease infinite;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        min-height: 100vh;
-        color: white;
+      background: linear-gradient(135deg, #1e3c72, #2a5298, #4b3f72);
+      color: #eee;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: 15px;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      touch-action: manipulation;
     }
-
-    @keyframes gradientBG {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
-    }
-
     h1 {
-        margin-top: 30px;
-        font-size: 2rem;
-        text-align: center;
+      text-align: center;
+      margin-bottom: 20px;
+      font-size: 1.8rem;
+      color: #ffffff;
     }
-
-    /* ===== App Container with Glassmorphism Effect ===== */
     .app-container {
-        background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border-radius: 20px;
-        padding: 20px;
-        margin: 20px;
-        max-width: 500px;
-        width: 90%;
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+      max-width: 480px;
+      width: 100%;
+      padding: 15px;
+      background: #121212;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     }
-
-    /* ===== Form Labels & Inputs ===== */
-    label {
-        font-size: 1.1rem;
-        font-weight: bold;
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
     }
-
-    input, .slider {
-        width: 100%;
-        padding: 12px;
-        font-size: 1.1rem;
-        border: none;
-        border-radius: 10px;
-        margin-top: 5px;
+    .account-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 20px;
     }
-
-    .account-fields {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-    }
-
-    .account-field {
-        flex: 1 1 calc(50% - 10px);
-        display: flex;
-        flex-direction: column;
-    }
-
-    /* Make SH - SIPP span full width */
-    .account-field.full-width {
-        flex: 1 1 100%;
-    }
-
-    /* ===== Slider Styling ===== */
-    .slider {
-        appearance: none;
-        height: 8px;
-        background: #ddd;
-        outline: none;
-        border-radius: 5px;
-    }
-    .slider::-webkit-slider-thumb {
-        appearance: none;
-        width: 20px;
-        height: 20px;
-        background: #ffcc00;
-        border-radius: 50%;
-        cursor: pointer;
-    }
-    .slider::-moz-range-thumb {
-        width: 20px;
-        height: 20px;
-        background: #ffcc00;
-        border-radius: 50%;
-        cursor: pointer;
-    }
-
-    /* ===== Result Display ===== */
-    .result {
-        font-size: 1.4rem;
-        font-weight: bold;
-        text-align: center;
-        margin-top: 15px;
-    }
-
-    /* ===== Copyright ===== */
-    footer {
-        margin: 20px 0;
-        font-size: 0.9rem;
-        opacity: 0.8;
-    }
-</style>
-</head>
-<body>
-
-<h1>Trade Risk Manager</h1>
-
-<div class="app-container">
-    <!-- SH - SIPP full row -->
-    <div class="account-fields">
-        <div class="account-field full-width">
-            <label for="shSipp">SH - SIPP (Acc Size)</label>
-            <input type="number" id="shSipp" placeholder="Enter amount" />
-        </div>
-
-        <!-- Other accounts -->
-        <div class="account-field">
-            <label for="acc2">Acc Size</label>
-            <input type="number" id="acc2" placeholder="Enter amount" />
-        </div>
-        <div class="account-field">
-            <label for="acc3">Acc Size</label>
-            <input type="number" id="acc3" placeholder="Enter amount" />
-        </div>
-        <div class="account-field">
-            <label for="acc4">Acc Size</label>
-            <input type="number" id="acc4" placeholder="Enter amount" />
-        </div>
-        <div class="account-field">
-            <label for="acc5">Acc Size</label>
-            <input type="number" id="acc5" placeholder="Enter amount" />
-        </div>
-    </div>
-
-    <!-- Entry Price -->
-    <label for="entryPrice">Entry Price</label>
-    <input type="number" id="entryPrice" placeholder="Enter entry price" />
-
-    <!-- Stop Loss Price -->
-    <label for="stopLoss">Stop Loss Price</label>
-    <input type="number" id="stopLoss" placeholder="Enter stop loss price" />
-
-    <!-- Risk % Slider -->
-    <label for="riskPercent">Risk %: <span id="riskValue">0.25%</span></label>
-    <input type="range" id="riskPercent" class="slider" min="0.05" max="2" step="0.05" value="0.25" />
-
-    <!-- Result -->
-    <div class="result" id="sharesToBuy">Shares to Buy: 0</div>
-</div>
-
-<footer>©2025 Trade Risk Manager</footer>
-
-<script>
-    // ===== Core Calculation Function =====
-    function calculateShares() {
-        const shSipp = parseFloat(document.getElementById('shSipp').value) || 0;
-        const acc2 = parseFloat(document.getElementById('acc2').value) || 0;
-        const acc3 = parseFloat(document.getElementById('acc3').value) || 0;
-        const acc4 = parseFloat(document.getElementById('acc4').value) || 0;
-        const acc5 = parseFloat(document.getElementById('acc5').value) || 0;
-
-        const entryPrice = parseFloat(document.getElementById('entryPrice').value) || 0;
-        const stopLoss = parseFloat(document.getElementById('stopLoss').value) || 0;
-        const riskPercent = parseFloat(document.getElementById('riskPercent').value) || 0;
-
-        const totalAccSize = shSipp + acc2 + acc3 + acc4 + acc5;
-        const riskAmount = totalAccSize * (riskPercent / 100);
-        const riskPerShare = Math.abs(entryPrice - stopLoss);
-
-        let shares = 0;
-        if (riskPerShare > 0) {
-            shares = Math.floor(riskAmount / riskPerShare);
-        }
-
-        document.getElementById('sharesToBuy').textContent = `Shares to Buy: ${shares}`;
-    }
-
-    // ===== Event Listeners =====
-    document.querySelectorAll('input').forEach(input => {
-        input.addEventListener('input', calculateShares);
-    });
-
-    // Update risk % label dynamically
-    document.getElementById('riskPercent').addEventListener('input', function() {
-        document.getElementById('riskValue').textContent = `${parseFloat(this.value).toFixed(2)}%`;
-        calculateShares();
-    });
-</script>
-
-</body>
-</html>
+    .input-group {
