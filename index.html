@@ -54,6 +54,9 @@
       flex-direction: column;
       gap: 6px;
     }
+    .full-width {
+      flex: 1 1 100%;
+    }
     label {
       font-size: 1.3rem;
       margin-bottom: 6px;
@@ -198,11 +201,11 @@
   <h1>Trade Risk Manager</h1>
   <div class="app-container">
     <form id="riskForm" novalidate>
+      <div class="input-group full-width">
+        <label for="accSize1">SH - SIPP Acc Size</label>
+        <input type="number" id="accSize1" min="0" step="0.01" placeholder="Enter account size" inputmode="decimal" />
+      </div>
       <div class="account-row">
-        <div class="input-group">
-          <label for="accSize1">SH - SIPP Acc Size</label>
-          <input type="number" id="accSize1" min="0" step="0.01" placeholder="Enter account size" inputmode="decimal" />
-        </div>
         <div class="input-group">
           <label for="accSize2">SH - ISA Acc Size</label>
           <input type="number" id="accSize2" min="0" step="0.01" placeholder="Enter account size" inputmode="decimal" />
@@ -274,15 +277,17 @@
         const riskAmount = accountSize * (equityRiskPercent / 100);
         const riskPerShare = Math.abs(purchasePrice - stopLoss);
         const positionSize = riskAmount / riskPerShare;
+        const positionSizePercent = ((positionSize * purchasePrice) / accountSize * 100).toFixed(2);
         const percentToStop = ((Math.abs(purchasePrice - stopLoss) / purchasePrice) * 100).toFixed(2);
         const derisk13Price = purchasePrice + (purchasePrice > stopLoss ? 2 * (purchasePrice - stopLoss) : -2 * (stopLoss - purchasePrice));
         const derisk13Shares = Math.floor(positionSize / 3);
-        const derisk14Shares = Math.floor(positionSize - (riskAmount / riskPerShare));
         const derisk14Price = purchasePrice + (purchasePrice > stopLoss ? (purchasePrice - stopLoss) : -(stopLoss - purchasePrice));
+        const derisk14Shares = Math.floor(positionSize / 4);
 
         return {
           riskAmount,
           positionSize,
+          positionSizePercent,
           percentToStop,
           derisk13Price,
           derisk13Shares,
@@ -326,59 +331,5 @@
                 <h3>${label}</h3>
                 <div class="result-row"><span>Money at Risk:</span> <span>£${formatNumber(res.riskAmount)}</span></div>
                 <div class="result-row"><span>Total Position Size:</span> <span>£${formatNumber(res.positionSize * purchasePrice)}</span></div>
-                <div class="result-row"><span>Shares to Buy:</span> <span class="bold">${formatNumber(res.positionSize)}</span></div>
-                <div class="result-row"><span>% to Stop:</span> <span>${res.percentToStop}%</span></div>
-                <div class="result-row"><span>Derisk 1/3 at:</span> <span>£${formatNumber(res.derisk13Price)}</span></div>
-                <div class="result-row"><span>Sell Shares (1/3):</span> <span>${res.derisk13Shares}</span></div>
-                <div class="result-row"><span>Derisk 1/4 at:</span> <span>£${formatNumber(res.derisk14Price)}</span></div>
-                <div class="result-row"><span>Sell Shares (1/4):</span> <span>${res.derisk14Shares}</span></div>
-              `;
-              resultsDiv.appendChild(group);
-            }
-          }
-        });
-      });
-
-      document.getElementById('resetBtn').addEventListener('click', () => {
-        console.log('Reset button clicked');
-        form.reset();
-        equityRiskVal.textContent = `${equityRiskSlider.value}%`;
-        resultsDiv.innerHTML = '';
-      });
-
-      function loadSavedData() {
-        accInputs.forEach(({ id }) => {
-          const saved = localStorage.getItem(id);
-          if (saved) document.getElementById(id).value = saved;
-        });
-        const savedPurchase = localStorage.getItem('purchasePrice');
-        if (savedPurchase) document.getElementById('purchasePrice').value = savedPurchase;
-        const savedStop = localStorage.getItem('stopLoss');
-        if (savedStop) document.getElementById('stopLoss').value = savedStop;
-        const savedRisk = localStorage.getItem('equityRisk');
-        if (savedRisk) {
-          equityRiskSlider.value = savedRisk;
-          equityRiskVal.textContent = `${savedRisk}%`;
-        }
-      }
-      loadSavedData();
-
-      form.addEventListener('input', () => {
-        accInputs.forEach(({ id }) => {
-          localStorage.setItem(id, document.getElementById(id).value);
-        });
-        localStorage.setItem('purchasePrice', document.getElementById('purchasePrice').value);
-        localStorage.setItem('stopLoss', document.getElementById('stopLoss').value);
-        localStorage.setItem('equityRisk', equityRiskSlider.value);
-      });
-
-      document.getElementById('resetBtn').addEventListener('click', () => {
-        accInputs.forEach(({ id }) => localStorage.removeItem(id));
-        localStorage.removeItem('purchasePrice');
-        localStorage.removeItem('stopLoss');
-        localStorage.removeItem('equityRisk');
-      });
-    })();
-  </script>
-</body>
-</html>
+                <div class="result-row"><span>Position Size %:</span> <span>${res.positionSizePercent}%</span></div>
+                <div class="result-row"><span>Shares to
