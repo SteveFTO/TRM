@@ -243,7 +243,7 @@
   </div>
   <div class="copyright">©2025 Trade Risk Manager</div>
   <script>
-    console.log('Trade Risk Manager script loaded'); // Debug log
+    console.log('Trade Risk Manager script loaded');
     (() => {
       const accInputs = [
         { id: 'accSize1', label: 'SH - SIPP' },
@@ -298,14 +298,13 @@
 
       form.addEventListener('submit', (e) => {
         e.preventDefault();
-        console.log('Form submitted');
         resultsDiv.innerHTML = '';
 
         const purchasePrice = parseFloat(document.getElementById('purchasePrice').value);
         const stopLoss = parseFloat(document.getElementById('stopLoss').value);
         const equityRiskPercent = parseFloat(equityRiskSlider.value);
 
-        if (!(purchasePrice > 0 && stopLoss > 0)) {
+        if (!purchasePrice || !stopLoss || purchasePrice <= 0 || stopLoss <= 0) {
           alert('Please enter valid Purchase Price and Stop Location.');
           return;
         }
@@ -332,4 +331,58 @@
                 <div class="result-row"><span>Money at Risk:</span> <span>£${formatNumber(res.riskAmount)}</span></div>
                 <div class="result-row"><span>Total Position Size:</span> <span>£${formatNumber(res.positionSize * purchasePrice)}</span></div>
                 <div class="result-row"><span>Position Size %:</span> <span>${res.positionSizePercent}%</span></div>
-                <div class="result-row"><span>Shares to
+                <div class="result-row"><span>Shares to Buy:</span> <span class="bold">${formatNumber(res.positionSize)}</span></div>
+                <div class="result-row"><span>% to Stop:</span> <span>${res.percentToStop}%</span></div>
+                <div class="result-row"><span>Derisk 1/3 at:</span> <span>£${formatNumber(res.derisk13Price)}</span></div>
+                <div class="result-row"><span>Sell Shares (1/3):</span> <span>${res.derisk13Shares}</span></div>
+                <div class="result-row"><span>Derisk 1/4 at:</span> <span>£${formatNumber(res.derisk14Price)}</span></div>
+                <div class="result-row"><span>Sell Shares (1/4):</span> <span>${res.derisk14Shares}</span></div>
+              `;
+              resultsDiv.appendChild(group);
+            }
+          }
+        });
+      });
+
+      document.getElementById('resetBtn').addEventListener('click', () => {
+        form.reset();
+        equityRiskVal.textContent = `${equityRiskSlider.value}%`;
+        resultsDiv.innerHTML = '';
+      });
+
+      function loadSavedData() {
+        accInputs.forEach(({ id }) => {
+          const saved = localStorage.getItem(id);
+          if (saved) document.getElementById(id).value = saved;
+        });
+        const savedPurchase = localStorage.getItem('purchasePrice');
+        if (savedPurchase) document.getElementById('purchasePrice').value = savedPurchase;
+        const savedStop = localStorage.getItem('stopLoss');
+        if (savedStop) document.getElementById('stopLoss').value = savedStop;
+        const savedRisk = localStorage.getItem('equityRisk');
+        if (savedRisk) {
+          equityRiskSlider.value = savedRisk;
+          equityRiskVal.textContent = `${savedRisk}%`;
+        }
+      }
+      loadSavedData();
+
+      form.addEventListener('input', () => {
+        accInputs.forEach(({ id }) => {
+          localStorage.setItem(id, document.getElementById(id).value);
+        });
+        localStorage.setItem('purchasePrice', document.getElementById('purchasePrice').value);
+        localStorage.setItem('stopLoss', document.getElementById('stopLoss').value);
+        localStorage.setItem('equityRisk', equityRiskSlider.value);
+      });
+
+      document.getElementById('resetBtn').addEventListener('click', () => {
+        accInputs.forEach(({ id }) => localStorage.removeItem(id));
+        localStorage.removeItem('purchasePrice');
+        localStorage.removeItem('stopLoss');
+        localStorage.removeItem('equityRisk');
+      });
+    })();
+  </script>
+</body>
+</html>
