@@ -24,14 +24,14 @@
     }
     h1 {
       text-align: center;
-      margin-bottom: 20px;
-      font-size: 1.8rem;
+      margin-bottom: 15px;
+      font-size: 1.6rem;
       color: #ffffff;
     }
     .app-container {
       max-width: 480px;
       width: 100%;
-      padding: 15px;
+      padding: 12px;
       background: #121212;
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
@@ -39,34 +39,39 @@
     form {
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 15px;
     }
-    .account-row {
+    .account-grid {
       display: flex;
       flex-wrap: wrap;
-      gap: 12px;
-      margin-bottom: 20px;
+      gap: 10px;
+      margin-bottom: 8px;
     }
     .input-group {
       flex: 1 1 45%;
       min-width: 140px;
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 4px;
     }
-    .full-width {
-      flex: 1 1 100%;
-    }
-    label {
-      font-size: 1.3rem;
-      margin-bottom: 6px;
-      cursor: pointer;
+    label, [contenteditable="true"] {
+      font-size: 1.1rem;
+      margin-bottom: 4px;
       color: #ffffff;
+      cursor: text;
+      display: inline-block;
+      padding: 2px 4px;
+      border-radius: 5px;
+    }
+    [contenteditable="true"]:focus {
+      outline: none;
+      background: #3a3a3a;
+      border: none;
     }
     input[type="number"] {
       width: 100%;
-      font-size: 1.25rem;
-      padding: 12px;
+      font-size: 1.1rem;
+      padding: 8px;
       border-radius: 5px;
       border: none;
       background: #2a2a2a;
@@ -93,29 +98,45 @@
     }
     input[type="range"]::-webkit-slider-thumb {
       appearance: none;
-      width: 24px;
-      height: 24px;
+      width: 20px;
+      height: 20px;
       background: #34c759;
       border-radius: 50%;
       cursor: pointer;
     }
     input[type="range"]::-moz-range-thumb {
-      width: 24px;
-      height: 24px;
+      width: 20px;
+      height: 20px;
       background: #34c759;
       border-radius: 50%;
       cursor: pointer;
     }
     .range-value {
-      font-size: 1.2rem;
+      font-size: 1rem;
       color: #eee;
-      margin-top: 6px;
+      margin-top: 4px;
       text-align: center;
+    }
+    .mode-group {
+      display: flex;
+      flex-direction: row;
+      gap: 15px;
+      align-items: center;
+      justify-content: center;
+    }
+    .mode-option {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .mode-option label {
+      font-size: 1.1rem;
+      color: #ffffff;
     }
     button {
       width: 100%;
-      padding: 16px;
-      font-size: 1.4rem;
+      padding: 12px;
+      font-size: 1.2rem;
       font-weight: 700;
       border: none;
       border-radius: 8px;
@@ -140,59 +161,63 @@
     }
     .results {
       max-width: 480px;
-      margin: 20px 0;
+      margin: 15px 0;
       background: #2a2a2a;
       border-radius: 8px;
-      padding: 15px;
+      padding: 12px;
     }
     .result-group {
       border-bottom: 1px solid #444;
-      padding: 10px 0;
+      padding: 8px 0;
     }
     .result-group:last-child {
       border-bottom: none;
     }
     .result-group h3 {
-      margin: 0 0 8px;
-      font-size: 1.4rem;
+      margin: 0 0 6px;
+      font-size: 1.2rem;
       color: #34c759;
     }
     .result-row {
       display: flex;
       justify-content: space-between;
-      font-size: 1.25rem;
-      margin-bottom: 5px;
+      font-size: 1rem;
+      margin-bottom: 4px;
     }
     .bold {
       font-weight: 700;
     }
     .copyright {
       text-align: center;
-      font-size: 1.2rem;
+      font-size: 1rem;
       color: #eee;
-      margin-top: 20px;
+      margin-top: 15px;
       opacity: 0.8;
     }
     @media (max-width: 375px) {
       .input-group {
         flex: 1 1 100%;
       }
-      label {
-        font-size: 1.2rem;
+      label, [contenteditable="true"] {
+        font-size: 1rem;
       }
       input[type="number"] {
-        font-size: 1.2rem;
-        padding: 10px;
+        font-size: 1rem;
+        padding: 6px;
       }
       button {
-        font-size: 1.3rem;
-        padding: 14px;
+        font-size: 1.1rem;
+        padding: 10px;
       }
       .result-row {
-        font-size: 1.2rem;
+        font-size: 0.9rem;
       }
       .result-group h3 {
-        font-size: 1.3rem;
+        font-size: 1.1rem;
+      }
+      .mode-group {
+        flex-direction: column;
+        gap: 8px;
       }
     }
   </style>
@@ -201,26 +226,30 @@
   <h1>Trade Risk Manager</h1>
   <div class="app-container">
     <form id="riskForm" novalidate>
-      <div class="input-group full-width">
-        <label for="accSize1">SH - SIPP Acc Size</label>
-        <input type="number" id="accSize1" min="0" step="0.01" placeholder="Enter account size" inputmode="decimal" />
-      </div>
-      <div class="account-row">
+      <div class="account-grid">
         <div class="input-group">
-          <label for="accSize2">SH - ISA Acc Size</label>
+          <label for="accSize1" contenteditable="true" id="labelAcc1" data-default="SH - SIPP">SH - SIPP</label>
+          <input type="number" id="accSize1" min="0" step="0.01" placeholder="Enter account size" inputmode="decimal" />
+        </div>
+        <div class="input-group">
+          <label for="accSize2" contenteditable="true" id="labelAcc2" data-default="SH - ISA">SH - ISA</label>
           <input type="number" id="accSize2" min="0" step="0.01" placeholder="Enter account size" inputmode="decimal" />
         </div>
         <div class="input-group">
-          <label for="accSize3">BH - ISA Acc Size</label>
+          <label for="accSize3" contenteditable="true" id="labelAcc3" data-default="BH - ISA">BH - ISA</label>
           <input type="number" id="accSize3" min="0" step="0.01" placeholder="Enter account size" inputmode="decimal" />
         </div>
         <div class="input-group">
-          <label for="accSize4">HH - ISA Acc Size</label>
+          <label for="accSize4" contenteditable="true" id="labelAcc4" data-default="HH - ISA">HH - ISA</label>
           <input type="number" id="accSize4" min="0" step="0.01" placeholder="Enter account size" inputmode="decimal" />
         </div>
         <div class="input-group">
-          <label for="accSize5">LH - SIPP Acc Size</label>
+          <label for="accSize5" contenteditable="true" id="labelAcc5" data-default="LH - SIPP">LH - SIPP</label>
           <input type="number" id="accSize5" min="0" step="0.01" placeholder="Enter account size" inputmode="decimal" />
+        </div>
+        <div class="input-group">
+          <label for="accSize6" contenteditable="true" id="labelAcc6" data-default="Acc - 6">Acc - 6</label>
+          <input type="number" id="accSize6" min="0" step="0.01" placeholder="Enter account size" inputmode="decimal" />
         </div>
       </div>
       <div class="input-group">
@@ -231,10 +260,25 @@
         <label for="stopLoss">Stop Location</label>
         <input type="number" id="stopLoss" min="0" step="0.01" placeholder="Enter stop loss price" inputmode="decimal" />
       </div>
-      <div class="input-group">
+      <div class="mode-group">
+        <div class="mode-option">
+          <input type="radio" id="modeEquityRisk" name="mode" value="equityRisk" checked />
+          <label for="modeEquityRisk">Equity Risk %</label>
+        </div>
+        <div class="mode-option">
+          <input type="radio" id="modePositionSize" name="mode" value="positionSize" />
+          <label for="modePositionSize">Position Size %</label>
+        </div>
+      </div>
+      <div class="input-group" id="equityRiskGroup">
         <label for="equityRisk">Equity Risk % (0.05% - 2%, step 0.05%)</label>
         <input type="range" id="equityRisk" min="0.05" max="2" step="0.05" value="0.25" />
         <div class="range-value" id="equityRiskVal">0.25%</div>
+      </div>
+      <div class="input-group" id="positionSizeGroup" style="display: none;">
+        <label for="positionSize">Position Size % (0% - 50%, step 0.5%)</label>
+        <input type="range" id="positionSize" min="0" max="50" step="0.5" value="10" />
+        <div class="range-value" id="positionSizeVal">10%</div>
       </div>
       <button type="submit" id="calculateBtn">Calculate</button>
       <button type="button" id="resetBtn">Reset</button>
@@ -246,24 +290,86 @@
     console.log('Trade Risk Manager script loaded');
     (() => {
       const accInputs = [
-        { id: 'accSize1', label: 'SH - SIPP' },
-        { id: 'accSize2', label: 'SH - ISA' },
-        { id: 'accSize3', label: 'BH - ISA' },
-        { id: 'accSize4', label: 'HH - ISA' },
-        { id: 'accSize5', label: 'LH - SIPP' }
+        { id: 'accSize1', labelId: 'labelAcc1', defaultLabel: 'SH - SIPP' },
+        { id: 'accSize2', labelId: 'labelAcc2', defaultLabel: 'SH - ISA' },
+        { id: 'accSize3', labelId: 'labelAcc3', defaultLabel: 'BH - ISA' },
+        { id: 'accSize4', labelId: 'labelAcc4', defaultLabel: 'HH - ISA' },
+        { id: 'accSize5', labelId: 'labelAcc5', defaultLabel: 'LH - SIPP' },
+        { id: 'accSize6', labelId: 'labelAcc6', defaultLabel: 'Acc - 6' }
       ];
       const equityRiskSlider = document.getElementById('equityRisk');
       const equityRiskVal = document.getElementById('equityRiskVal');
+      const positionSizeSlider = document.getElementById('positionSize');
+      const positionSizeVal = document.getElementById('positionSizeVal');
+      const equityRiskGroup = document.getElementById('equityRiskGroup');
+      const positionSizeGroup = document.getElementById('positionSizeGroup');
+      const modeEquityRisk = document.getElementById('modeEquityRisk');
+      const modePositionSize = document.getElementById('modePositionSize');
       const resultsDiv = document.getElementById('results');
       const form = document.getElementById('riskForm');
 
-      if (!form || !equityRiskSlider || !equityRiskVal || !resultsDiv) {
+      if (!form || !equityRiskSlider || !equityRiskVal || !positionSizeSlider || !positionSizeVal || !resultsDiv) {
         console.error('Form elements not found');
         return;
       }
 
+      // Enhance contenteditable for mobile compatibility
+      accInputs.forEach(({ labelId }) => {
+        const label = document.getElementById(labelId);
+        label.addEventListener('touchstart', (e) => {
+          e.preventDefault();
+          label.focus();
+          const range = document.createRange();
+          const sel = window.getSelection();
+          range.selectNodeContents(label);
+          range.collapse(false);
+          sel.removeAllRanges();
+          sel.addRange(range);
+        });
+        label.addEventListener('input', () => {
+          let text = label.innerText.replace(/\n/g, '');
+          if (text.length > 20) {
+            text = text.slice(0, 20);
+            label.innerText = text;
+            const range = document.createRange();
+            const sel = window.getSelection();
+            range.selectNodeContents(label);
+            range.collapse(false);
+            sel.removeAllRanges();
+            sel.addRange(range);
+          }
+          localStorage.setItem(labelId, text);
+        });
+        label.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            label.blur();
+          }
+        });
+        label.addEventListener('blur', () => {
+          let text = label.innerText.trim().replace(/\n/g, '');
+          if (text === '') text = label.getAttribute('data-default');
+          label.innerText = text;
+          localStorage.setItem(labelId, text);
+        });
+      });
+
       equityRiskSlider.addEventListener('input', () => {
         equityRiskVal.textContent = `${equityRiskSlider.value}%`;
+      });
+
+      positionSizeSlider.addEventListener('input', () => {
+        positionSizeVal.textContent = `${positionSizeSlider.value}%`;
+      });
+
+      modeEquityRisk.addEventListener('change', () => {
+        equityRiskGroup.style.display = 'block';
+        positionSizeGroup.style.display = 'none';
+      });
+
+      modePositionSize.addEventListener('change', () => {
+        equityRiskGroup.style.display = 'none';
+        positionSizeGroup.style.display = 'block';
       });
 
       function formatNumber(num) {
@@ -302,10 +408,15 @@
 
         const purchasePrice = parseFloat(document.getElementById('purchasePrice').value);
         const stopLoss = parseFloat(document.getElementById('stopLoss').value);
-        const equityRiskPercent = parseFloat(equityRiskSlider.value);
+        const mode = document.querySelector('input[name="mode"]:checked')?.value;
 
         if (!purchasePrice || !stopLoss || purchasePrice <= 0 || stopLoss <= 0) {
           alert('Please enter valid Purchase Price and Stop Location.');
+          return;
+        }
+
+        if (!mode) {
+          alert('Please select either Equity Risk % or Position Size %.');
           return;
         }
 
@@ -319,15 +430,38 @@
           return;
         }
 
-        accInputs.forEach(({ id, label }) => {
+        let equityRiskPercent;
+        let displayLabel;
+        if (mode === 'equityRisk') {
+          equityRiskPercent = parseFloat(equityRiskSlider.value);
+          displayLabel = `At ${equityRiskPercent}% Equity Risk`;
+        } else {
+          const targetPositionSizePercent = parseFloat(positionSizeSlider.value);
+          const riskPerShare = Math.abs(purchasePrice - stopLoss);
+          equityRiskPercent = ((targetPositionSizePercent / 100) * (riskPerShare / purchasePrice) * 100).toFixed(2);
+          displayLabel = `At ${targetPositionSizePercent}% Position Size (Equity Risk: ${equityRiskPercent}%)`;
+        }
+
+        accInputs.forEach(({ id, labelId, defaultLabel }) => {
           const accSize = parseFloat(document.getElementById(id).value);
+          let accLabel = document.getElementById(labelId).innerText.trim();
+          if (accLabel === '') accLabel = defaultLabel;
           if (accSize > 0) {
-            const res = calcRisk(accSize, purchasePrice, stopLoss, equityRiskPercent);
+            let adjustedEquityRiskPercent = equityRiskPercent;
+            let positionSize = (accSize * (equityRiskPercent / 100)) / Math.abs(purchasePrice - stopLoss);
+            if (positionSize * purchasePrice > accSize) {
+              positionSize = accSize / purchasePrice;
+              adjustedEquityRiskPercent = ((positionSize * Math.abs(purchasePrice - stopLoss)) / accSize * 100).toFixed(2);
+              if (mode === 'positionSize') {
+                displayLabel = `At ${((positionSize * purchasePrice) / accSize * 100).toFixed(2)}% Position Size (Equity Risk: ${adjustedEquityRiskPercent}%)`;
+              }
+            }
+            const res = calcRisk(accSize, purchasePrice, stopLoss, adjustedEquityRiskPercent);
             if (res) {
               const group = document.createElement('div');
               group.className = 'result-group';
               group.innerHTML = `
-                <h3>${label}</h3>
+                <h3>${accLabel}</h3>
                 <div class="result-row"><span>Money at Risk:</span> <span>£${formatNumber(res.riskAmount)}</span></div>
                 <div class="result-row"><span>Total Position Size:</span> <span>£${formatNumber(res.positionSize * purchasePrice)}</span></div>
                 <div class="result-row"><span>Position Size %:</span> <span>${res.positionSizePercent}%</span></div>
@@ -337,6 +471,7 @@
                 <div class="result-row"><span>Sell Shares (1/3):</span> <span>${res.derisk13Shares}</span></div>
                 <div class="result-row"><span>Derisk 1/4 at:</span> <span>£${formatNumber(res.derisk14Price)}</span></div>
                 <div class="result-row"><span>Sell Shares (1/4):</span> <span>${res.derisk14Shares}</span></div>
+                <div class="result-row"><span>${displayLabel}</span></div>
               `;
               resultsDiv.appendChild(group);
             }
@@ -347,13 +482,24 @@
       document.getElementById('resetBtn').addEventListener('click', () => {
         form.reset();
         equityRiskVal.textContent = `${equityRiskSlider.value}%`;
+        positionSizeVal.textContent = `${positionSizeSlider.value}%`;
+        equityRiskGroup.style.display = 'block';
+        positionSizeGroup.style.display = 'none';
+        modeEquityRisk.checked = true;
+        accInputs.forEach(({ labelId, defaultLabel }) => {
+          document.getElementById(labelId).innerText = defaultLabel;
+          localStorage.setItem(labelId, defaultLabel);
+        });
         resultsDiv.innerHTML = '';
       });
 
       function loadSavedData() {
-        accInputs.forEach(({ id }) => {
-          const saved = localStorage.getItem(id);
-          if (saved) document.getElementById(id).value = saved;
+        accInputs.forEach(({ id, labelId, defaultLabel }) => {
+          const savedSize = localStorage.getItem(id);
+          if (savedSize) document.getElementById(id).value = savedSize;
+          const savedLabel = localStorage.getItem(labelId);
+          if (savedLabel) document.getElementById(labelId).innerText = savedLabel;
+          else document.getElementById(labelId).innerText = defaultLabel;
         });
         const savedPurchase = localStorage.getItem('purchasePrice');
         if (savedPurchase) document.getElementById('purchasePrice').value = savedPurchase;
@@ -364,23 +510,42 @@
           equityRiskSlider.value = savedRisk;
           equityRiskVal.textContent = `${savedRisk}%`;
         }
+        const savedPosition = localStorage.getItem('positionSize');
+        if (savedPosition) {
+          positionSizeSlider.value = savedPosition;
+          positionSizeVal.textContent = `${savedPosition}%`;
+        }
+        const savedMode = localStorage.getItem('mode');
+        if (savedMode) {
+          document.querySelector(`input[name="mode"][value="${savedMode}"]`).checked = true;
+          equityRiskGroup.style.display = savedMode === 'equityRisk' ? 'block' : 'none';
+          positionSizeGroup.style.display = savedMode === 'positionSize' ? 'block' : 'none';
+        }
       }
       loadSavedData();
 
       form.addEventListener('input', () => {
-        accInputs.forEach(({ id }) => {
+        accInputs.forEach(({ id, labelId }) => {
           localStorage.setItem(id, document.getElementById(id).value);
+          localStorage.setItem(labelId, document.getElementById(labelId).innerText.trim());
         });
         localStorage.setItem('purchasePrice', document.getElementById('purchasePrice').value);
         localStorage.setItem('stopLoss', document.getElementById('stopLoss').value);
         localStorage.setItem('equityRisk', equityRiskSlider.value);
+        localStorage.setItem('positionSize', positionSizeSlider.value);
+        localStorage.setItem('mode', document.querySelector('input[name="mode"]:checked')?.value || 'equityRisk');
       });
 
       document.getElementById('resetBtn').addEventListener('click', () => {
-        accInputs.forEach(({ id }) => localStorage.removeItem(id));
+        accInputs.forEach(({ id, labelId }) => {
+          localStorage.removeItem(id);
+          localStorage.removeItem(labelId);
+        });
         localStorage.removeItem('purchasePrice');
         localStorage.removeItem('stopLoss');
         localStorage.removeItem('equityRisk');
+        localStorage.removeItem('positionSize');
+        localStorage.removeItem('mode');
       });
     })();
   </script>
