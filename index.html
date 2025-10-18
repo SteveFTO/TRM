@@ -41,11 +41,50 @@
       flex-direction: column;
       gap: 15px;
     }
+    .accounts-section {
+      margin-bottom: 8px;
+    }
+    .accounts-toggle {
+      width: 100%;
+      padding: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      user-select: none;
+      touch-action: manipulation;
+      transition: background 0.3s ease;
+      background: #2a2a2a;
+      color: #eee;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .accounts-toggle:hover {
+      background: #3a3a3a;
+    }
+    .accounts-toggle::after {
+      content: '▼';
+      font-size: 0.8rem;
+      transition: transform 0.3s ease;
+    }
+    .accounts-toggle.expanded::after {
+      transform: rotate(180deg);
+    }
     .account-grid {
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
-      margin-bottom: 8px;
+      margin-top: 8px;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease, opacity 0.3s ease;
+      opacity: 0;
+    }
+    .account-grid.expanded {
+      max-height: 300px; /* Adjust as needed based on content */
+      opacity: 1;
     }
     .input-group {
       flex: 1 1 45%;
@@ -188,18 +227,65 @@
       background: #2a2a2a;
       border-radius: 8px;
       padding: 12px;
+      display: none; /* Hidden until results generated */
     }
-    .result-group {
-      border-bottom: 1px solid #444;
+    .results.show {
+      display: block;
+    }
+    .tab-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-bottom: 12px;
+      overflow-x: auto; /* Horizontal scroll for many tabs on small screens */
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 4px;
+    }
+    .tab-btn {
+      flex: 1 1 auto;
+      min-width: 80px;
+      padding: 8px 12px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      background: #444;
+      color: #eee;
+      transition: background 0.3s ease, transform 0.2s ease;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .tab-btn.active {
+      background: #34c759;
+      color: #fff;
+    }
+    .tab-btn:hover {
+      background: #555;
+    }
+    .tab-btn:active {
+      transform: scale(0.98);
+    }
+    .tab-content {
+      max-height: 400px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .tab-pane {
+      display: none;
       padding: 8px 0;
     }
-    .result-group:last-child {
-      border-bottom: none;
+    .tab-pane.active {
+      display: block;
     }
-    .result-group h3 {
+    .tab-pane h3 {
       margin: 0 0 6px;
       font-size: 1.2rem;
       color: #34c759;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .result-row {
       display: flex;
@@ -209,6 +295,12 @@
     }
     .bold {
       font-weight: 700;
+    }
+    .no-results {
+      text-align: center;
+      padding: 20px;
+      color: #aaa;
+      font-style: italic;
     }
     .copyright {
       text-align: center;
@@ -241,15 +333,22 @@
         font-size: 1.1rem;
         padding: 10px;
       }
+      .tab-btn {
+        font-size: 0.85rem;
+        padding: 6px 10px;
+      }
       .result-row {
         font-size: 0.9rem;
       }
-      .result-group h3 {
+      .tab-pane h3 {
         font-size: 1.1rem;
       }
       .mode-group {
         flex-direction: column;
         gap: 8px;
+      }
+      .tab-content {
+        max-height: 300px;
       }
     }
   </style>
@@ -258,30 +357,33 @@
   <h1>Trade Risk Manager</h1>
   <div class="app-container">
     <form id="riskForm" novalidate>
-      <div class="account-grid">
-        <div class="input-group">
-          <label for="accSize1" contenteditable="true" id="labelAcc1" data-default="SH - SIPP">SH - SIPP</label>
-          <input type="number" id="accSize1" min="0" step="0.01" placeholder="Enter account size" inputmode="decimal" />
-        </div>
-        <div class="input-group">
-          <label for="accSize2" contenteditable="true" id="labelAcc2" data-default="SH - ISA">SH - ISA</label>
-          <input type="number" id="accSize2" min="0" step="0.01" placeholder="Enter account size" inputmode="decimal" />
-        </div>
-        <div class="input-group">
-          <label for="accSize3" contenteditable="true" id="labelAcc3" data-default="BH - ISA">BH - ISA</label>
-          <input type="number" id="accSize3" min="0" step="0.01" placeholder="Enter account size" inputmode="decimal" />
-        </div>
-        <div class="input-group">
-          <label for="accSize4" contenteditable="true" id="labelAcc4" data-default="HH - ISA">HH - ISA</label>
-          <input type="number" id="accSize4" min="0" step="0.01" placeholder="Enter account size" inputmode="decimal" />
-        </div>
-        <div class="input-group">
-          <label for="accSize5" contenteditable="true" id="labelAcc5" data-default="LH - SIPP">LH - SIPP</label>
-          <input type="number" id="accSize5" min="0" step="0.01" placeholder="Enter account size" inputmode="decimal" />
-        </div>
-        <div class="input-group">
-          <label for="accSize6" contenteditable="true" id="labelAcc6" data-default="Acc - 6">Acc - 6</label>
-          <input type="number" id="accSize6" min="0" step="0.01" placeholder="Enter account size" inputmode="decimal" />
+      <div class="accounts-section">
+        <button type="button" class="accounts-toggle" id="accountsToggle">Accounts</button>
+        <div class="account-grid" id="accountGrid">
+          <div class="input-group">
+            <label for="accSize1" contenteditable="true" id="labelAcc1" data-default="SH - SIPP">SH - SIPP</label>
+            <input type="number" id="accSize1" min="0" step="0.01" placeholder="Enter account size" inputmode="decimal" />
+          </div>
+          <div class="input-group">
+            <label for="accSize2" contenteditable="true" id="labelAcc2" data-default="SH - ISA">SH - ISA</label>
+            <input type="number" id="accSize2" min="0" step="0.01" placeholder="Enter account size" inputmode="decimal" />
+          </div>
+          <div class="input-group">
+            <label for="accSize3" contenteditable="true" id="labelAcc3" data-default="BH - ISA">BH - ISA</label>
+            <input type="number" id="accSize3" min="0" step="0.01" placeholder="Enter account size" inputmode="decimal" />
+          </div>
+          <div class="input-group">
+            <label for="accSize4" contenteditable="true" id="labelAcc4" data-default="HH - ISA">HH - ISA</label>
+            <input type="number" id="accSize4" min="0" step="0.01" placeholder="Enter account size" inputmode="decimal" />
+          </div>
+          <div class="input-group">
+            <label for="accSize5" contenteditable="true" id="labelAcc5" data-default="LH - SIPP">LH - SIPP</label>
+            <input type="number" id="accSize5" min="0" step="0.01" placeholder="Enter account size" inputmode="decimal" />
+          </div>
+          <div class="input-group">
+            <label for="accSize6" contenteditable="true" id="labelAcc6" data-default="Acc - 6">Acc - 6</label>
+            <input type="number" id="accSize6" min="0" step="0.01" placeholder="Enter account size" inputmode="decimal" />
+          </div>
         </div>
       </div>
       <div class="input-row">
@@ -326,9 +428,11 @@
       <button type="submit" id="calculateBtn">Calculate</button>
       <button type="button" id="resetBtn">Reset</button>
     </form>
-    <div id="results" class="results" aria-live="polite"></div>
+    <div id="results" class="results">
+      <div class="no-results">Calculate to see results for each account.</div>
+    </div>
   </div>
-  <div class="copyright">©2025 Trade Risk Manager</div>
+  <div class="copyright">&copy;2025 Trade Risk Manager</div>
   <script>
     console.log('Trade Risk Manager script loaded');
     (() => {
@@ -352,11 +456,46 @@
       const usdOption = document.getElementById('usdOption');
       const resultsDiv = document.getElementById('results');
       const form = document.getElementById('riskForm');
+      const accountsToggle = document.getElementById('accountsToggle');
+      const accountGrid = document.getElementById('accountGrid');
       let GBP_TO_USD = 1.34; // Default fallback rate
+      let accountsExpanded = localStorage.getItem('accountsExpanded') !== 'false'; // Default to expanded
 
-      if (!form || !equityRiskSlider || !equityRiskVal || !positionSizeSlider || !positionSizeVal || !resultsDiv || !currencySelect || !usdOption) {
+      if (!form || !equityRiskSlider || !equityRiskVal || !positionSizeSlider || !positionSizeVal || !resultsDiv || !currencySelect || !usdOption || !accountsToggle || !accountGrid) {
         console.error('Form elements not found');
         return;
+      }
+
+      // Initialize accounts section
+      function toggleAccounts() {
+        accountsExpanded = !accountsExpanded;
+        accountGrid.classList.toggle('expanded', accountsExpanded);
+        accountsToggle.classList.toggle('expanded', accountsExpanded);
+        localStorage.setItem('accountsExpanded', accountsExpanded);
+      }
+      accountsToggle.addEventListener('click', toggleAccounts);
+      if (accountsExpanded) {
+        accountGrid.classList.add('expanded');
+        accountsToggle.classList.add('expanded');
+      }
+
+      // Tab switching functionality
+      function initTabs() {
+        const tabBtns = resultsDiv.querySelectorAll('.tab-btn');
+        const tabPanes = resultsDiv.querySelectorAll('.tab-pane');
+        tabBtns.forEach((btn, index) => {
+          btn.addEventListener('click', () => {
+            tabBtns.forEach(b => b.classList.remove('active'));
+            tabPanes.forEach(p => p.classList.remove('active'));
+            btn.classList.add('active');
+            tabPanes[index].classList.add('active');
+          });
+        });
+        // Activate first tab if exists
+        if (tabBtns.length > 0) {
+          tabBtns[0].classList.add('active');
+          tabPanes[0].classList.add('active');
+        }
       }
 
       // Fetch live exchange rate from Frankfurter API
@@ -386,6 +525,7 @@
       // Enhance contenteditable for mobile compatibility
       accInputs.forEach(({ labelId }) => {
         const label = document.getElementById(labelId);
+        if (!label) return;
         label.addEventListener('touchstart', (e) => {
           e.preventDefault();
           label.focus();
@@ -481,7 +621,7 @@
 
       form.addEventListener('submit', (e) => {
         e.preventDefault();
-        resultsDiv.innerHTML = '';
+        resultsDiv.innerHTML = ''; // Clear previous
 
         const purchasePrice = parseFloat(document.getElementById('purchasePrice').value);
         const stopLoss = parseFloat(document.getElementById('stopLoss').value);
@@ -521,6 +661,8 @@
           displayLabel = `At ${targetPositionSizePercent}% Position Size (Equity Risk: ${equityRiskPercent}%)`;
         }
 
+        // Collect all valid results
+        const resultsData = [];
         accInputs.forEach(({ id, labelId, defaultLabel }) => {
           const accSize = parseFloat(document.getElementById(id).value);
           let accLabel = document.getElementById(labelId).innerText.trim();
@@ -540,26 +682,56 @@
             }
             const res = calcRisk(accSize, purchasePrice, stopLoss, adjustedEquityRiskPercent, currency);
             if (res) {
-              const group = document.createElement('div');
-              group.className = 'result-group';
-              group.innerHTML = `
-                <h3>${accLabel}</h3>
-                <div class="result-row"><span>Money at Risk:</span> <span>£${formatNumber(res.riskAmount)}</span></div>
-                <div class="result-row"><span>Total Position Size:</span> <span>${res.currencySymbol}${formatNumber(res.positionSizeValue)}</span></div>
-                <div class="result-row"><span>Position Size %:</span> <span>${res.positionSizePercent}%</span></div>
-                <div class="result-row"><span>Shares to Buy:</span> <span class="bold">${formatNumber(res.positionSize)}</span></div>
-                <div class="result-row"><span>Stop Loss:</span> <span class="bold">${formatNumber(stopLoss)} ${res.currencySymbol}</span></div>
-                <div class="result-row"><span>% to Stop:</span> <span>${res.percentToStop}%</span></div>
-                <div class="result-row"><span>Derisk 1/3 at:</span> <span>${res.currencySymbol}${formatNumber(res.derisk13Price)}</span></div>
-                <div class="result-row"><span>Sell Shares (1/3):</span> <span>${res.derisk13Shares}</span></div>
-                <div class="result-row"><span>Derisk 1/4 at:</span> <span>${res.currencySymbol}${formatNumber(res.derisk14Price)}</span></div>
-                <div class="result-row"><span>Sell Shares (1/4):</span> <span>${res.derisk14Shares}</span></div>
-                <div class="result-row"><span>${displayLabel}</span></div>
-              `;
-              resultsDiv.appendChild(group);
+              resultsData.push({ label: accLabel, res, displayLabel });
             }
           }
         });
+
+        if (resultsData.length === 0) {
+          resultsDiv.innerHTML = '<div class="no-results">No valid results generated.</div>';
+          resultsDiv.classList.remove('show');
+          return;
+        }
+
+        // Build tab structure
+        const tabNav = document.createElement('nav');
+        tabNav.className = 'tab-nav';
+        const tabContent = document.createElement('div');
+        tabContent.className = 'tab-content';
+
+        resultsData.forEach(({ label, res, displayLabel }, index) => {
+          // Tab button
+          const tabBtn = document.createElement('button');
+          tabBtn.className = 'tab-btn';
+          tabBtn.textContent = label;
+          tabBtn.dataset.tab = index;
+          tabNav.appendChild(tabBtn);
+
+          // Tab pane
+          const tabPane = document.createElement('div');
+          tabPane.className = 'tab-pane';
+          tabPane.id = `tab-${index}`;
+          tabPane.innerHTML = `
+            <h3>${label}</h3>
+            <div class="result-row"><span>Money at Risk:</span> <span>£${formatNumber(res.riskAmount)}</span></div>
+            <div class="result-row"><span>Total Position Size:</span> <span>${res.currencySymbol}${formatNumber(res.positionSizeValue)}</span></div>
+            <div class="result-row"><span>Position Size %:</span> <span>${res.positionSizePercent}%</span></div>
+            <div class="result-row"><span>Shares to Buy:</span> <span class="bold">${formatNumber(res.positionSize)}</span></div>
+            <div class="result-row"><span>Stop Loss:</span> <span class="bold">${formatNumber(stopLoss)} ${res.currencySymbol}</span></div>
+            <div class="result-row"><span>% to Stop:</span> <span>${res.percentToStop}%</span></div>
+            <div class="result-row"><span>Derisk 1/3 at:</span> <span>${res.currencySymbol}${formatNumber(res.derisk13Price)}</span></div>
+            <div class="result-row"><span>Sell Shares (1/3):</span> <span>${res.derisk13Shares}</span></div>
+            <div class="result-row"><span>Derisk 1/4 at:</span> <span>${res.currencySymbol}${formatNumber(res.derisk14Price)}</span></div>
+            <div class="result-row"><span>Sell Shares (1/4):</span> <span>${res.derisk14Shares}</span></div>
+            <div class="result-row"><span>${displayLabel}</span></div>
+          `;
+          tabContent.appendChild(tabPane);
+        });
+
+        resultsDiv.appendChild(tabNav);
+        resultsDiv.appendChild(tabContent);
+        initTabs();
+        resultsDiv.classList.add('show');
       });
 
       document.getElementById('resetBtn').addEventListener('click', () => {
@@ -572,19 +744,28 @@
         currencySelect.value = 'USD';
         updateCurrencyOption();
         accInputs.forEach(({ labelId, defaultLabel }) => {
-          document.getElementById(labelId).innerText = defaultLabel;
-          localStorage.setItem(labelId, defaultLabel);
+          const labelEl = document.getElementById(labelId);
+          if (labelEl) {
+            labelEl.innerText = defaultLabel;
+            localStorage.setItem(labelId, defaultLabel);
+          }
         });
-        resultsDiv.innerHTML = '';
+        resultsDiv.innerHTML = '<div class="no-results">Calculate to see results for each account.</div>';
+        resultsDiv.classList.remove('show');
       });
 
       function loadSavedData() {
         accInputs.forEach(({ id, labelId, defaultLabel }) => {
-          const savedSize = localStorage.getItem(id);
-          if (savedSize) document.getElementById(id).value = savedSize;
-          const savedLabel = localStorage.getItem(labelId);
-          if (savedLabel) document.getElementById(labelId).innerText = savedLabel;
-          else document.getElementById(labelId).innerText = defaultLabel;
+          const el = document.getElementById(id);
+          if (el) {
+            const savedSize = localStorage.getItem(id);
+            if (savedSize) el.value = savedSize;
+          }
+          const labelEl = document.getElementById(labelId);
+          if (labelEl) {
+            const savedLabel = localStorage.getItem(labelId);
+            labelEl.innerText = savedLabel || defaultLabel;
+          }
         });
         const savedPurchase = localStorage.getItem('purchasePrice');
         if (savedPurchase) document.getElementById('purchasePrice').value = savedPurchase;
@@ -614,8 +795,10 @@
 
       form.addEventListener('input', () => {
         accInputs.forEach(({ id, labelId }) => {
-          localStorage.setItem(id, document.getElementById(id).value);
-          localStorage.setItem(labelId, document.getElementById(labelId).innerText.trim());
+          const el = document.getElementById(id);
+          if (el) localStorage.setItem(id, el.value);
+          const labelEl = document.getElementById(labelId);
+          if (labelEl) localStorage.setItem(labelId, labelEl.innerText.trim());
         });
         localStorage.setItem('purchasePrice', document.getElementById('purchasePrice').value);
         localStorage.setItem('stopLoss', document.getElementById('stopLoss').value);
@@ -636,6 +819,7 @@
         localStorage.removeItem('positionSize');
         localStorage.removeItem('mode');
         localStorage.removeItem('currency');
+        localStorage.removeItem('accountsExpanded');
       });
     })();
   </script>
