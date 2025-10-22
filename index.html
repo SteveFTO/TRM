@@ -727,8 +727,6 @@
 
           const label = document.getElementById(acc.labelId).innerText;
 
-          const stopLabel = stopType === 'single' ? 'Stop Loss' : 'Avg Stop Loss';
-
           const tabBtn = document.createElement('button');
           tabBtn.textContent = label;
           tabBtn.classList.add('tab-btn');
@@ -740,12 +738,13 @@
           tabPane.classList.add('tab-pane');
           tabPane.innerHTML = `
             <h3>${label}</h3>
-            <div class="result-row"><span>Shares to Buy:</span> <span style="color: green; font-weight: bold;">${formatNumber(positionSize)}</span></div>
-            <div class="result-row"><span style="font-weight: bold;">${stopLabel}:</span> <span style="color: red;">${tradeSymbol}${formatNumber(avgStopLoss.toFixed(2))}</span></div>
+            <div class="result-row"><span>Exchange Rate (${accCurrency} to ${tradeCurrency}):</span> <span>${exchangeRate.toFixed(4)}</span></div>
             <div class="result-row"><span>Account Size:</span> <span>${accSymbol}${formatNumber(accountSize)}</span></div>
             <div class="result-row"><span>Money at Risk:</span> <span>${accSymbol}${formatNumber(riskAmount)}</span></div>
             <div class="result-row"><span>Total Position Size:</span> <span>${accSymbol}${formatNumber(positionSizeValue)}</span></div>
             <div class="result-row"><span>Position Size %:</span> <span>${positionSizePercent.toFixed(2)}%</span></div>
+            <div class="result-row"><span>Shares to Buy:</span> <span>${formatNumber(positionSize)}</span></div>
+            <div class="result-row"><span>Avg Stop Loss:</span> <span>${tradeSymbol}${formatNumber(avgStopLoss.toFixed(2))}</span></div>
             <div class="result-row"><span>% to Stop:</span> <span>${percentToStop.toFixed(2)}%</span></div>
             <div class="result-row"><span>Derisk 1/3 (breakeven) at:</span> <span>${tradeSymbol}${formatNumber(derisk13Price.toFixed(2))}</span></div>
             <div class="result-row"><span>Sell Shares (1/3):</span> <span>${formatNumber(derisk13Shares)}</span></div>
