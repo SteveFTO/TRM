@@ -285,103 +285,155 @@
       align-items: center;
       gap: 6px;
     }
-    .mode-option label {
-      font-size: 1.1rem;
-      color: #ffffff;
+    input[type="radio"] {
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid #eee;
+      background: #2a2a2a;
+      cursor: pointer;
+      transition: background 0.3s ease;
     }
-    button {
+    input[type="radio"]:checked {
+      background: #34c759;
+      border-color: #34c759;
+    }
+    .btn {
       width: 100%;
       padding: 12px;
       font-size: 1.2rem;
-      font-weight: 700;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      user-select: none;
-      touch-action: manipulation;
-      transition: transform 0.2s ease, background 0.3s ease;
-    }
-    button#calculateBtn {
       background: #34c759;
       color: #fff;
-    }
-    button#resetBtn {
-      background: #f0f0f0;
-      color: #1e3c72;
-    }
-    button:hover {
-      transform: scale(1.02);
-    }
-    button:active {
-      transform: scale(0.98);
-    }
-    .results {
-      max-width: 480px;
-      margin: 15px 0;
-      background: #2a2a2a;
-      border-radius: 8px;
-      padding: 12px;
-      display: none;
-    }
-    .tab-nav {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-      margin-bottom: 12px;
-      overflow-x: auto;
-    }
-    .tab-btn {
-      flex: 1;
-      min-width: 80px;
-      padding: 6px;
-      font-size: 1rem;
-      background: #3a3a3a;
-      color: #eee;
       border: none;
       border-radius: 5px;
       cursor: pointer;
       transition: background 0.3s ease;
     }
-    .tab-btn.active {
-      background: #34c759;
+    .btn:hover {
+      background: #28a745;
     }
-    .tab-content {
+    .btn.reset {
+      background: #ff3b30;
+    }
+    .btn.reset:hover {
+      background: #d32e26;
+    }
+    .results {
+      display: none;
+      margin-top: 15px;
+      background: #1c1c1e;
+      border-radius: 5px;
+      padding: 15px;
+      gap: 8px;
+    }
+    .tab-nav {
       display: flex;
-      flex-direction: column;
+      overflow-x: auto;
+      margin-bottom: 10px;
+      border-bottom: 1px solid #444;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 8px 12px;
+      background: none;
+      border: none;
+      color: #aaa;
+      cursor: pointer;
+      font-size: 1rem;
+      text-align: center;
+      transition: color 0.3s ease, border-bottom 0.3s ease;
+      white-space: nowrap;
+    }
+    .tab-btn.active {
+      color: #34c759;
+      border-bottom: 2px solid #34c759;
     }
     .tab-pane {
       display: none;
+      flex-direction: column;
+      gap: 8px;
     }
     .tab-pane.active {
-      display: block;
+      display: flex;
     }
     .result-row {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 8px;
       font-size: 1rem;
+      padding: 4px 0;
+      border-bottom: 1px solid #333;
     }
-    .bold {
-      font-weight: bold;
+    .result-row:last-child {
+      border-bottom: none;
+    }
+    .result-row span:first-child {
+      font-weight: 600;
+      color: #ddd;
+    }
+    .result-row span:last-child {
+      text-align: right;
+      color: #34c759;
     }
   </style>
 </head>
 <body>
-  <h1>Trade Risk Manager <button class="help-icon" onclick="openHelp()">?</button></h1>
-
-  <div id="helpModal" class="modal">
-    <div class="modal-content">
-      <span class="close">&times;</span>
-      <h2>Help & Instructions</h2>
-      <p>This tool helps manage trade risk across multiple accounts.</p>
-      <p>Enter account sizes, purchase price, stop levels, and risk or position size to calculate position details.</p>
-      <p>Use staggered stops for multiple stop levels with percentages.</p>
-    </div>
-  </div>
-
   <div class="app-container">
-    <form id="riskForm">
-      <div class="currency-select-group">
+    <h1>Trade Risk Manager <button class="help-icon" onclick="openHelp()">?</button></h1>
+
+    <div id="helpModal" class="modal">
+      <div class="modal-content">
+        <span class="close" onclick="closeHelp()">&times;</span>
+        <h2>How to Use Trade Risk Manager</h2>
+        <p>This app helps you calculate position sizes and risk for trades across multiple accounts with different currencies.</p>
+        <p><strong>Accounts:</strong> Click the toggle to expand and edit account sizes and labels. Labels are editable by clicking on them.</p>
+        <p><strong>Account Currency:</strong> Select the base currency for your accounts.</p>
+        <p><strong>Trade Currency:</strong> Select the currency of the asset you're trading. If different from account currency, exchange rates will be used (assumed rates for simplicity).</p>
+        <p><strong>Purchase Price:</strong> Enter the entry price for the trade.</p>
+        <p><strong>Stop Type:</strong> Choose single stop or staggered stops.</p>
+        <p>- For single: Enter one stop loss price.</p>
+        <p>- For staggered: Enter up to 3 stop levels with percentages (must sum to 100%).</p>
+        <p><strong>Mode:</strong> Choose between Equity Risk % or Position Size %.</p>
+        <p>- Equity Risk: Set the percentage of account equity to risk.</p>
+        <p>- Position Size: Set the percentage of account for position size.</p>
+        <p>Click Calculate to see results per account, including shares, position size, avg stop, % to stop, and derisk points.</p>
+        <p>Results are shown in tabs for each account.</p>
+        <p>Data is saved locally and persists across sessions. Use Reset to clear.</p>
+      </div>
+    </div>
+
+    <form id="tradeForm">
+      <div class="accounts-section">
+        <button type="button" id="accountsToggle" class="accounts-toggle">Accounts</button>
+        <div id="accountGrid" class="account-grid">
+          <div class="input-group">
+            <span id="acc1Label" contenteditable="true">Acc 1</span>
+            <input type="number" id="acc1Size" placeholder="Account Size" min="0" step="any" />
+          </div>
+          <div class="input-group">
+            <span id="acc2Label" contenteditable="true">Acc 2</span>
+            <input type="number" id="acc2Size" placeholder="Account Size" min="0" step="any" />
+          </div>
+          <div class="input-group">
+            <span id="acc3Label" contenteditable="true">Acc 3</span>
+            <input type="number" id="acc3Size" placeholder="Account Size" min="0" step="any" />
+          </div>
+          <div class="input-group">
+            <span id="acc4Label" contenteditable="true">Acc 4</span>
+            <input type="number" id="acc4Size" placeholder="Account Size" min="0" step="any" />
+          </div>
+          <div class="input-group">
+            <span id="acc5Label" contenteditable="true">Acc 5</span>
+            <input type="number" id="acc5Size" placeholder="Account Size" min="0" step="any" />
+          </div>
+          <div class="input-group">
+            <span id="acc6Label" contenteditable="true">Acc 6</span>
+            <input type="number" id="acc6Size" placeholder="Account Size" min="0" step="any" />
+          </div>
+        </div>
+      </div>
+
+      <div class="currency-select-group input-group">
         <label for="accountCurrency">Account Currency</label>
         <select id="accountCurrency">
           <option value="GBP">GBP (£)</option>
@@ -390,140 +442,101 @@
         </select>
       </div>
 
-      <button type="button" class="accounts-toggle">Accounts</button>
-      <div class="account-grid">
-        <div class="input-group">
-          <span contenteditable="true" id="account1Label">Account 1</span>
-          <input type="number" id="account1" min="0">
-        </div>
-        <div class="input-group">
-          <span contenteditable="true" id="account2Label">Account 2</span>
-          <input type="number" id="account2" min="0">
-        </div>
-        <div class="input-group">
-          <span contenteditable="true" id="account3Label">Account 3</span>
-          <input type="number" id="account3" min="0">
-        </div>
-        <div class="input-group">
-          <span contenteditable="true" id="account4Label">Account 4</span>
-          <input type="number" id="account4" min="0">
-        </div>
-        <div class="input-group">
-          <span contenteditable="true" id="account5Label">Account 5</span>
-          <input type="number" id="account5" min="0">
-        </div>
-        <div class="input-group">
-          <span contenteditable="true" id="account6Label">Account 6</span>
-          <input type="number" id="account6" min="0">
-        </div>
+      <div class="input-group">
+        <label for="purchasePrice">Purchase Price</label>
+        <input type="number" id="purchasePrice" placeholder="Purchase Price" min="0" step="any" required />
       </div>
 
-      <div class="input-row">
-        <div class="input-group">
-          <label for="tradeCurrency">Trade Currency</label>
-          <select id="tradeCurrency">
-            <!-- Options populated dynamically -->
-          </select>
-        </div>
-        <div class="input-group">
-          <label for="purchasePrice">Purchase Price</label>
-          <input type="number" id="purchasePrice" step="0.01" min="0">
-        </div>
+      <div class="currency-select-group input-group">
+        <label for="tradeCurrency">Trade Currency</label>
+        <select id="tradeCurrency"></select>
       </div>
 
       <div class="stop-type-group">
-        <div class="mode-option">
-          <input type="radio" id="stopSingle" name="stopType" value="single" checked>
-          <label for="stopSingle">Single Stop</label>
-        </div>
-        <div class="mode-option">
-          <input type="radio" id="stopStaggered" name="stopType" value="staggered">
-          <label for="stopStaggered">Staggered Stops</label>
-        </div>
+        <label class="mode-option"><input type="radio" name="stopType" value="single" checked /> Single Stop</label>
+        <label class="mode-option"><input type="radio" name="stopType" value="staggered" /> Staggered Stops</label>
       </div>
 
-      <div class="stop-row" id="stopRow">
+      <div id="stopRow" class="stop-row">
         <div class="input-group">
-          <label for="stopLoss">Stop Location</label>
-          <input type="number" id="stopLoss" step="0.01" min="0">
+          <label for="stopLoss">Stop Loss</label>
+          <input type="number" id="stopLoss" placeholder="Stop Loss" min="0" step="any" required />
         </div>
       </div>
 
-      <div class="staggered-stops" id="staggeredStops">
-        <div class="staggered-level" id="level1">
+      <div id="staggeredStops" class="staggered-stops">
+        <div id="level1" class="staggered-level">
           <div class="input-group">
             <label>Stop Level 1</label>
-            <input type="number" class="stopLevel" data-level="1" step="0.01" min="0">
+            <input class="stopLevel" data-level="1" type="number" placeholder="Stop Price" min="0" step="any" />
           </div>
-          <div class="percent-group">
+          <div class="percent-group input-group">
             <label>%</label>
-            <input type="number" class="stopPercent" data-level="1" min="0" max="100">
+            <input class="stopPercent" data-level="1" type="number" placeholder="%" min="0" max="100" step="any" value="50" />
           </div>
         </div>
-        <div class="staggered-level" id="level2">
+        <div id="level2" class="staggered-level">
           <div class="input-group">
             <label>Stop Level 2</label>
-            <input type="number" class="stopLevel" data-level="2" step="0.01" min="0">
+            <input class="stopLevel" data-level="2" type="number" placeholder="Stop Price" min="0" step="any" />
           </div>
-          <div class="percent-group">
+          <div class="percent-group input-group">
             <label>%</label>
-            <input type="number" class="stopPercent" data-level="2" min="0" max="100">
+            <input class="stopPercent" data-level="2" type="number" placeholder="%" min="0" max="100" step="any" value="50" />
           </div>
         </div>
-        <div class="staggered-level" id="level3" style="display: none;">
+        <div id="level3" class="staggered-level" style="display: none;">
           <div class="input-group">
             <label>Stop Level 3</label>
-            <input type="number" class="stopLevel" data-level="3" step="0.01" min="0">
+            <input class="stopLevel" data-level="3" type="number" placeholder="Stop Price" min="0" step="any" />
           </div>
-          <div class="percent-group">
+          <div class="percent-group input-group">
             <label>%</label>
-            <input type="number" class="stopPercent" data-level="3" min="0" max="100">
+            <input class="stopPercent" data-level="3" type="number" placeholder="%" min="0" max="100" step="any" />
           </div>
         </div>
-        <button type="button" class="add-level-btn" id="addLevelBtn">Add Level</button>
+        <button type="button" id="addLevelBtn" class="add-level-btn">+ Add Level</button>
       </div>
 
       <div class="mode-group">
-        <div class="mode-option">
-          <input type="radio" id="modeEquityRisk" name="mode" value="equityRisk" checked>
-          <label for="modeEquityRisk">Equity Risk %</label>
-        </div>
-        <div class="mode-option">
-          <input type="radio" id="modePositionSize" name="mode" value="positionSize">
-          <label for="modePositionSize">Position Size %</label>
-        </div>
+        <label class="mode-option"><input type="radio" name="mode" value="equityRisk" checked /> Equity Risk %</label>
+        <label class="mode-option"><input type="radio" name="mode" value="positionSize" /> Position Size %</label>
       </div>
 
       <div id="equityRiskGroup">
-        <input type="range" id="equityRiskSlider" min="0.025" max="1.5" step="0.025" value="1">
-        <span class="range-value" id="equityRiskVal">1%</span>
+        <label>Equity Risk %</label>
+        <input type="range" id="equityRiskSlider" min="0.1" max="2" step="0.025" value="0.25" />
+        <div class="range-value" id="equityRiskVal">1%</div>
       </div>
 
       <div id="positionSizeGroup" style="display: none;">
-        <input type="range" id="positionSizeSlider" min="3" max="50" step="0.5" value="10">
-        <span class="range-value" id="positionSizeVal">10%</span>
+        <label>Position Size %</label>
+        <input type="range" id="positionSizeSlider" min="3" max="50" step="0.5" value="10" />
+        <div class="range-value" id="positionSizeVal">10%</div>
       </div>
 
-      <button type="button" id="calculateBtn">Calculate</button>
-      <button type="button" id="resetBtn">Reset</button>
+      <button type="button" id="calculateBtn" class="btn">Calculate</button>
+      <button type="button" id="resetBtn" class="btn reset">Reset</button>
     </form>
-  </div>
 
-  <div class="results" id="resultsDiv"></div>
+    <div id="results" class="results"></div>
+  </div>
 
   <script>
     (() => {
-      const form = document.getElementById('riskForm');
-      const accountsToggle = document.querySelector('.accounts-toggle');
-      const accountGrid = document.querySelector('.account-grid');
-      const stopSingle = document.getElementById('stopSingle');
-      const stopStaggered = document.getElementById('stopStaggered');
+      const form = document.getElementById('tradeForm');
+      const accountsToggle = document.getElementById('accountsToggle');
+      const accountGrid = document.getElementById('accountGrid');
+      const accountCurrencySelect = document.getElementById('accountCurrency');
+      const tradeCurrencySelect = document.getElementById('tradeCurrency');
+      const stopSingle = document.querySelector('input[name="stopType"][value="single"]');
+      const stopStaggered = document.querySelector('input[name="stopType"][value="staggered"]');
       const stopRow = document.getElementById('stopRow');
       const staggeredStops = document.getElementById('staggeredStops');
-      const addLevelBtn = document.getElementById('addLevelBtn');
       const level3 = document.getElementById('level3');
-      const modeEquityRisk = document.getElementById('modeEquityRisk');
-      const modePositionSize = document.getElementById('modePositionSize');
+      const addLevelBtn = document.getElementById('addLevelBtn');
+      const modeEquityRisk = document.querySelector('input[name="mode"][value="equityRisk"]');
+      const modePositionSize = document.querySelector('input[name="mode"][value="positionSize"]');
       const equityRiskGroup = document.getElementById('equityRiskGroup');
       const positionSizeGroup = document.getElementById('positionSizeGroup');
       const equityRiskSlider = document.getElementById('equityRiskSlider');
@@ -532,32 +545,109 @@
       const positionSizeVal = document.getElementById('positionSizeVal');
       const calculateBtn = document.getElementById('calculateBtn');
       const resetBtn = document.getElementById('resetBtn');
-      const resultsDiv = document.getElementById('resultsDiv');
-
-      const accountCurrencySelect = document.getElementById('accountCurrency');
-      const tradeCurrencySelect = document.getElementById('tradeCurrency');
+      const resultsDiv = document.getElementById('results');
 
       let numStaggeredLevels = 2;
 
-      const currencySymbols = {
-        'GBP': '£',
-        'USD': '$',
-        'EUR': '€'
-      };
-
-      const currencies = ['GBP', 'USD', 'EUR'];
-
       const accInputs = [
-        { id: 'account1', labelId: 'account1Label', defaultLabel: 'Account 1' },
-        { id: 'account2', labelId: 'account2Label', defaultLabel: 'Account 2' },
-        { id: 'account3', labelId: 'account3Label', defaultLabel: 'Account 3' },
-        { id: 'account4', labelId: 'account4Label', defaultLabel: 'Account 4' },
-        { id: 'account5', labelId: 'account5Label', defaultLabel: 'Account 5' },
-        { id: 'account6', labelId: 'account6Label', defaultLabel: 'Account 6' }
+        { id: 'acc1Size', labelId: 'acc1Label', defaultLabel: 'Acc 1' },
+        { id: 'acc2Size', labelId: 'acc2Label', defaultLabel: 'Acc 2' },
+        { id: 'acc3Size', labelId: 'acc3Label', defaultLabel: 'Acc 3' },
+        { id: 'acc4Size', labelId: 'acc4Label', defaultLabel: 'Acc 4' },
+        { id: 'acc5Size', labelId: 'acc5Label', defaultLabel: 'Acc 5' },
+        { id: 'acc6Size', labelId: 'acc6Label', defaultLabel: 'Acc 6' }
       ];
 
+      const currencySymbols = {
+        GBP: '£',
+        USD: '$',
+        EUR: '€'
+      };
+
+      async function getExchangeRate(from, to) {
+        if (from === to) return 1;
+        try {
+          const response = await fetch(`https://api.frankfurter.app/latest?from=${from}&to=${to}`);
+          const data = await response.json();
+          return data.rates[to] || 1;
+        } catch (error) {
+          console.error('Error fetching exchange rate:', error);
+          return 1; // Fallback to 1 if error
+        }
+      }
+
+      function updateTradeCurrencyOptions() {
+        const accCurrency = accountCurrencySelect.value;
+        tradeCurrencySelect.innerHTML = '';
+        const currencies = ['GBP', 'USD', 'EUR'];
+        currencies.forEach(curr => {
+          if (curr !== accCurrency) {
+            const option = document.createElement('option');
+            option.value = curr;
+            option.textContent = `${curr} (${currencySymbols[curr]})`;
+            tradeCurrencySelect.appendChild(option);
+          }
+        });
+        const sameOption = document.createElement('option');
+        sameOption.value = accCurrency;
+        sameOption.textContent = `${accCurrency} (${currencySymbols[accCurrency]})`;
+        tradeCurrencySelect.appendChild(sameOption);
+        tradeCurrencySelect.value = localStorage.getItem('tradeCurrency') || accCurrency;
+      }
+
+      accountCurrencySelect.addEventListener('change', updateTradeCurrencyOptions);
+
+      accountsToggle.addEventListener('click', () => {
+        accountGrid.classList.toggle('expanded');
+        accountsToggle.classList.toggle('expanded');
+      });
+
+      stopSingle.addEventListener('change', () => {
+        if (stopSingle.checked) {
+          stopRow.style.display = 'flex';
+          staggeredStops.classList.remove('show');
+        }
+      });
+
+      stopStaggered.addEventListener('change', () => {
+        if (stopStaggered.checked) {
+          stopRow.style.display = 'none';
+          staggeredStops.classList.add('show');
+        }
+      });
+
+      addLevelBtn.addEventListener('click', () => {
+        if (numStaggeredLevels < 3) {
+          numStaggeredLevels++;
+          level3.style.display = 'flex';
+          addLevelBtn.style.display = 'none';
+        }
+      });
+
+      modeEquityRisk.addEventListener('change', () => {
+        if (modeEquityRisk.checked) {
+          equityRiskGroup.style.display = 'block';
+          positionSizeGroup.style.display = 'none';
+        }
+      });
+
+      modePositionSize.addEventListener('change', () => {
+        if (modePositionSize.checked) {
+          equityRiskGroup.style.display = 'none';
+          positionSizeGroup.style.display = 'block';
+        }
+      });
+
+      equityRiskSlider.addEventListener('input', () => {
+        equityRiskVal.textContent = `${equityRiskSlider.value}%`;
+      });
+
+      positionSizeSlider.addEventListener('input', () => {
+        positionSizeVal.textContent = `${positionSizeSlider.value}%`;
+      });
+
       function formatNumber(num) {
-        return num.toLocaleString('en-GB', { maximumFractionDigits: 2 });
+        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
       }
 
       function initTabs() {
@@ -571,180 +661,133 @@
             tabPanes[index].classList.add('active');
           });
         });
-        if (tabBtns.length > 0) tabBtns[0].classList.add('active');
-        if (tabPanes.length > 0) tabPanes[0].classList.add('active');
       }
 
-      accountsToggle.addEventListener('click', () => {
-        accountGrid.classList.toggle('expanded');
-        accountsToggle.classList.toggle('expanded');
-      });
-
-      stopSingle.addEventListener('change', () => {
-        stopRow.style.display = 'flex';
-        staggeredStops.classList.remove('show');
-      });
-
-      stopStaggered.addEventListener('change', () => {
-        stopRow.style.display = 'none';
-        staggeredStops.classList.add('show');
-      });
-
-      addLevelBtn.addEventListener('click', () => {
-        if (numStaggeredLevels < 3) {
-          numStaggeredLevels++;
-          level3.style.display = 'flex';
-          addLevelBtn.style.display = 'none';
-        }
-      });
-
-      modeEquityRisk.addEventListener('change', () => {
-        equityRiskGroup.style.display = 'block';
-        positionSizeGroup.style.display = 'none';
-      });
-
-      modePositionSize.addEventListener('change', () => {
-        equityRiskGroup.style.display = 'none';
-        positionSizeGroup.style.display = 'block';
-      });
-
-      equityRiskSlider.addEventListener('input', () => {
-        equityRiskVal.textContent = `${equityRiskSlider.value}%`;
-      });
-
-      positionSizeSlider.addEventListener('input', () => {
-        positionSizeVal.textContent = `${positionSizeSlider.value}%`;
-      });
-
-      // Update trade currency options with rates
-      async function updateTradeCurrencyOptions() {
-        const accCurrency = accountCurrencySelect.value;
-        let rates = {};
-        try {
-          const response = await fetch(`https://api.frankfurter.app/latest?from=${accCurrency}&to=${currencies.join(',')}`);
-          const data = await response.json();
-          rates = data.rates || {};
-        } catch (e) {
-          // Silent fail, use defaults
-        }
-
-        tradeCurrencySelect.innerHTML = '';
-        currencies.forEach(c => {
-          const rate = (c === accCurrency) ? 1 : (rates[c] || 1);
-          const opt = document.createElement('option');
-          opt.value = c;
-          opt.textContent = `${c} (${currencySymbols[c]}) (${rate.toFixed(4)})`;
-          opt.dataset.rate = rate.toFixed(4);
-          tradeCurrencySelect.appendChild(opt);
-        });
-
-        // Restore saved selection if valid
-        const savedTradeCurrency = localStorage.getItem('defaultTradeCurrency') || accCurrency;
-        if (currencies.includes(savedTradeCurrency)) {
-          tradeCurrencySelect.value = savedTradeCurrency;
-        }
-      }
-
-      // Initial load and listeners for currency changes
-      accountCurrencySelect.addEventListener('change', async () => {
-        await updateTradeCurrencyOptions();
-        localStorage.setItem('accountCurrency', accountCurrencySelect.value);
-      });
-      tradeCurrencySelect.addEventListener('change', () => {
-        localStorage.setItem('defaultTradeCurrency', tradeCurrencySelect.value);
-      });
-
-      calculateBtn.addEventListener('click', () => {
-        resultsDiv.innerHTML = '';
-        resultsDiv.style.display = 'none';
-
+      calculateBtn.addEventListener('click', async () => {
         const mode = document.querySelector('input[name="mode"]:checked').value;
         const purchasePrice = parseFloat(document.getElementById('purchasePrice').value);
-        if (isNaN(purchasePrice) || purchasePrice <= 0) return;
-
         const stopType = document.querySelector('input[name="stopType"]:checked').value;
-        let avgStopLoss = 0;
-        let percentToStop = 0;
+        const accountCurrency = accountCurrencySelect.value;
+        const tradeCurrency = tradeCurrencySelect.value;
+        const accountSymbol = currencySymbols[accountCurrency];
+        const tradeSymbol = currencySymbols[tradeCurrency];
 
-        if (stopType === 'single') {
-          const stopLoss = parseFloat(document.getElementById('stopLoss').value);
-          if (isNaN(stopLoss)) return;
-          avgStopLoss = stopLoss;
-        } else {
-          let totalPct = 0;
-          let weightedSum = 0;
-          for (let i = 1; i <= numStaggeredLevels; i++) {
-            const stop = parseFloat(document.querySelector(`.stopLevel[data-level="${i}"]`).value);
-            const pct = parseFloat(document.querySelector(`.stopPercent[data-level="${i}"]`).value);
-            if (isNaN(stop) || isNaN(pct) || pct <= 0) return;
-            weightedSum += stop * pct;
-            totalPct += pct;
-          }
-          avgStopLoss = weightedSum / totalPct;
+        if (isNaN(purchasePrice) || purchasePrice <= 0) {
+          alert('Please enter a valid purchase price.');
+          return;
         }
 
-        const priceDiff = Math.abs(purchasePrice - avgStopLoss);
-        percentToStop = (priceDiff / purchasePrice) * 100;
+        let avgStopLoss;
+        let percentToStop;
+        let riskPerShare;
+        let stops = [];
 
-        const accCurrency = accountCurrencySelect.value;
-        const tradeCurrency = tradeCurrencySelect.value;
-        const selectedOption = tradeCurrencySelect.options[tradeCurrencySelect.selectedIndex];
-        const exchangeRate = parseFloat(selectedOption.dataset.rate) || 1;
-        const accSymbol = currencySymbols[accCurrency] || accCurrency;
-        const tradeSymbol = currencySymbols[tradeCurrency] || tradeCurrency;
+        if (stopType === 'single') {
+          avgStopLoss = parseFloat(document.getElementById('stopLoss').value);
+          if (isNaN(avgStopLoss) || avgStopLoss >= purchasePrice) {
+            alert('Please enter a valid stop loss below purchase price.');
+            return;
+          }
+          percentToStop = Math.abs((purchasePrice - avgStopLoss) / purchasePrice * 100);
+          riskPerShare = Math.abs(purchasePrice - avgStopLoss);
+        } else {
+          let totalPct = 0;
+          for (let i = 1; i <= numStaggeredLevels; i++) {
+            const stopEl = document.querySelector(`.stopLevel[data-level="${i}"]`);
+            const pctEl = document.querySelector(`.stopPercent[data-level="${i}"]`);
+            const stop = parseFloat(stopEl.value);
+            const pct = parseFloat(pctEl.value);
+            if (isNaN(stop) || stop >= purchasePrice || isNaN(pct) || pct <= 0) {
+              alert(`Please enter valid stop level ${i} and percentage.`);
+              return;
+            }
+            stops.push({ stop, percent: pct });
+            totalPct += pct;
+          }
+          if (Math.abs(totalPct - 100) > 0.01) {
+            alert('Staggered percentages must sum to 100%.');
+            return;
+          }
+          avgStopLoss = stops.reduce((sum, s) => sum + s.stop * (s.percent / 100), 0);
+          percentToStop = Math.abs((purchasePrice - avgStopLoss) / purchasePrice * 100);
+          riskPerShare = Math.abs(purchasePrice - avgStopLoss);
+        }
+
+        const exchangeRate = await getExchangeRate(accountCurrency, tradeCurrency);
+
+        const accounts = accInputs.map(acc => {
+          const size = parseFloat(document.getElementById(acc.id).value);
+          const label = document.getElementById(acc.labelId).innerText.trim();
+          return { size, label: label || acc.defaultLabel };
+        }).filter(acc => !isNaN(acc.size) && acc.size > 0);
+
+        if (accounts.length === 0) {
+          alert('Please enter at least one account size.');
+          return;
+        }
 
         const tabNav = document.createElement('div');
         tabNav.classList.add('tab-nav');
         const tabContent = document.createElement('div');
         tabContent.classList.add('tab-content');
 
-        accInputs.forEach((acc, index) => {
-          const accountSize = parseFloat(document.getElementById(acc.id).value) || 0;
-          if (accountSize <= 0) return;
-
-          let riskAmount, positionSizeValue, positionSizePercent, positionSize;
+        accounts.forEach((acc, index) => {
+          const accountSize = acc.size;
+          let riskAmount, positionSizePercent;
 
           if (mode === 'equityRisk') {
-            const equityRisk = parseFloat(equityRiskSlider.value);
-            riskAmount = accountSize * (equityRisk / 100);
-            positionSizeValue = riskAmount / (percentToStop / 100);
-            positionSizePercent = (positionSizeValue / accountSize) * 100;
-            positionSize = Math.floor((riskAmount * exchangeRate) / priceDiff);
+            const equityRisk = parseFloat(equityRiskSlider.value) / 100;
+            riskAmount = accountSize * equityRisk;
           } else {
-            const positionPercent = parseFloat(positionSizeSlider.value);
-            positionSizeValue = accountSize * (positionPercent / 100);
-            positionSizePercent = positionPercent;
-            positionSize = Math.floor(positionSizeValue * exchangeRate / purchasePrice);
-            riskAmount = (positionSize * priceDiff) / exchangeRate;
+            positionSizePercent = parseFloat(positionSizeSlider.value) / 100;
+            const positionSize = accountSize * positionSizePercent;
+            const positionSizeConverted = positionSize * exchangeRate;
+            const shares = Math.floor(positionSizeConverted / purchasePrice);
+            riskAmount = (shares * riskPerShare) / exchangeRate;
           }
 
-          const derisk12Price = purchasePrice + (purchasePrice - avgStopLoss);
-          const derisk12Shares = Math.floor(positionSize / 2);
-          const derisk13Price = purchasePrice + 1.5 * (purchasePrice - avgStopLoss);
-          const derisk13Shares = Math.floor(positionSize / 3);
-          const derisk14Price = purchasePrice + 2 * (purchasePrice - avgStopLoss);
-          const derisk14Shares = Math.floor(positionSize / 4);
+          const riskAmountConverted = riskAmount * exchangeRate;
+          let shares = Math.floor(riskAmountConverted / riskPerShare);
 
-          const label = document.getElementById(acc.labelId).innerText;
+          const positionSize = shares * purchasePrice;
+          positionSizePercent = mode === 'positionSize' ? parseFloat(positionSizeSlider.value) : (positionSize / (accountSize * exchangeRate)) * 100;
+
+          const derisk13Price = purchasePrice + (purchasePrice - avgStopLoss);
+          const derisk13Shares = Math.floor(shares / 3);
+
+          const derisk14Price = purchasePrice + (purchasePrice - avgStopLoss) * (4 / 3);
+          const derisk14Shares = Math.floor(shares / 4);
 
           const tabBtn = document.createElement('button');
-          tabBtn.textContent = label;
           tabBtn.classList.add('tab-btn');
-          tabBtn.dataset.tab = `account${index + 1}`;
+          tabBtn.textContent = acc.label;
+          if (index === 0) tabBtn.classList.add('active');
           tabNav.appendChild(tabBtn);
 
+          const stopLabel = stopType === 'single' ? 'Stop Loss' : 'Avg Stop Loss';
+
+          let staggeredHTML = '';
+          if (stopType === 'staggered') {
+            stops.forEach((s, idx) => {
+              const sharesToSell = Math.floor(shares * (s.percent / 100));
+              staggeredHTML += `
+                <div class="result-row"><span>Stop Level ${idx + 1}:</span> <span>${tradeSymbol}${formatNumber(s.stop.toFixed(2))} (Sell ${formatNumber(sharesToSell)})</span></div>
+              `;
+            });
+          }
+
           const tabPane = document.createElement('div');
-          tabPane.id = `account${index + 1}`;
           tabPane.classList.add('tab-pane');
+          if (index === 0) tabPane.classList.add('active');
           tabPane.innerHTML = `
-            <h3>${label}</h3>
-            <div class="result-row"><span>Exchange Rate (${accCurrency} to ${tradeCurrency}):</span> <span>${exchangeRate.toFixed(4)}</span></div>
-            <div class="result-row"><span>Account Size:</span> <span>${accSymbol}${formatNumber(accountSize)}</span></div>
-            <div class="result-row"><span>Money at Risk:</span> <span>${accSymbol}${formatNumber(riskAmount)}</span></div>
-            <div class="result-row"><span>Total Position Size:</span> <span>${accSymbol}${formatNumber(positionSizeValue)}</span></div>
+            <div class="result-row"><span>Account Size:</span> <span>${accountSymbol}${formatNumber(accountSize.toFixed(2))}</span></div>
+            <div class="result-row"><span>Exchange Rate (${accountCurrency} to ${tradeCurrency}):</span> <span>${exchangeRate.toFixed(4)}</span></div>
+            <div class="result-row"><span>Risk Amount:</span> <span>${accountSymbol}${formatNumber(riskAmount.toFixed(2))}</span></div>
+            <div class="result-row"><span>Shares:</span> <span>${formatNumber(shares)}</span></div>
+            <div class="result-row"><span>Position Size:</span> <span>${tradeSymbol}${formatNumber(positionSize.toFixed(2))}</span></div>
             <div class="result-row"><span>Position Size %:</span> <span>${positionSizePercent.toFixed(2)}%</span></div>
-            <div class="result-row"><span>Shares to Buy:</span> <span>${formatNumber(positionSize)}</span></div>
-            <div class="result-row"><span>Avg Stop Loss:</span> <span>${tradeSymbol}${formatNumber(avgStopLoss.toFixed(2))}</span></div>
+            <div class="result-row"><span>${stopLabel}:</span> <span>${tradeSymbol}${formatNumber(avgStopLoss.toFixed(2))}</span></div>
+            ${staggeredHTML}
             <div class="result-row"><span>% to Stop:</span> <span>${percentToStop.toFixed(2)}%</span></div>
             <div class="result-row"><span>Derisk 1/3 (breakeven) at:</span> <span>${tradeSymbol}${formatNumber(derisk13Price.toFixed(2))}</span></div>
             <div class="result-row"><span>Sell Shares (1/3):</span> <span>${formatNumber(derisk13Shares)}</span></div>
@@ -754,6 +797,7 @@
           tabContent.appendChild(tabPane);
         });
 
+        resultsDiv.innerHTML = '';
         resultsDiv.appendChild(tabNav);
         resultsDiv.appendChild(tabContent);
         initTabs();
@@ -761,24 +805,43 @@
       });
 
       resetBtn.addEventListener('click', () => {
-        form.reset();
+        // Reset trade-related fields only
+        document.getElementById('purchasePrice').value = '';
+        document.getElementById('stopLoss').value = '';
+        document.querySelectorAll('.stopLevel').forEach(el => el.value = '');
+        const percents = document.querySelectorAll('.stopPercent');
+        percents[0].value = 50;
+        percents[1].value = 50;
+        percents[2].value = '';
+        equityRiskSlider.value = 1;
         equityRiskVal.textContent = '1%';
+        positionSizeSlider.value = 10;
         positionSizeVal.textContent = '10%';
+        document.querySelector('input[name="mode"][value="equityRisk"]').checked = true;
         equityRiskGroup.style.display = 'block';
         positionSizeGroup.style.display = 'none';
+        document.querySelector('input[name="stopType"][value="single"]').checked = true;
         stopRow.style.display = 'flex';
         staggeredStops.classList.remove('show');
         level3.style.display = 'none';
         addLevelBtn.style.display = 'block';
         numStaggeredLevels = 2;
-        accountGrid.classList.remove('expanded');
-        accountsToggle.classList.remove('expanded');
+        tradeCurrencySelect.value = accountCurrencySelect.value;
         resultsDiv.style.display = 'none';
-        accInputs.forEach(acc => {
-          document.getElementById(acc.labelId).innerText = acc.defaultLabel;
-        });
-        localStorage.clear();
-        updateTradeCurrencyOptions(); // Reset trade options
+
+        // Remove trade-related items from localStorage
+        localStorage.removeItem('purchasePrice');
+        localStorage.removeItem('stopLoss');
+        localStorage.removeItem('stopType');
+        localStorage.removeItem('numStaggeredLevels');
+        for (let i = 1; i <= 3; i++) {
+          localStorage.removeItem(`staggeredStop${i}`);
+          localStorage.removeItem(`staggeredPct${i}`);
+        }
+        localStorage.removeItem('equityRisk');
+        localStorage.removeItem('positionSize');
+        localStorage.removeItem('mode');
+        localStorage.removeItem('tradeCurrency');
       });
 
       function loadSavedData() {
@@ -865,6 +928,7 @@
         localStorage.setItem('equityRisk', equityRiskSlider.value);
         localStorage.setItem('positionSize', positionSizeSlider.value);
         localStorage.setItem('mode', document.querySelector('input[name="mode"]:checked').value);
+        localStorage.setItem('tradeCurrency', tradeCurrencySelect.value);
       });
 
       accountsToggle.addEventListener('click', () => {
