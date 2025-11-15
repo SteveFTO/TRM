@@ -9,6 +9,7 @@
   <link rel="manifest" href="/manifest.json" />
   <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
   <title>Trade Risk Manager</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
       background: linear-gradient(135deg, #1e3c72, #2a5298, #4b3f72);
@@ -224,7 +225,7 @@
       background: #3a3a3a;
       border: none;
     }
-    input[type="number"], select {
+    input[type="number"], select, input[type="text"] {
       width: 100%;
       font-size: 1.1rem;
       padding: 8px;
@@ -236,7 +237,7 @@
       appearance: none;
       transition: background 0.3s ease;
     }
-    input[type="number"]:focus, select:focus {
+    input[type="number"]:focus, select:focus, input[type="text"]:focus {
       background: #3a3a3a;
       outline: none;
     }
@@ -319,6 +320,18 @@
     .btn.reset:hover {
       background: #d32e26;
     }
+    .btn.trade-log {
+      background: #007aff;
+    }
+    .btn.trade-log:hover {
+      background: #0066d6;
+    }
+    .btn.charts {
+      background: #007aff;
+    }
+    .btn.charts:hover {
+      background: #0066d6;
+    }
     .results {
       display: none;
       margin-top: 15px;
@@ -375,10 +388,303 @@
       text-align: right;
       color: #34c759;
     }
+    .input-row {
+      display: flex;
+      gap: 10px;
+    }
+    /* Trade Log Styles */
+    #tradeLogPage {
+      display: none;
+      max-width: 480px;
+      width: 100%;
+      padding: 12px;
+      background: #121212;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      margin-top: 20px;
+    }
+    #tradeLogPage h2 {
+      text-align: center;
+      color: #ffffff;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .log-form {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 15px;
+      border-bottom: 1px solid #2a2a2a;
+      padding-bottom: 12px;
+    }
+    .log-row {
+      display: flex;
+      gap: 10px;
+    }
+    .log-input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+    }
+    .log-input-group input,
+    .log-input-group select {
+      width: 100%;
+      padding: 8px;
+      border-radius: 5px;
+      border: none;
+      background: #2a2a2a;
+      color: #eee;
+    }
+    #addLogBtn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #34c759;
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      font-size: 1.5rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      z-index: 100;
+      transition: background 0.3s ease;
+    }
+    #addLogBtn:hover {
+      background: #28a745;
+    }
+    #backBtn {
+      background: #007aff;
+      color: #fff;
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-bottom: 15px;
+    }
+    #backBtn:hover {
+      background: #0066d6;
+    }
+    .search-bar {
+      width: 80%;
+      padding: 8px;
+      border-radius: 5px;
+      border: none;
+      background: #2a2a2a;
+      color: #eee;
+      margin-bottom: 10px;
+    }
+    .summary-stats {
+      display: flex;
+      justify-content: space-between;
+      background: #1c1c1c;
+      padding: 10px;
+      border-radius: 5px;
+      margin-bottom: 15px;
+      font-size: 0.95rem;
+    }
+    .summary-stats span {
+      flex: 1;
+      text-align: center;
+    }
+    #logTable {
+      width: 75%;
+      border-collapse: collapse;
+    }
+    #logTable th,
+    #logTable td {
+      padding: 4px 6px;
+      text-align: left;
+      border-bottom: 1px solid #2a2a2a;
+      color: #eee;
+      font-size: 0.95rem;
+    }
+    #logTable th {
+      background: #1c1c1c;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+    }
+    #logTable tr:nth-child(even) {
+      background: #1c1c1e;
+    }
+    #logTable th.numeric,
+    #logTable td.numeric {
+      text-align: right;
+    }
+    #logTable th:nth-child(2),
+    #logTable td:nth-child(2) {
+      width: 120px;
+      white-space: nowrap;
+    }
+    #logTable td.actions {
+      width: 50px;
+      text-align: center;
+      padding: 4px;
+    }
+    .edit-btn,
+    .delete-btn,
+    .save-btn,
+    .cancel-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.1rem;
+      margin-left: 0;
+    }
+    .edit-btn {
+      color: #007aff;
+    }
+    .delete-btn {
+      color: #ff3b30;
+    }
+    .save-btn {
+      color: #34c759;
+    }
+    .cancel-btn {
+      color: #aaa;
+    }
+    .outcome-tick {
+      color: #34c759;
+    }
+    .outcome-x {
+      color: #ff3b30;
+    }
+    .result-positive {
+      color: #34c759;
+    }
+    .result-negative {
+      color: #ff3b30;
+    }
+    #logTable td input,
+    #logTable td select {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 4px;
+      background: #2a2a2a;
+      color: #eee;
+      border: none;
+      border-radius: 3px;
+      font-size: 0.95rem;
+    }
+    #toast {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1c1c1c;
+      color: #eee;
+      padding: 10px 20px;
+      border-radius: 5px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      z-index: 100;
+    }
+    #toast.show {
+      opacity: 1;
+    }
+    #exportBtn {
+      background: #007aff;
+      color: #fff;
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 15px;
+      width: 100%;
+    }
+    #exportBtn:hover {
+      background: #0066d6;
+    }
+    #selectBtn {
+      background: #007aff;
+      color: #fff;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-bottom: 10px;
+      font-size: 0.95rem;
+    }
+    #selectBtn:hover {
+      background: #0066d6;
+    }
+    #deleteSelectedBtn {
+      background: #ff3b30;
+      color: #fff;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-bottom: 10px;
+      font-size: 0.95rem;
+      display: none;
+    }
+    #deleteSelectedBtn:hover {
+      background: #d32e26;
+    }
+    .hidden {
+      display: none;
+    }
+    .multi-select-checkbox {
+      margin-right: 4px;
+    }
+    #addToLogBtn {
+      width: 100%;
+      padding: 12px;
+      font-size: 1.2rem;
+      background: #34c759;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+      margin-top: 15px;
+      display: none;
+    }
+    #addToLogBtn:hover {
+      background: #28a745;
+    }
+    #chartsSection {
+      margin-top: 20px;
+    }
+    .chart-container {
+      background: #1c1c1c;
+      padding: 10px;
+      border-radius: 5px;
+      margin-bottom: 15px;
+    }
+    #chartsPage {
+      display: none;
+      max-width: 480px;
+      width: 100%;
+      padding: 12px;
+      background: #121212;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      margin-top: 20px;
+    }
+    #chartsPage h2 {
+      text-align: center;
+      color: #ffffff;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
   </style>
 </head>
 <body>
-  <div class="app-container">
+  <div class="app-container" id="mainPage">
     <h1>Trade Risk Manager <button class="help-icon" onclick="openHelp()">?</button></h1>
 
     <div id="helpModal" class="modal">
@@ -442,9 +748,15 @@
         </select>
       </div>
 
-      <div class="input-group">
-        <label for="purchasePrice">Purchase Price</label>
-        <input type="number" id="purchasePrice" placeholder="Purchase Price" min="0" step="any" required />
+      <div class="input-row">
+        <div class="input-group">
+          <label for="ticker">Ticker</label>
+          <input type="text" id="ticker" placeholder="Ticker" />
+        </div>
+        <div class="input-group">
+          <label for="purchasePrice">Purchase Price</label>
+          <input type="number" id="purchasePrice" placeholder="Purchase Price" min="0" step="any" required />
+        </div>
       </div>
 
       <div class="currency-select-group input-group">
@@ -517,9 +829,52 @@
 
       <button type="button" id="calculateBtn" class="btn">Calculate</button>
       <button type="button" id="resetBtn" class="btn reset">Reset</button>
+      <button type="button" id="tradeLogBtn" class="btn trade-log">Trade Log</button>
     </form>
 
     <div id="results" class="results"></div>
+  </div>
+
+  <div id="tradeLogPage">
+    <h2>Trade Log <button id="backBtn">Back</button></h2>
+    <input type="text" id="searchBar" class="search-bar" placeholder="Search by Ticker or Date..." aria-label="Search trades">
+    <button id="selectBtn" class="hidden">Select</button>
+    <button id="deleteSelectedBtn">Delete Selected</button>
+    <div class="summary-stats">
+      <span id="totalTrades">Total Trades: 0</span>
+      <span id="winRate">Win Rate: 0%</span>
+      <span id="avgR">Avg R: 0</span>
+    </div>
+    <table id="logTable">
+      <thead>
+        <tr>
+          <th data-sort="ticker">Ticker</th>
+          <th data-sort="date" class="sortable desc">Date</th>
+          <th data-sort="ecRisk" class="numeric">EC Risk %</th>
+          <th>Outcome</th>
+          <th data-sort="result" class="numeric">Result %</th>
+          <th>Edit</th>
+          <th>Delete</th>
+        </tr>
+      </thead>
+      <tbody id="logTableBody"></tbody>
+    </table>
+    <button id="chartsBtn" class="btn charts">Charts</button>
+    <button id="exportBtn">Export Logs</button>
+    <div id="toast">Trade Added!</div>
+  </div>
+
+  <div id="chartsPage">
+    <h2>Trade Charts <button id="chartsBackBtn">Back</button></h2>
+    <div class="chart-container">
+      <canvas id="equityCurveChart"></canvas>
+    </div>
+    <div class="chart-container">
+      <canvas id="rMultiplesChart"></canvas>
+    </div>
+    <div class="chart-container">
+      <canvas id="winLossPieChart"></canvas>
+    </div>
   </div>
 
   <script>
@@ -548,6 +903,8 @@
       const resultsDiv = document.getElementById('results');
 
       let numStaggeredLevels = 2;
+      let lastEquityRisk = 0;
+      let lastTicker = '';
 
       const accInputs = [
         { id: 'acc1Size', labelId: 'acc1Label', defaultLabel: 'Acc 1' },
@@ -671,6 +1028,7 @@
         const tradeCurrency = tradeCurrencySelect.value;
         const accountSymbol = currencySymbols[accountCurrency];
         const tradeSymbol = currencySymbols[tradeCurrency];
+        lastTicker = document.getElementById('ticker').value.trim();
 
         if (isNaN(purchasePrice) || purchasePrice <= 0) {
           alert('Please enter a valid purchase price.');
@@ -738,12 +1096,14 @@
           if (mode === 'equityRisk') {
             const equityRisk = parseFloat(equityRiskSlider.value) / 100;
             riskAmount = accountSize * equityRisk;
+            if (index === 0) lastEquityRisk = parseFloat(equityRiskSlider.value);
           } else {
             positionSizePercent = parseFloat(positionSizeSlider.value) / 100;
             const positionSize = accountSize * positionSizePercent;
             const positionSizeConverted = positionSize * exchangeRate;
             const shares = Math.floor(positionSizeConverted / purchasePrice);
             riskAmount = (shares * riskPerShare) / exchangeRate;
+            if (index === 0) lastEquityRisk = (riskAmount / accountSize) * 100;
           }
 
           const riskAmountConverted = riskAmount * exchangeRate;
@@ -801,10 +1161,22 @@
         resultsDiv.appendChild(tabContent);
         initTabs();
         resultsDiv.style.display = 'block';
+
+        // Add 'Add to Trade Log' button
+        let addToLogBtn = document.getElementById('addToLogBtn');
+        if (!addToLogBtn) {
+          addToLogBtn = document.createElement('button');
+          addToLogBtn.id = 'addToLogBtn';
+          addToLogBtn.classList.add('btn');
+          addToLogBtn.textContent = 'Add to Trade Log';
+          resultsDiv.appendChild(addToLogBtn);
+        }
+        addToLogBtn.style.display = 'block';
       });
 
       resetBtn.addEventListener('click', () => {
         // Reset trade-related fields only
+        document.getElementById('ticker').value = '';
         document.getElementById('purchasePrice').value = '';
         document.getElementById('stopLoss').value = '';
         document.querySelectorAll('.stopLevel').forEach(el => el.value = '');
@@ -829,6 +1201,7 @@
         resultsDiv.style.display = 'none';
 
         // Remove trade-related items from localStorage
+        localStorage.removeItem('ticker');
         localStorage.removeItem('purchasePrice');
         localStorage.removeItem('stopLoss');
         localStorage.removeItem('stopType');
@@ -875,6 +1248,9 @@
           const savedLabel = localStorage.getItem(acc.labelId);
           if (savedLabel) document.getElementById(acc.labelId).innerText = savedLabel || acc.defaultLabel;
         });
+
+        const savedTicker = localStorage.getItem('ticker');
+        if (savedTicker) document.getElementById('ticker').value = savedTicker;
 
         const savedPurchase = localStorage.getItem('purchasePrice');
         if (savedPurchase) document.getElementById('purchasePrice').value = savedPurchase;
@@ -923,6 +1299,7 @@
           localStorage.setItem(acc.id, document.getElementById(acc.id).value);
           localStorage.setItem(acc.labelId, document.getElementById(acc.labelId).innerText.trim());
         });
+        localStorage.setItem('ticker', document.getElementById('ticker').value);
         localStorage.setItem('purchasePrice', document.getElementById('purchasePrice').value);
         localStorage.setItem('equityRisk', equityRiskSlider.value);
         localStorage.setItem('positionSize', positionSizeSlider.value);
@@ -939,6 +1316,419 @@
       document.querySelector('.close').addEventListener('click', closeHelp);
       window.addEventListener('click', (e) => {
         if (e.target === document.getElementById('helpModal')) closeHelp();
+      });
+
+      // New Trade Log Functionality
+      const mainPage = document.getElementById('mainPage');
+      const tradeLogPage = document.getElementById('tradeLogPage');
+      const chartsPage = document.getElementById('chartsPage');
+      const tradeLogBtn = document.getElementById('tradeLogBtn');
+      const backBtn = document.getElementById('backBtn');
+      const chartsBtn = document.getElementById('chartsBtn');
+      const chartsBackBtn = document.getElementById('chartsBackBtn');
+      const logTableBody = document.getElementById('logTableBody');
+      const searchBar = document.getElementById('searchBar');
+      const selectBtn = document.getElementById('selectBtn');
+      const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+      const exportBtn = document.getElementById('exportBtn');
+      const totalTrades = document.getElementById('totalTrades');
+      const winRate = document.getElementById('winRate');
+      const avgR = document.getElementById('avgR');
+      const toast = document.getElementById('toast');
+
+      const LOG_STORAGE_KEY = 'tradeLogs';
+      let sortColumn = 'date';
+      let sortDirection = 'desc';
+      let multiSelectMode = false;
+      let selectedRows = new Set();
+      let equityChart, rMultiplesChart, winLossChart;
+
+      // Load logs from localStorage
+      function loadLogs(filter = '') {
+        let logs = JSON.parse(localStorage.getItem(LOG_STORAGE_KEY)) || [];
+        if (filter) {
+          const lowerFilter = filter.toLowerCase();
+          logs = logs.filter(log => log.ticker.toLowerCase().includes(lowerFilter) || log.date.includes(lowerFilter));
+        }
+        logs = sortLogs(logs);
+        logTableBody.innerHTML = '';
+        logs.forEach((log, index) => {
+          addLogRow(log, index);
+        });
+        updateSummaryStats(logs);
+        if (multiSelectMode) {
+          document.querySelectorAll('.multi-select-checkbox').forEach(checkbox => checkbox.classList.remove('hidden'));
+          deleteSelectedBtn.style.display = 'block';
+        } else {
+          document.querySelectorAll('.multi-select-checkbox').forEach(checkbox => checkbox.classList.add('hidden'));
+          deleteSelectedBtn.style.display = 'none';
+        }
+        return logs;
+      }
+
+      // Sort logs
+      function sortLogs(logs) {
+        return logs.sort((a, b) => {
+          let valA = a[sortColumn];
+          let valB = b[sortColumn];
+          if (sortColumn === 'date') {
+            valA = new Date(valA);
+            valB = new Date(valB);
+          } else if (sortColumn === 'result') {
+            valA = a.result || 0;
+            valB = b.result || 0;
+          }
+          if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+          if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+          return 0;
+        });
+      }
+
+      // Update summary stats
+      function updateSummaryStats(logs) {
+        const total = logs.length;
+        const wins = logs.filter(log => log.outcome === 'profit').length;
+        const winPct = total > 0 ? (wins / total * 100).toFixed(1) : 0;
+        const rValues = logs.filter(log => log.outcome && log.result !== null).map(log => log.result / log.ecRisk);
+        const avgRVal = rValues.length > 0 ? (rValues.reduce((sum, r) => sum + r, 0) / rValues.length).toFixed(2) : 0;
+
+        totalTrades.textContent = `Total Trades: ${total}`;
+        winRate.textContent = `Win Rate: ${winPct}%`;
+        avgR.textContent = `Avg R: ${avgRVal}`;
+      }
+
+      // Update charts
+      function updateCharts(logs) {
+        // Destroy existing charts if they exist
+        if (equityChart) equityChart.destroy();
+        if (rMultiplesChart) rMultiplesChart.destroy();
+        if (winLossChart) winLossChart.destroy();
+
+        // Equity Curve Chart (Line)
+        const equityCtx = document.getElementById('equityCurveChart').getContext('2d');
+        const cumulativeReturns = [];
+        let cumulative = 0;
+        logs.forEach(log => {
+          if (log.result !== null) {
+            cumulative += log.result;
+            cumulativeReturns.push(cumulative);
+          }
+        });
+        equityChart = new Chart(equityCtx, {
+          type: 'line',
+          data: {
+            labels: logs.map(log => log.date),
+            datasets: [{
+              label: 'Equity Curve',
+              data: cumulativeReturns,
+              borderColor: '#34c759',
+              backgroundColor: 'rgba(52, 199, 89, 0.2)',
+              fill: true
+            }]
+          },
+          options: {
+            responsive: true,
+            scales: {
+              y: {
+                beginAtZero: true
+              }
+            }
+          }
+        });
+
+        // R-Multiples Bar Chart
+        const rMultiplesCtx = document.getElementById('rMultiplesChart').getContext('2d');
+        const rMultiples = logs.filter(log => log.outcome && log.result !== null).map(log => log.result / log.ecRisk);
+        rMultiplesChart = new Chart(rMultiplesCtx, {
+          type: 'bar',
+          data: {
+            labels: logs.filter(log => log.outcome && log.result !== null).map(log => log.ticker),
+            datasets: [{
+              label: 'R-Multiples',
+              data: rMultiples,
+              backgroundColor: rMultiples.map(r => r > 0 ? '#34c759' : '#ff3b30')
+            }]
+          },
+          options: {
+            responsive: true,
+            scales: {
+              y: {
+                beginAtZero: true
+              }
+            }
+          }
+        });
+
+        // Win/Loss Pie Chart
+        const winLossCtx = document.getElementById('winLossPieChart').getContext('2d');
+        const wins = logs.filter(log => log.outcome === 'profit').length;
+        const losses = logs.filter(log => log.outcome === 'loss').length;
+        winLossChart = new Chart(winLossCtx, {
+          type: 'pie',
+          data: {
+            labels: ['Wins', 'Losses'],
+            datasets: [{
+              data: [wins, losses],
+              backgroundColor: ['#34c759', '#ff3b30']
+            }]
+          },
+          options: {
+            responsive: true
+          }
+        });
+      }
+
+      // Add row to table
+      function addLogRow(log, index) {
+        const outcomeDisplay = log.outcome ? (log.outcome === 'profit' ? '✓' : '✗') : '-';
+        const outcomeClass = log.outcome ? (log.outcome === 'profit' ? 'outcome-tick' : 'outcome-x') : '';
+        let resultDisplay = log.result !== null ? log.result.toFixed(3) : '-';
+        let resultClass = '';
+        if (log.result !== null) {
+          resultClass = log.result > 0 ? 'result-positive' : (log.result < 0 ? 'result-negative' : '');
+        }
+
+        const tr = document.createElement('tr');
+        tr.dataset.index = index;
+        tr.innerHTML = `
+          <td class="multi-select-checkbox hidden"><input type="checkbox" class="multi-select-checkbox" onclick="toggleSelect(${index})"></td>
+          <td>${log.ticker}</td>
+          <td>${log.date}</td>
+          <td class="numeric">${log.ecRisk.toFixed(3)}</td>
+          <td class="${outcomeClass}">${outcomeDisplay}</td>
+          <td class="numeric ${resultClass}">${resultDisplay}</td>
+          <td class="actions">
+            <button class="edit-btn" aria-label="Edit Trade" onclick="editRow(${index})">✏️</button>
+            <button class="save-btn hidden" aria-label="Save Changes" onclick="saveRow(${index})">✅</button>
+            <button class="cancel-btn hidden" aria-label="Cancel Edit" onclick="cancelEdit(${index})">❌</button>
+          </td>
+          <td class="actions">
+            <button class="delete-btn" aria-label="Delete Trade" onclick="deleteRow(${index})">🗑️</button>
+          </td>
+        `;
+        logTableBody.appendChild(tr);
+      }
+
+      // Toggle select for multi-select
+      window.toggleSelect = (index) => {
+        if (selectedRows.has(index)) {
+          selectedRows.delete(index);
+        } else {
+          selectedRows.add(index);
+        }
+      };
+
+      // Delete selected
+      deleteSelectedBtn.addEventListener('click', () => {
+        if (confirm('Delete selected entries?')) {
+          let logs = JSON.parse(localStorage.getItem(LOG_STORAGE_KEY)) || [];
+          logs = logs.filter((_, index) => !selectedRows.has(index));
+          localStorage.setItem(LOG_STORAGE_KEY, JSON.stringify(logs));
+          selectedRows.clear();
+          loadLogs(searchBar.value);
+          showToast('Selected Trades Deleted!');
+        }
+      });
+
+      // Edit row
+      window.editRow = (index) => {
+        const row = logTableBody.rows[index];
+
+        // Ticker
+        const tickerVal = row.cells[1].innerText;
+        row.cells[1].innerHTML = `<input type="text" value="${tickerVal}">`;
+
+        // Date
+        const dateVal = row.cells[2].innerText;
+        row.cells[2].innerHTML = `<input type="date" value="${dateVal}">`;
+
+        // EC Risk
+        const ecRiskVal = row.cells[3].innerText;
+        row.cells[3].innerHTML = `<input type="number" step="0.01" min="0" value="${ecRiskVal}">`;
+
+        // Outcome
+        const outcomeVal = row.cells[4].innerText === '✓' ? 'profit' : (row.cells[4].innerText === '✗' ? 'loss' : '');
+        row.cells[4].innerHTML = `<select><option value="">-</option><option value="profit" ${outcomeVal === 'profit' ? 'selected' : ''}>✓ (Profit)</option><option value="loss" ${outcomeVal === 'loss' ? 'selected' : ''}>✗ (Loss)</option></select>`;
+        row.cells[4].className = '';
+
+        // Result
+        const resultVal = row.cells[5].innerText === '-' ? '' : row.cells[5].innerText;
+        row.cells[5].innerHTML = `<input type="number" step="0.01" value="${resultVal}">`;
+
+        // Buttons
+        row.cells[6].querySelector('.edit-btn').classList.add('hidden');
+        row.cells[6].querySelector('.save-btn').classList.remove('hidden');
+        row.cells[6].querySelector('.cancel-btn').classList.remove('hidden');
+      };
+
+      // Cancel edit
+      window.cancelEdit = (index) => {
+        loadLogs(searchBar.value); // Reload to revert changes
+      };
+
+      // Save edited row
+      window.saveRow = (index) => {
+        const row = logTableBody.rows[index];
+
+        // Get values
+        const tickerInput = row.cells[1].querySelector('input');
+        const ticker = tickerInput.value.trim();
+
+        const dateInput = row.cells[2].querySelector('input');
+        const date = dateInput.value;
+
+        const ecRiskInput = row.cells[3].querySelector('input');
+        const ecRisk = parseFloat(ecRiskInput.value);
+
+        const outcomeSelect = row.cells[4].querySelector('select');
+        const outcome = outcomeSelect.value || null;
+
+        const resultInput = row.cells[5].querySelector('input');
+        const resultVal = resultInput.value.trim();
+        const result = resultVal ? parseFloat(resultVal) : null;
+
+        // Validate
+        if (!ticker || !date || isNaN(ecRisk) || (result !== null && isNaN(result))) {
+          alert('Invalid data. Please correct.');
+          return;
+        }
+
+        // Save to storage
+        const logs = JSON.parse(localStorage.getItem(LOG_STORAGE_KEY)) || [];
+        logs[index] = { ticker, date, ecRisk, outcome, result };
+        localStorage.setItem(LOG_STORAGE_KEY, JSON.stringify(logs));
+
+        loadLogs(searchBar.value);
+        showToast('Trade Updated!');
+      };
+
+      // Delete row
+      window.deleteRow = (index) => {
+        if (confirm('Delete this entry?')) {
+          const logs = JSON.parse(localStorage.getItem(LOG_STORAGE_KEY)) || [];
+          logs.splice(index, 1);
+          localStorage.setItem(LOG_STORAGE_KEY, JSON.stringify(logs));
+          loadLogs(searchBar.value);
+          showToast('Trade Deleted!');
+        }
+      };
+
+      // Show toast
+      function showToast(message) {
+        toast.textContent = message;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2000);
+      }
+
+      // Get today's date
+      function getTodayDate() {
+        const today = new Date();
+        return today.toISOString().split('T')[0];
+      }
+
+      // Search bar
+      searchBar.addEventListener('input', () => loadLogs(searchBar.value));
+
+      // Sortable headers
+      document.querySelectorAll('#logTable th[data-sort]').forEach(th => {
+        th.addEventListener('click', () => {
+          const column = th.dataset.sort;
+          if (column === sortColumn) {
+            sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+          } else {
+            sortColumn = column;
+            sortDirection = 'asc';
+          }
+          document.querySelectorAll('#logTable th').forEach(header => header.classList.remove('asc', 'desc'));
+          th.classList.add(sortDirection);
+          loadLogs(searchBar.value);
+        });
+      });
+
+      // Multi-select mode
+      selectBtn.addEventListener('click', () => {
+        multiSelectMode = !multiSelectMode;
+        selectBtn.textContent = multiSelectMode ? 'Cancel' : 'Select';
+        selectedRows.clear();
+        loadLogs(searchBar.value);
+      });
+
+      // Export logs
+      exportBtn.addEventListener('click', () => {
+        const logs = JSON.parse(localStorage.getItem(LOG_STORAGE_KEY)) || [];
+        const csv = 'Ticker,Date,EC Risk %,Outcome,Result %\n' + logs.map(log => `${log.ticker},${log.date},${log.ecRisk},${log.outcome || ''},${log.result || ''}`).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'trade_logs.csv';
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+
+      // Swipe-to-delete
+      let touchStartX = 0;
+      logTableBody.addEventListener('touchstart', e => {
+        touchStartX = e.changedTouches[0].screenX;
+      });
+      logTableBody.addEventListener('touchend', e => {
+        const touchEndX = e.changedTouches[0].screenX;
+        if (touchStartX - touchEndX > 50) { // Swipe left
+          const row = e.target.closest('tr');
+          if (row) {
+            const index = parseInt(row.dataset.index);
+            deleteRow(index);
+          }
+        }
+      });
+
+      // Navigation and initial load
+      tradeLogBtn.addEventListener('click', () => {
+        mainPage.style.display = 'none';
+        tradeLogPage.style.display = 'block';
+        loadLogs();
+      });
+
+      backBtn.addEventListener('click', () => {
+        tradeLogPage.style.display = 'none';
+        mainPage.style.display = 'block';
+        multiSelectMode = false;
+        selectBtn.textContent = 'Select';
+        selectBtn.classList.add('hidden');
+        deleteSelectedBtn.style.display = 'none';
+      });
+
+      // Charts navigation
+      chartsBtn.addEventListener('click', () => {
+        tradeLogPage.style.display = 'none';
+        chartsPage.style.display = 'block';
+        const logs = loadLogs(); // Reload logs to ensure latest data for charts
+        updateCharts(logs);
+      });
+
+      chartsBackBtn.addEventListener('click', () => {
+        chartsPage.style.display = 'none';
+        tradeLogPage.style.display = 'block';
+      });
+
+      // Add to Trade Log button logic
+      resultsDiv.addEventListener('click', (e) => {
+        if (e.target.id === 'addToLogBtn') {
+          mainPage.style.display = 'none';
+          tradeLogPage.style.display = 'block';
+          const newLog = {
+            ticker: lastTicker,
+            date: getTodayDate(),
+            ecRisk: lastEquityRisk,
+            outcome: null,
+            result: null
+          };
+          const logs = JSON.parse(localStorage.getItem(LOG_STORAGE_KEY)) || [];
+          logs.push(newLog);
+          localStorage.setItem(LOG_STORAGE_KEY, JSON.stringify(logs));
+          loadLogs();
+          showToast('Trade Added to Log!');
+        }
       });
     })();
   </script>
