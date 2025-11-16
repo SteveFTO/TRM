@@ -1075,8 +1075,8 @@
 
         const accounts = accInputs.map(acc => {
           const size = parseFloat(document.getElementById(acc.id).value);
-          const label = document.getElementById(acc.labelId).innerText.trim();
-          return { size, label: label || acc.defaultLabel };
+          const label = localStorage.getItem(acc.labelId) || acc.defaultLabel;
+          return { size, label };
         }).filter(acc => !isNaN(acc.size) && acc.size > 0);
 
         if (accounts.length === 0) {
