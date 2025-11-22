@@ -741,6 +741,34 @@
 #logTable th.strategy-col, #logTable td.strategy-col, #logTable th.notes-col, #logTable td.notes-col { max-width: 100% !important; white-space:normal !important; }
 #logTable th, #logTable td { text-align:left; }
 </style>
+
+<style>
+/* Make table responsive and allow Strategy/Notes to expand in landscape */
+#tradeLogPage { max-width: 100vw !important; width: 100% !important; padding: 8px !important; }
+#logTable { width: 100% !important; table-layout: auto !important; }
+#logTable th.strategy-col, #logTable td.strategy-col, #logTable th.notes-col, #logTable td.notes-col {
+  white-space: normal !important;
+  max-width: none !important;
+}
+@media (orientation: landscape) {
+  #logTable th, #logTable td { font-size: 0.95rem; }
+  #logTable td { padding: 8px 10px; }
+}
+#entryNotes, #modalNotes { font-size:16px !important; }
+</style>
+
+<style>
+/* Remove action columns and edit icons */
+#logTable th.actions, #logTable td.actions, .edit-btn, .delete-btn { display:none !important; }
+#logTable th.strategy-col, #logTable td.strategy-col, #logTable th.notes-col, #logTable td.notes-col {
+  white-space: normal !important; max-width: none !important;
+}
+/* Ensure table uses full width in landscape */
+@media (orientation: landscape) {
+  #tradeLogPage { width:100vw !important; max-width:100vw !important; }
+  #logTable { width:100% !important; table-layout:auto !important; }
+}
+</style>
 </head>
 <body>
   <div class="app-container" id="mainPage">
@@ -928,8 +956,8 @@
           <th data-sort="ecRisk" class="numeric">EC Risk %</th>
           <th>Outcome</th>
           <th data-sort="result" class="numeric">Result %</th>
-          <th data-sort="strategy">Strategy</th>
-          <th>Notes</th>
+          <th data-sort="strategy" class="strategy-col">Strategy</th>
+          <th class="notes-col">Notes</th>
         </tr>
       </thead>
       <tbody id="logTableBody"></tbody>
@@ -1996,262 +2024,24 @@
     })();
   </script>
 
-<!-- INSERTED: Modal lightbox for editing trades (stacked layout) -->
-<div id="modalEditBackdrop" style="display:none;position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;z-index:9999;">
-  <div id="modalEdit" style="width:92%;max-width:560px;background:#0f1724;color:#e6eef8;padding:16px;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,0.6);">
-    <h3 style="margin-top:0;margin-bottom:8px;">Edit Trade</h3>
-    <div style="display:flex;flex-direction:column;gap:8px;">
-      <label>Ticker</label>
-      <input id="modalTicker" style="padding:8px;border-radius:6px;background:#111;border:none;color:#fff;">
-      <label>Date</label>
-      <input id="modalDate" type="date" style="padding:8px;border-radius:6px;background:#111;border:none;color:#fff;">
-      <label>EC Risk %</label>
-      <input id="modalECRisk" type="number" step="any" style="padding:8px;border-radius:6px;background:#111;border:none;color:#fff;">
-      <label>Outcome</label>
-      <select id="modalOutcome" style="padding:8px;border-radius:6px;background:#111;border:none;color:#fff;">
-        <option value="">---</option><option value="profit">Profit</option><option value="loss">Loss</option>
-      </select>
-      <label>Result %</label>
-      <input id="modalResult" type="number" step="any" style="padding:8px;border-radius:6px;background:#111;border:none;color:#fff;">
-      <label>Strategy</label>
-      <select id="modalStrategy" style="padding:8px;border-radius:6px;background:#111;border:none;color:#fff;">
-        <option value="">(none)</option>
-        <option value="FB Breakout">FB Breakout</option>
-        <option value="21d Pullback">21d Pullback</option>
-        <option value="Add">Add</option>
-        <option value="Other">Other</option>
-      </select>
-      <input id="modalStrategyOther" placeholder="Other strategy" style="display:none;padding:8px;border-radius:6px;background:#111;border:none;color:#fff;">
-      <label>Notes</label>
-      <textarea id="modalNotes" rows="3" style="padding:8px;border-radius:6px;background:#111;border:none;color:#fff;"></textarea>
-    </div>
-    <div style="display:flex;justify-content:space-between;margin-top:12px;">
-      <button id="modalDelete" style="background:#b00020;color:white;padding:8px 12px;border:none;border-radius:6px;">Delete</button>
-      <div>
-        <button id="modalCancel" style="margin-right:8px;padding:8px 12px;border:none;border-radius:6px;">Cancel</button>
-        <button id="modalSave" style="background:#0a0;color:white;padding:8px 12px;border:none;border-radius:6px;">Save</button>
-      </div>
-    </div>
-  </div>
-</div>
+
+
 <script>
 (function(){
-  // helper to enhance header with Strategy/Notes columns if not present
-  function ensureHeaderCols(){
-    const logTable = document.getElementById('logTable');
-    if(!logTable) return;
-    const ths = logTable.querySelectorAll('thead th');
-    // Check if Strategy header already added
-    if(logTable.querySelector('thead th.strategy-col')) return;
-    // find the Edit th to insert before
-    const editTh = Array.from(ths).find(t => t.innerText.trim().toLowerCase() === 'edit');
-    const notesTh = document.createElement('th');
-    notesTh.className = 'notes-col';
-    notesTh.textContent = 'Notes';
-    const stratTh = document.createElement('th');
-    stratTh.className = 'strategy-col';
-    stratTh.textContent = 'Strategy';
-    if(editTh){
-      editTh.parentNode.insertBefore(notesTh, editTh);
-      editTh.parentNode.insertBefore(stratTh, notesTh);
-    } else {
-      const headRow = logTable.querySelector('thead tr');
-      headRow.appendChild(stratTh);
-      headRow.appendChild(notesTh);
-    }
-  }
-
-  // Enhance rows by inserting strategy/notes cells from localStorage logs
-  function enhanceRows(){
-    const tbody = document.getElementById('logTableBody');
-    if(!tbody) return;
-    const logs = JSON.parse(localStorage.getItem('tradeLogs')) || [];
-    for(let i=0;i<tbody.rows.length;i++){
-      const row = tbody.rows[i];
-      // avoid double-insert
-      if(row.dataset.enhanced === '1') continue;
-      const orig = parseInt(row.dataset.origIndex);
-      const log = logs[orig] || {};
-      // create strategy cell and notes cell before the Edit cell (which is currently at index 6 or similar)
-      const cells = row.cells;
-      // Determine position to insert: before the first .actions cell (Edit)
-      let insertBeforeNode = null;
-      for(let c=0;c<cells.length;c++){
-        if(cells[c].classList.contains('actions')){
-          insertBeforeNode = cells[c];
-          break;
-        }
-      }
-      const stratTd = document.createElement('td');
-      stratTd.className = 'strategy-col';
-      stratTd.textContent = log.strategy || '';
-      const notesTd = document.createElement('td');
-      notesTd.className = 'notes-col';
-      notesTd.textContent = log.notes ? (log.notes.length>80 ? log.notes.substring(0,77)+'...' : log.notes) : '';
-      if(insertBeforeNode){
-        row.insertBefore(notesTd, insertBeforeNode);
-        row.insertBefore(stratTd, notesTd);
-      } else {
-        row.appendChild(stratTd);
-        row.appendChild(notesTd);
-      }
-      row.dataset.enhanced = '1';
-    }
-  }
-
-  // Wrap existing loadLogs to enhance rows after load
-  if(window.loadLogs && typeof window.loadLogs === 'function'){
-    const oldLoad = window.loadLogs;
-    window.loadLogs = function(){
-      const res = oldLoad.apply(this, arguments);
-      setTimeout(enhanceRows, 0);
-      return res;
-    };
-  } else {
-    document.addEventListener('DOMContentLoaded', enhanceRows);
-  }
-
-  // Listen for AddToLog button clicks and attach strategy/notes to the last added log
-  document.addEventListener('click', function(e){
-    if(e.target && e.target.id === 'addToLogBtn'){
-      // small timeout to let original handler push the log
-      setTimeout(function(){
-        try{
-          const logs = JSON.parse(localStorage.getItem('tradeLogs')) || [];
-          if(logs.length === 0) return;
-          const last = logs[logs.length-1];
-          const stratEl = document.getElementById('entryStrategy');
-          const otherEl = document.getElementById('entryStrategyOther');
-          const notesEl = document.getElementById('entryNotes');
-          let strat = null;
-          if(stratEl){
-            strat = stratEl.value || null;
-            if(strat === 'Other' && otherEl){
-              const o = otherEl.value.trim();
-              strat = o || null;
-            }
-          }
-          const notes = notesEl ? (notesEl.value||'').trim() : null;
-          last.strategy = strat;
-          last.notes = notes;
-          logs[logs.length-1] = last;
-          localStorage.setItem('tradeLogs', JSON.stringify(logs));
-          if(typeof loadLogs === 'function') loadLogs();
-        }catch(err){ console.error(err); }
-      }, 80);
-    }
-  });
-
-  // Row click delegation: open modal (ignore clicks on buttons/checkboxes)
+  // Delegate clicks on table rows to open edit page
   const tbody = document.getElementById('logTableBody');
   if(tbody){
     tbody.addEventListener('click', function(e){
-      const btn = e.target.closest('button');
-      if(btn) return; // ignore button clicks (buttons have separate handlers)
+      // ignore clicks on buttons or inputs
+      if(e.target.closest('button') || e.target.closest('input') || e.target.closest('a')) return;
       const tr = e.target.closest('tr');
       if(!tr) return;
-      const orig = tr.dataset.origIndex ? parseInt(tr.dataset.origIndex) : null;
-      if(orig === null) return;
-      openEditModal(orig);
+      const idx = tr.dataset.origIndex || tr.getAttribute('data-orig-index') || tr.getAttribute('data-origIndex');
+      if(idx === undefined || idx === null) return;
+      // navigate to edit page with index
+      window.location.href = 'trade_edit.html?index=' + encodeURIComponent(idx);
     });
   }
-
-  // Override window.editRow to open modal (keeps existing button wired)
-  window.editRow = function(sortedIndex){
-    const row = document.querySelector('#logTableBody').rows[sortedIndex];
-    const orig = row ? parseInt(row.dataset.origIndex) : sortedIndex;
-    openEditModal(orig);
-  };
-
-  // Hide inline save/cancel by overriding to reload
-  window.saveRow = function(){ if(typeof loadLogs==='function') loadLogs(); };
-  window.cancelEdit = function(){ if(typeof loadLogs==='function') loadLogs(); };
-
-  // Modal functions
-  function $(id){ return document.getElementById(id); }
-  const modal = $('modalEditBackdrop');
-  const modalTicker = $('modalTicker');
-  const modalDate = $('modalDate');
-  const modalECRisk = $('modalECRisk');
-  const modalOutcome = $('modalOutcome');
-  const modalResult = $('modalResult');
-  const modalStrategy = $('modalStrategy');
-  const modalStrategyOther = $('modalStrategyOther');
-  const modalNotes = $('modalNotes');
-  const modalSave = $('modalSave');
-  const modalCancel = $('modalCancel');
-  const modalDelete = $('modalDelete');
-  let modalOrigIndex = null;
-
-  modalStrategy && modalStrategy.addEventListener('change', function(){ if(this.value==='Other'){ modalStrategyOther.style.display='block'; } else { modalStrategyOther.style.display='none'; modalStrategyOther.value=''; } });
-
-  window.openEditModal = function(origIndex){
-    try{
-      const logs = JSON.parse(localStorage.getItem('tradeLogs')) || [];
-      const log = logs[origIndex];
-      if(!log) return;
-      modalOrigIndex = origIndex;
-      modalTicker.value = log.ticker || '';
-      modalDate.value = log.date || new Date().toISOString().split('T')[0];
-      modalECRisk.value = log.ecRisk !== undefined ? log.ecRisk : '';
-      modalOutcome.value = log.outcome || '';
-      modalResult.value = log.result !== undefined ? log.result : '';
-      if(['FB Breakout','21d Pullback','Add'].includes(log.strategy)){
-        modalStrategy.value = log.strategy;
-        modalStrategyOther.style.display = 'none';
-        modalStrategyOther.value = '';
-      } else if(log.strategy){
-        modalStrategy.value = 'Other';
-        modalStrategyOther.style.display = 'block';
-        modalStrategyOther.value = log.strategy;
-      } else {
-        modalStrategy.value = '';
-        modalStrategyOther.style.display = 'none';
-        modalStrategyOther.value = '';
-      }
-      modalNotes.value = log.notes || '';
-      modal.style.display = 'flex';
-    }catch(err){ console.error(err); }
-  };
-
-  window.closeEditModal = function(){ modal.style.display = 'none'; modalOrigIndex = null; };
-
-  modalCancel && modalCancel.addEventListener('click', function(){ closeEditModal(); });
-
-  modalSave && modalSave.addEventListener('click', function(){
-    if(modalOrigIndex === null) return;
-    try{
-      const logs = JSON.parse(localStorage.getItem('tradeLogs')) || [];
-      const log = logs[modalOrigIndex] || {};
-      log.ticker = (modalTicker.value || '').trim().toUpperCase();
-      log.date = modalDate.value || log.date;
-      log.ecRisk = parseFloat(modalECRisk.value) || 0;
-      log.outcome = modalOutcome.value || null;
-      log.result = modalResult.value !== '' ? parseFloat(modalResult.value) : null;
-      log.strategy = (modalStrategy.value === 'Other') ? (modalStrategyOther.value || '').trim() : (modalStrategy.value || null);
-      log.notes = (modalNotes.value || '').trim() || null;
-      logs[modalOrigIndex] = log;
-      localStorage.setItem('tradeLogs', JSON.stringify(logs));
-      closeEditModal(); loadLogs(); if(typeof loadLogs === 'function') loadLogs();
-    }catch(err){ console.error(err); }
-  });
-
-  modalDelete && modalDelete.addEventListener('click', function(){
-    if(!confirm('Delete this trade?')) return;
-    if(modalOrigIndex === null) return;
-    try{
-      const logs = JSON.parse(localStorage.getItem('tradeLogs')) || [];
-      logs.splice(modalOrigIndex,1);
-      localStorage.setItem('tradeLogs', JSON.stringify(logs));
-      closeEditModal(); loadLogs(); if(typeof loadLogs === 'function') loadLogs();
-    }catch(err){ console.error(err); }
-  });
-
-  // ensure header and rows enhanced on load
-  document.addEventListener('DOMContentLoaded', function(){ ensureHeaderCols(); setTimeout(enhanceRows,200); });
-  // also attempt immediately
-  setTimeout(function(){ ensureHeaderCols(); enhanceRows(); }, 200);
-
 })();
 </script>
 </body>
