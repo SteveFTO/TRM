@@ -938,7 +938,7 @@
     <div id="results" class="results"></div>
   </div>
 
-  <div id="tradeLogPage">
+  <div id="tradeLogPage" class="page" style="display:none;">
     <h2>Trade Log <button id="backBtn">Back</button></h2>
     <input type="text" id="searchBar" class="search-bar" placeholder="Search by Ticker or Date..." aria-label="Search trades">
     <button id="selectBtn" class="hidden">Select</button>
@@ -967,7 +967,7 @@
     <div id="toast">Trade Added!</div>
   </div>
 
-  <div id="chartsPage">
+  <div id="chartsPage" class="page" style="display:none;">
     <h2>Trade Charts <button id="chartsBackBtn">Back</button></h2>
     <div class="benchmark-section">
       <label>Benchmark Overlays</label>
@@ -2060,6 +2060,23 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 });
 </script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const hash = window.location.hash.replace('#', '');
+
+    if (hash) {
+        const targetPage = document.getElementById(hash);
+        if (targetPage) {
+            document.querySelectorAll('.page').forEach(p => {
+                p.style.display = 'none';
+            });
+            targetPage.style.display = 'block';
+        }
+    }
+});
+</script>
+
 </body>
 </html>
 
