@@ -2044,5 +2044,22 @@
   }
 })();
 </script>
+
+  <script>
+document.addEventListener("DOMContentLoaded", function() {
+    const hash = window.location.hash.replace('#','');
+
+    if (hash) {
+        const targetPage = document.getElementById(hash);
+        if (targetPage) {
+            // Hide all pages
+            document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
+            // Show the target page
+            targetPage.style.display = 'block';
+        }
+    }
+});
+</script>
 </body>
 </html>
+
