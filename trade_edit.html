@@ -1,0 +1,134 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Edit Trade</title>
+<style>
+body { font-family: system-ui, -apple-system, Roboto, sans-serif; background:#081221; color:#e6eef8; padding:12px; }
+.container { max-width:760px; margin:0 auto; }
+label { display:block; margin-top:8px; font-weight:600; }
+input, select, textarea { width:100%; padding:8px; margin-top:4px; border-radius:6px; background:#0b1220; border:1px solid #223; color:#fff; box-sizing:border-box; font-size:16px; }
+button { margin-top:12px; padding:10px 14px; border-radius:6px; border:none; background:#0a84ff; color:white; font-weight:600; }
+.row { display:flex; gap:8px; }
+.half { flex:1; }
+.small { width:120px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h2>Edit Trade</h2>
+  <form id="editForm">
+    <label>Ticker</label>
+    <input id="ticker" type="text" required>
+
+    <label>Date</label>
+    <input id="date" type="date">
+
+    <div class="row">
+      <div class="half">
+        <label>EC Risk %</label>
+        <input id="ecRisk" type="number" step="any">
+      </div>
+      <div class="half">
+        <label>Result %</label>
+        <input id="result" type="number" step="any">
+      </div>
+    </div>
+
+    <label>Outcome</label>
+    <select id="outcome">
+      <option value=""></option>
+      <option value="profit">Profit</option>
+      <option value="loss">Loss</option>
+    </select>
+
+    <label>Strategy</label>
+    <select id="strategy">
+      <option value=""></option>
+      <option value="FB Breakout">FB Breakout</option>
+      <option value="21d Pullback">21d Pullback</option>
+      <option value="Add">Add</option>
+      <option value="Other">Other</option>
+    </select>
+    <input id="strategyOther" type="text" placeholder="If Other, describe" style="display:none;">
+
+    <label>Notes</label>
+    <textarea id="notes" rows="4"></textarea>
+
+    <div style="display:flex; gap:8px;">
+      <button type="submit" id="saveBtn">Save</button>
+      <button type="button" id="cancelBtn" style="background:#666;">Cancel</button>
+    </div>
+  </form>
+</div>
+
+<script>
+(function(){
+  const params = new URLSearchParams(window.location.search);
+  const idx = parseInt(params.get('index'));
+  const LOG_KEY = 'tradeLogs';
+  const ticker = document.getElementById('ticker');
+  const date = document.getElementById('date');
+  const ecRisk = document.getElementById('ecRisk');
+  const result = document.getElementById('result');
+  const outcome = document.getElementById('outcome');
+  const strategy = document.getElementById('strategy');
+  const strategyOther = document.getElementById('strategyOther');
+  const notes = document.getElementById('notes');
+  const form = document.getElementById('editForm');
+
+  function load(){
+    const logs = JSON.parse(localStorage.getItem(LOG_KEY)) || [];
+    const log = logs[idx];
+    if(!log){ alert('Trade not found'); return; }
+    ticker.value = log.ticker || '';
+    date.value = log.date || '';
+    ecRisk.value = log.ecRisk !== undefined ? log.ecRisk : '';
+    result.value = log.result !== undefined ? log.result : '';
+    outcome.value = log.outcome || '';
+    if(['FB Breakout','21d Pullback','Add'].includes(log.strategy)){
+      strategy.value = log.strategy;
+      strategyOther.style.display = 'none';
+    } else if(log.strategy){
+      strategy.value = 'Other';
+      strategyOther.style.display = 'block';
+      strategyOther.value = log.strategy;
+    } else {
+      strategy.value = '';
+      strategyOther.style.display = 'none';
+    }
+    notes.value = log.notes || '';
+  }
+
+  strategy.addEventListener('change', function(){
+    strategyOther.style.display = this.value === 'Other' ? 'block' : 'none';
+    if(this.value !== 'Other') strategyOther.value = '';
+  });
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    const logs = JSON.parse(localStorage.getItem(LOG_KEY)) || [];
+    const log = logs[idx] || {};
+    log.ticker = (ticker.value || '').trim().toUpperCase();
+    log.date = date.value || log.date;
+    log.ecRisk = parseFloat(ecRisk.value) || 0;
+    log.result = result.value !== '' ? parseFloat(result.value) : null;
+    log.outcome = outcome.value || null;
+    log.strategy = (strategy.value === 'Other') ? (strategyOther.value || '').trim() : (strategy.value || null);
+    log.notes = (notes.value || '').trim() || null;
+    logs[idx] = log;
+    localStorage.setItem(LOG_KEY, JSON.stringify(logs));
+    // navigate back to main trade log page and show trade log
+    window.location.href = 'index.html#tradeLogPage';
+  });
+
+  document.getElementById('cancelBtn').addEventListener('click', function(){
+    window.location.href = 'index.html#tradeLogPage';
+  });
+
+  load();
+})();
+</script>
+</body>
+</html>
