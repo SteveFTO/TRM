@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <title>Trade Risk Manager v7</title>
+  <title>Trade Risk Manager v8</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -67,6 +67,15 @@
     @keyframes slideIn {
         from { opacity: 0; transform: translateX(20px); }
         to { opacity: 1; transform: translateX(0); }
+    }
+
+    /* Insight Card Animation */
+    .insight-card {
+        animation: fadeIn 0.5s ease-out forwards;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(5px); }
+        to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
@@ -340,7 +349,7 @@
                 <p class="text-xs text-slate-400">In <strong>Settings</strong>, select one account as the <strong>Master</strong>. The Trade Log and Stats will only track the share count and P&L of this Master account to keep your data clean.</p>
             </div>
 
-            <!-- NEW STATS GUIDE -->
+            <!-- STATS GUIDE -->
             <div class="bg-slate-800 rounded-xl p-4 border border-slate-700">
                 <h3 class="font-bold text-purple-400 mb-2 flex items-center gap-2"><i data-lucide="bar-chart-2" class="w-4 h-4"></i> Statistics & Charts</h3>
                 
@@ -361,9 +370,21 @@
                             <li><strong>Recent Contributions:</strong> A bar chart of your last 5 closed trades. Green bars added to your growth; red bars subtracted.</li>
                             <li><strong>Drawdown:</strong> Shows how far your account is from its "Peak" equity. Deep red valleys indicate periods of significant loss.</li>
                             <li><strong>Monthly Performance:</strong> Aggregates your gains/losses by calendar month to show consistency.</li>
+                            <li><strong>Strategy & Time:</strong> Breakdowns of your performance by Strategy Tag and Time of Day/Day of Week.</li>
                         </ul>
                     </div>
                 </div>
+            </div>
+
+            <!-- SMART INSIGHTS GUIDE (NEW) -->
+            <div class="bg-slate-800 rounded-xl p-4 border border-slate-700">
+                <h3 class="font-bold text-indigo-400 mb-2 flex items-center gap-2"><i data-lucide="brain-circuit" class="w-4 h-4"></i> Smart Insights (AI)</h3>
+                <p class="text-xs text-slate-400 mb-2">The App automatically scans your trade logs to find patterns you might miss. It activates once you have logged at least 3 closed trades.</p>
+                <ul class="text-[10px] text-slate-400 list-disc ml-4 space-y-1">
+                    <li><strong>Streak Detection:</strong> Warns you if you are on a losing streak (tilt danger) or winning streak (overconfidence).</li>
+                    <li><strong>Strategy Analysis:</strong> Identifies your highest performing setup.</li>
+                    <li><strong>Time Analysis:</strong> Compares your Morning vs Afternoon performance.</li>
+                </ul>
             </div>
 
             <div class="bg-slate-800 rounded-xl p-4 border border-slate-700">
@@ -454,6 +475,15 @@
 
     <!-- VIEW: STATS -->
     <div id="view-stats" class="hidden p-4 max-w-lg mx-auto pb-24">
+        
+        <!-- SMART INSIGHTS (NEW in v8) -->
+        <div class="bg-indigo-900/20 border border-indigo-500/30 p-4 rounded-xl mb-6">
+            <h3 class="font-bold text-indigo-300 mb-3 flex items-center gap-2 text-sm"><i data-lucide="brain-circuit" class="w-5 h-5"></i> AI Analyst Insights</h3>
+            <div id="smartInsightsList" class="space-y-2 text-xs text-slate-300">
+               <!-- Dynamically Injected -->
+            </div>
+        </div>
+
         <div class="mb-4">
              <label class="text-xs text-slate-500 uppercase font-bold">Filter by Strategy</label>
              <select id="statsFilter" onchange="app.renderStats()" class="w-full bg-slate-800 border-none text-sm rounded-lg p-2 mt-1">
@@ -551,7 +581,7 @@
 
 <script>
 /**
- * Trade Risk Manager v7 - Help Guide & Enhanced Risk Logic
+ * Trade Risk Manager v8 - Smart Insights Engine
  */
 
 const app = {
@@ -647,10 +677,127 @@ const app = {
         document.getElementById('dispBaseCcy').textContent = this.data.settings.baseCurrency;
     },
 
+    // --- SMART INSIGHTS ENGINE (NEW) ---
+    generateInsights(logs) {
+        const insights = [];
+        const closed = logs.filter(l => {
+             const totalSold = l.exits ? l.exits.reduce((a,b)=>a+b.qty,0) : 0;
+             return l.outcome !== 'open' || (l.initialQty > 0 && totalSold >= l.initialQty);
+        });
+        
+        if(closed.length < 3) {
+            document.getElementById('smartInsightsList').innerHTML = `<div class="text-center italic opacity-50">Log at least 3 closed trades to unlock AI insights.</div>`;
+            return;
+        }
+
+        // 1. Streak Analysis
+        // Sort by date desc
+        const sorted = [...closed].sort((a,b) => new Date(b.date) - new Date(a.date));
+        let currentStreak = 0;
+        let type = null; 
+        
+        for(let trade of sorted) {
+             let netR = 0;
+             const riskPerShare = Math.abs(trade.entry - trade.stop);
+             if(trade.exits && trade.exits.length > 0) {
+                 let pnl = 0;
+                 trade.exits.forEach(ex => pnl += (trade.direction==='SHORT'?trade.entry-ex.price:ex.price-trade.entry)*ex.qty);
+                 netR = pnl / (trade.initialQty * riskPerShare);
+             } else if(trade.exitPrice) {
+                 netR = (trade.direction==='SHORT'?trade.entry-trade.exitPrice:trade.exitPrice-trade.entry)/riskPerShare;
+             }
+
+             const isWin = netR > 0;
+             if(type === null) type = isWin;
+             
+             if(isWin === type) currentStreak++;
+             else break;
+        }
+
+        if(currentStreak >= 3) {
+            if(type) insights.push(`<div class="insight-card text-emerald-400 border-l-2 border-emerald-500 pl-2">🔥 You are on a <strong>${currentStreak} trade winning streak</strong>. Stay disciplined.</div>`);
+            else insights.push(`<div class="insight-card text-red-400 border-l-2 border-red-500 pl-2">⚠️ <strong>${currentStreak} loss streak detected</strong>. Consider reducing size by 50% to recover mental capital.</div>`);
+        }
+
+        // 2. Strategy Analysis
+        const stratMap = {};
+        closed.forEach(l => {
+            if(!l.strategy) return;
+            // Calc R
+            let netR = 0;
+            const riskPerShare = Math.abs(l.entry - l.stop);
+            if(l.exits && l.exits.length > 0) {
+                 let pnl = 0;
+                 l.exits.forEach(ex => pnl += (l.direction==='SHORT'?l.entry-ex.price:ex.price-l.entry)*ex.qty);
+                 netR = pnl / (l.initialQty * riskPerShare);
+            } else if(l.exitPrice) {
+                 netR = (l.direction==='SHORT'?l.entry-l.exitPrice:l.exitPrice-l.entry)/riskPerShare;
+            }
+            
+            if(!stratMap[l.strategy]) stratMap[l.strategy] = { wins: 0, count: 0, totalR: 0 };
+            stratMap[l.strategy].count++;
+            stratMap[l.strategy].totalR += netR;
+            if(netR > 0) stratMap[l.strategy].wins++;
+        });
+
+        let bestStrat = null;
+        let bestR = -Infinity;
+        
+        Object.keys(stratMap).forEach(s => {
+            if(stratMap[s].count >= 3 && stratMap[s].totalR > bestR) {
+                bestR = stratMap[s].totalR;
+                bestStrat = s;
+            }
+        });
+
+        if(bestStrat) {
+            insights.push(`<div class="insight-card text-blue-400 border-l-2 border-blue-500 pl-2">🚀 <strong>${bestStrat}</strong> is your top performer with <strong>+${bestR.toFixed(2)}R</strong> total. Focus here!</div>`);
+        }
+
+        // 3. Time of Day Analysis (Morning vs Afternoon)
+        // Morning < 12:00, Afternoon >= 12:00
+        let morningR = 0, afternoonR = 0;
+        let morningCount = 0, afternoonCount = 0;
+
+        closed.forEach(l => {
+             if(!l.date.includes('T')) return; // Skip legacy without time
+             const hour = new Date(l.date).getHours();
+             
+             let netR = 0;
+             const riskPerShare = Math.abs(l.entry - l.stop);
+             if(l.exits && l.exits.length > 0) {
+                 let pnl = 0;
+                 l.exits.forEach(ex => pnl += (l.direction==='SHORT'?l.entry-ex.price:ex.price-l.entry)*ex.qty);
+                 netR = pnl / (l.initialQty * riskPerShare);
+             } else if(l.exitPrice) {
+                 netR = (l.direction==='SHORT'?l.entry-l.exitPrice:l.exitPrice-l.entry)/riskPerShare;
+             }
+
+             if(hour < 12) { morningR += netR; morningCount++; }
+             else { afternoonR += netR; afternoonCount++; }
+        });
+
+        if(morningCount > 2 && afternoonCount > 2) {
+             if(morningR > afternoonR + 2) {
+                 insights.push(`<div class="insight-card text-amber-400 border-l-2 border-amber-500 pl-2">☀️ You trade better in the <strong>Morning (+${morningR.toFixed(1)}R)</strong> vs Afternoon (${afternoonR.toFixed(1)}R).</div>`);
+             } else if (afternoonR > morningR + 2) {
+                 insights.push(`<div class="insight-card text-amber-400 border-l-2 border-amber-500 pl-2">🌇 You trade better in the <strong>Afternoon (+${afternoonR.toFixed(1)}R)</strong> vs Morning (${morningR.toFixed(1)}R).</div>`);
+             }
+        }
+
+        // Render
+        const container = document.getElementById('smartInsightsList');
+        if(insights.length === 0) {
+             container.innerHTML = `<div class="text-center text-slate-500">Collecting more data for insights...</div>`;
+        } else {
+             container.innerHTML = insights.join('');
+        }
+    },
+
     // --- DATA BACKUP & RESTORE ---
     backupData() {
         const payload = {
-            version: 'v6',
+            version: 'v8',
             timestamp: new Date().toISOString(),
             logs: this.data.logs,
             accounts: this.data.accounts,
@@ -1273,6 +1420,8 @@ const app = {
         localStorage.setItem('tradeLogs', JSON.stringify(this.data.logs));
         this.updateStrategyFilter(); 
         this.updateHeatWidget(); // Update Heat
+        // Refresh smart insights if needed
+        this.generateInsights(this.data.logs);
         
         document.getElementById('calculationResults').classList.add('hidden');
         document.getElementById('ticker').value = '';
@@ -1647,7 +1796,123 @@ const app = {
         this.drawContributionChart(closedTrades);
         this.drawMonthlyChart(closedTrades); 
         
+        // Generate Insights
+        this.generateInsights(relevantLogs);
+
         lucide.createIcons();
+    },
+    
+    // --- SMART INSIGHTS ENGINE (NEW) ---
+    generateInsights(logs) {
+        const insights = [];
+        const closed = logs.filter(l => {
+             const totalSold = l.exits ? l.exits.reduce((a,b)=>a+b.qty,0) : 0;
+             return l.outcome !== 'open' || (l.initialQty > 0 && totalSold >= l.initialQty);
+        });
+        
+        if(closed.length < 3) {
+            document.getElementById('smartInsightsList').innerHTML = `<div class="text-center italic opacity-50">Log at least 3 closed trades to unlock AI insights.</div>`;
+            return;
+        }
+
+        // 1. Streak Analysis
+        const sorted = [...closed].sort((a,b) => new Date(b.date) - new Date(a.date));
+        let currentStreak = 0;
+        let type = null; 
+        
+        for(let trade of sorted) {
+             let netR = 0;
+             const riskPerShare = Math.abs(trade.entry - trade.stop);
+             if(trade.exits && trade.exits.length > 0) {
+                 let pnl = 0;
+                 trade.exits.forEach(ex => pnl += (trade.direction==='SHORT'?trade.entry-ex.price:ex.price-trade.entry)*ex.qty);
+                 netR = pnl / (trade.initialQty * riskPerShare);
+             } else if(trade.exitPrice) {
+                 netR = (trade.direction==='SHORT'?trade.entry-trade.exitPrice:trade.exitPrice-trade.entry)/riskPerShare;
+             }
+
+             const isWin = netR > 0;
+             if(type === null) type = isWin;
+             
+             if(isWin === type) currentStreak++;
+             else break;
+        }
+
+        if(currentStreak >= 3) {
+            if(type) insights.push(`<div class="insight-card text-emerald-400 border-l-2 border-emerald-500 pl-2">🔥 You are on a <strong>${currentStreak} trade winning streak</strong>. Stay disciplined.</div>`);
+            else insights.push(`<div class="insight-card text-red-400 border-l-2 border-red-500 pl-2">⚠️ <strong>${currentStreak} loss streak detected</strong>. Consider reducing size by 50% to recover mental capital.</div>`);
+        }
+
+        // 2. Strategy Analysis
+        const stratMap = {};
+        closed.forEach(l => {
+            if(!l.strategy) return;
+            let netR = 0;
+            const riskPerShare = Math.abs(l.entry - l.stop);
+            if(l.exits && l.exits.length > 0) {
+                 let pnl = 0;
+                 l.exits.forEach(ex => pnl += (l.direction==='SHORT'?l.entry-ex.price:ex.price-l.entry)*ex.qty);
+                 netR = pnl / (l.initialQty * riskPerShare);
+            } else if(l.exitPrice) {
+                 netR = (l.direction==='SHORT'?l.entry-l.exitPrice:l.exitPrice-l.entry)/riskPerShare;
+            }
+            
+            if(!stratMap[l.strategy]) stratMap[l.strategy] = { wins: 0, count: 0, totalR: 0 };
+            stratMap[l.strategy].count++;
+            stratMap[l.strategy].totalR += netR;
+            if(netR > 0) stratMap[l.strategy].wins++;
+        });
+
+        let bestStrat = null;
+        let bestR = -Infinity;
+        
+        Object.keys(stratMap).forEach(s => {
+            if(stratMap[s].count >= 3 && stratMap[s].totalR > bestR) {
+                bestR = stratMap[s].totalR;
+                bestStrat = s;
+            }
+        });
+
+        if(bestStrat) {
+            insights.push(`<div class="insight-card text-blue-400 border-l-2 border-blue-500 pl-2">🚀 <strong>${bestStrat}</strong> is your top performer with <strong>+${bestR.toFixed(2)}R</strong> total. Focus here!</div>`);
+        }
+
+        // 3. Time Analysis
+        let morningR = 0, afternoonR = 0;
+        let morningCount = 0, afternoonCount = 0;
+
+        closed.forEach(l => {
+             if(!l.date.includes('T')) return; 
+             const hour = new Date(l.date).getHours();
+             
+             let netR = 0;
+             const riskPerShare = Math.abs(l.entry - l.stop);
+             if(l.exits && l.exits.length > 0) {
+                 let pnl = 0;
+                 l.exits.forEach(ex => pnl += (l.direction==='SHORT'?l.entry-ex.price:ex.price-l.entry)*ex.qty);
+                 netR = pnl / (l.initialQty * riskPerShare);
+             } else if(l.exitPrice) {
+                 netR = (l.direction==='SHORT'?l.entry-l.exitPrice:l.exitPrice-l.entry)/riskPerShare;
+             }
+
+             if(hour < 12) { morningR += netR; morningCount++; }
+             else { afternoonR += netR; afternoonCount++; }
+        });
+
+        if(morningCount > 2 && afternoonCount > 2) {
+             if(morningR > afternoonR + 2) {
+                 insights.push(`<div class="insight-card text-amber-400 border-l-2 border-amber-500 pl-2">☀️ You trade better in the <strong>Morning (+${morningR.toFixed(1)}R)</strong> vs Afternoon (${afternoonR.toFixed(1)}R).</div>`);
+             } else if (afternoonR > morningR + 2) {
+                 insights.push(`<div class="insight-card text-amber-400 border-l-2 border-amber-500 pl-2">🌇 You trade better in the <strong>Afternoon (+${afternoonR.toFixed(1)}R)</strong> vs Morning (${morningR.toFixed(1)}R).</div>`);
+             }
+        }
+
+        const container = document.getElementById('smartInsightsList');
+        if(insights.length === 0) {
+             container.innerHTML = `<div class="text-center text-slate-500">Collecting more data for insights...</div>`;
+        } else {
+             container.innerHTML = insights.join('');
+        }
     },
 
     drawGrowthChart(logs) {
