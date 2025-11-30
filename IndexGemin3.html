@@ -476,7 +476,7 @@
     <!-- VIEW: STATS -->
     <div id="view-stats" class="hidden p-4 max-w-lg mx-auto pb-24">
         
-        <!-- SMART INSIGHTS (NEW in v8) -->
+        <!-- SMART INSIGHTS -->
         <div class="bg-indigo-900/20 border border-indigo-500/30 p-4 rounded-xl mb-6">
             <h3 class="font-bold text-indigo-300 mb-3 flex items-center gap-2 text-sm"><i data-lucide="brain-circuit" class="w-5 h-5"></i> AI Analyst Insights</h3>
             <div id="smartInsightsList" class="space-y-2 text-xs text-slate-300">
@@ -581,7 +581,7 @@
 
 <script>
 /**
- * Trade Risk Manager v8 - Smart Insights Engine
+ * Trade Risk Manager v8.1
  */
 
 const app = {
@@ -677,118 +677,134 @@ const app = {
         document.getElementById('dispBaseCcy').textContent = this.data.settings.baseCurrency;
     },
 
-    // --- SMART INSIGHTS ENGINE (NEW) ---
+    // --- SMART INSIGHTS ENGINE V2 (PATCH) ---
     generateInsights(logs) {
         const insights = [];
+        const filter = document.getElementById('statsFilter').value;
+        
+        // 1. Filter for Closed Trades Only
         const closed = logs.filter(l => {
              const totalSold = l.exits ? l.exits.reduce((a,b)=>a+b.qty,0) : 0;
              return l.outcome !== 'open' || (l.initialQty > 0 && totalSold >= l.initialQty);
         });
         
+        // 2. Create Context Subset (Are we looking at ALL or just ONE strategy?)
+        const subset = filter === 'ALL' ? closed : closed.filter(l => l.strategy === filter);
+
         if(closed.length < 3) {
             document.getElementById('smartInsightsList').innerHTML = `<div class="text-center italic opacity-50">Log at least 3 closed trades to unlock AI insights.</div>`;
             return;
         }
 
-        // 1. Streak Analysis
-        // Sort by date desc
-        const sorted = [...closed].sort((a,b) => new Date(b.date) - new Date(a.date));
-        let currentStreak = 0;
-        let type = null; 
-        
-        for(let trade of sorted) {
-             let netR = 0;
-             const riskPerShare = Math.abs(trade.entry - trade.stop);
-             if(trade.exits && trade.exits.length > 0) {
-                 let pnl = 0;
-                 trade.exits.forEach(ex => pnl += (trade.direction==='SHORT'?trade.entry-ex.price:ex.price-trade.entry)*ex.qty);
-                 netR = pnl / (trade.initialQty * riskPerShare);
-             } else if(trade.exitPrice) {
-                 netR = (trade.direction==='SHORT'?trade.entry-trade.exitPrice:trade.exitPrice-trade.entry)/riskPerShare;
-             }
+        // HELPER: HTML Generator
+        const createCard = (color, title, text) => {
+            const colors = {
+                emerald: 'border-emerald-500 text-emerald-400',
+                amber: 'border-amber-500 text-amber-400',
+                blue: 'border-blue-500 text-blue-400',
+                purple: 'border-purple-500 text-purple-400'
+            };
+            return `<div class="insight-card border-l-2 pl-3 py-2 bg-slate-900/50 rounded-r mb-2 ${colors[color]}">
+                <strong class="block text-[10px] uppercase opacity-80 mb-0.5">${title}</strong>
+                <span class="block leading-snug">${text}</span>
+            </div>`;
+        };
 
-             const isWin = netR > 0;
-             if(type === null) type = isWin;
-             
-             if(isWin === type) currentStreak++;
-             else break;
-        }
-
-        if(currentStreak >= 3) {
-            if(type) insights.push(`<div class="insight-card text-emerald-400 border-l-2 border-emerald-500 pl-2">🔥 You are on a <strong>${currentStreak} trade winning streak</strong>. Stay disciplined.</div>`);
-            else insights.push(`<div class="insight-card text-red-400 border-l-2 border-red-500 pl-2">⚠️ <strong>${currentStreak} loss streak detected</strong>. Consider reducing size by 50% to recover mental capital.</div>`);
-        }
-
-        // 2. Strategy Analysis
-        const stratMap = {};
-        closed.forEach(l => {
-            if(!l.strategy) return;
-            // Calc R
-            let netR = 0;
-            const riskPerShare = Math.abs(l.entry - l.stop);
+        // INSIGHT A: Efficiency (Avg Win vs Avg Loss)
+        let wins = [], losses = [];
+        subset.forEach(l => {
+            const risk = Math.abs(l.entry - l.stop);
+            let r = 0;
             if(l.exits && l.exits.length > 0) {
-                 let pnl = 0;
-                 l.exits.forEach(ex => pnl += (l.direction==='SHORT'?l.entry-ex.price:ex.price-l.entry)*ex.qty);
-                 netR = pnl / (l.initialQty * riskPerShare);
-            } else if(l.exitPrice) {
-                 netR = (l.direction==='SHORT'?l.entry-l.exitPrice:l.exitPrice-l.entry)/riskPerShare;
+                let pnl = 0;
+                l.exits.forEach(e => pnl += (l.direction==='SHORT'?l.entry-e.price : e.price-l.entry)*e.qty);
+                r = pnl / (l.initialQty * risk);
+            } else if (l.exitPrice) {
+                r = (l.direction==='SHORT'?l.entry-l.exitPrice : l.exitPrice-l.entry)/risk;
             }
+            if(r > 0) wins.push(r); else losses.push(Math.abs(r));
+        });
+
+        const avgWin = wins.length ? wins.reduce((a,b)=>a+b,0)/wins.length : 0;
+        const avgLoss = losses.length ? losses.reduce((a,b)=>a+b,0)/losses.length : 0;
+
+        if(wins.length > 0 && losses.length > 0) {
+            if(avgWin > avgLoss * 2) {
+                insights.push(createCard('emerald', 'High Efficiency', `Your average winner (${avgWin.toFixed(2)}R) is <strong>2x larger</strong> than your average loser.`));
+            } else if(avgLoss > avgWin) {
+                insights.push(createCard('amber', 'Negative Skew', `Warning: Your average loss (${avgLoss.toFixed(2)}R) is bigger than your average win (${avgWin.toFixed(2)}R).`));
+            }
+        }
+
+        // INSIGHT B: Strategy Context
+        if(filter === 'ALL') {
+            // Rank Strategies
+            const sMap = {};
+            closed.forEach(l => {
+                if(!l.strategy) return;
+                // Quick R Calc
+                const risk = Math.abs(l.entry - l.stop);
+                let r = 0;
+                if(l.exits && l.exits.length) { let p=0; l.exits.forEach(e=>p+=(l.direction==='SHORT'?l.entry-e.price:e.price-l.entry)*e.qty); r=p/(l.initialQty*risk); }
+                else if(l.exitPrice) r=(l.direction==='SHORT'?l.entry-l.exitPrice:l.exitPrice-l.entry)/risk;
+                
+                if(!sMap[l.strategy]) sMap[l.strategy] = 0;
+                sMap[l.strategy] += r;
+            });
             
-            if(!stratMap[l.strategy]) stratMap[l.strategy] = { wins: 0, count: 0, totalR: 0 };
-            stratMap[l.strategy].count++;
-            stratMap[l.strategy].totalR += netR;
-            if(netR > 0) stratMap[l.strategy].wins++;
-        });
-
-        let bestStrat = null;
-        let bestR = -Infinity;
-        
-        Object.keys(stratMap).forEach(s => {
-            if(stratMap[s].count >= 3 && stratMap[s].totalR > bestR) {
-                bestR = stratMap[s].totalR;
-                bestStrat = s;
+            // Find Best
+            let bestS = null, maxR = -Infinity;
+            Object.keys(sMap).forEach(k => { if(sMap[k] > maxR) { maxR = sMap[k]; bestS = k; } });
+            
+            if(bestS) {
+                insights.push(createCard('blue', 'MVP Strategy', `<strong>${bestS}</strong> is your top performer with <strong>${maxR.toFixed(1)}R</strong> total return.`));
             }
-        });
-
-        if(bestStrat) {
-            insights.push(`<div class="insight-card text-blue-400 border-l-2 border-blue-500 pl-2">🚀 <strong>${bestStrat}</strong> is your top performer with <strong>+${bestR.toFixed(2)}R</strong> total. Focus here!</div>`);
+        } else {
+            // Deep Dive: Compare Strategy vs Global Average
+            const globalWinRate = (closed.filter(l => {
+                 // Quick check win
+                 const risk = Math.abs(l.entry - l.stop);
+                 let r = 0;
+                 if(l.exits && l.exits.length) { let p=0; l.exits.forEach(e=>p+=(l.direction==='SHORT'?l.entry-e.price:e.price-l.entry)*e.qty); r=p/(l.initialQty*risk); }
+                 else if(l.exitPrice) r=(l.direction==='SHORT'?l.entry-l.exitPrice:l.exitPrice-l.entry)/risk;
+                 return r > 0;
+            }).length / closed.length) * 100;
+            
+            const stratWinRate = (wins.length / subset.length) * 100;
+            const diff = stratWinRate - globalWinRate;
+            
+            if(diff > 5) {
+                insights.push(createCard('blue', 'Outperformer', `<strong>${filter}</strong> wins ${Math.round(diff)}% more often than your average trade.`));
+            } else if (diff < -5) {
+                insights.push(createCard('blue', 'Underperformer', `<strong>${filter}</strong> has a lower win rate (${Math.round(stratWinRate)}%) than your average.`));
+            }
         }
 
-        // 3. Time of Day Analysis (Morning vs Afternoon)
-        // Morning < 12:00, Afternoon >= 12:00
-        let morningR = 0, afternoonR = 0;
-        let morningCount = 0, afternoonCount = 0;
-
-        closed.forEach(l => {
-             if(!l.date.includes('T')) return; // Skip legacy without time
-             const hour = new Date(l.date).getHours();
+        // INSIGHT C: Seasonality (Best Month)
+        const monthMap = {};
+        subset.forEach(l => {
+             const m = new Date(l.date).toLocaleString('default', {month:'long'});
+             // Quick R Calc
+             const risk = Math.abs(l.entry - l.stop);
+             let r = 0;
+             if(l.exits && l.exits.length) { let p=0; l.exits.forEach(e=>p+=(l.direction==='SHORT'?l.entry-e.price:e.price-l.entry)*e.qty); r=p/(l.initialQty*risk); }
+             else if(l.exitPrice) r=(l.direction==='SHORT'?l.entry-l.exitPrice:l.exitPrice-l.entry)/risk;
              
-             let netR = 0;
-             const riskPerShare = Math.abs(l.entry - l.stop);
-             if(l.exits && l.exits.length > 0) {
-                 let pnl = 0;
-                 l.exits.forEach(ex => pnl += (l.direction==='SHORT'?l.entry-ex.price:ex.price-l.entry)*ex.qty);
-                 netR = pnl / (l.initialQty * riskPerShare);
-             } else if(l.exitPrice) {
-                 netR = (l.direction==='SHORT'?l.entry-l.exitPrice:l.exitPrice-l.entry)/riskPerShare;
-             }
-
-             if(hour < 12) { morningR += netR; morningCount++; }
-             else { afternoonR += netR; afternoonCount++; }
+             if(!monthMap[m]) monthMap[m] = 0;
+             monthMap[m] += r;
         });
-
-        if(morningCount > 2 && afternoonCount > 2) {
-             if(morningR > afternoonR + 2) {
-                 insights.push(`<div class="insight-card text-amber-400 border-l-2 border-amber-500 pl-2">☀️ You trade better in the <strong>Morning (+${morningR.toFixed(1)}R)</strong> vs Afternoon (${afternoonR.toFixed(1)}R).</div>`);
-             } else if (afternoonR > morningR + 2) {
-                 insights.push(`<div class="insight-card text-amber-400 border-l-2 border-amber-500 pl-2">🌇 You trade better in the <strong>Afternoon (+${afternoonR.toFixed(1)}R)</strong> vs Morning (${morningR.toFixed(1)}R).</div>`);
-             }
+        
+        let bestM = null, maxM = -Infinity;
+        Object.keys(monthMap).forEach(k => { if(monthMap[k] > maxM) { maxM = monthMap[k]; bestM = k; } });
+        
+        if(bestM && maxM > 2) {
+            insights.push(createCard('purple', 'Seasonality', `<strong>${bestM}</strong> is your strongest month (+${maxM.toFixed(1)}R).`));
         }
 
-        // Render
+        // Render to DOM
         const container = document.getElementById('smartInsightsList');
         if(insights.length === 0) {
-             container.innerHTML = `<div class="text-center text-slate-500">Collecting more data for insights...</div>`;
+             container.innerHTML = `<div class="text-center text-slate-500 text-[10px]">No significant patterns found yet. Keep trading!</div>`;
         } else {
              container.innerHTML = insights.join('');
         }
@@ -1342,7 +1358,7 @@ const app = {
     saveToLog(entry, stop, shares) {
         if(shares <= 0) alert("Warning: Master Account share count is 0. Log will have no initial quantity.");
 
-        const { derisk13Price, derisk14Price, rate } = this.data.tempCalculation || {};
+        const { derisk13Price, derisk14Price, rate, impliedRiskPct } = this.data.tempCalculation || {};
         
         let stopMeta = null;
         if (this.data.settings.stopMode === 'staggered') {
@@ -1350,6 +1366,16 @@ const app = {
             stopMeta = { mode: 'staggered', levels: validLevels };
         } else {
             stopMeta = { mode: 'single', price: parseFloat(document.getElementById('stopLoss').value) };
+        }
+
+        // NORMALIZE RISK VALUE: Always save as Equity %
+        // If we are in Position mode, use the calculated implied risk %
+        let finalRiskVal = this.data.settings.riskValue;
+        let finalRiskMode = this.data.settings.riskMode;
+        
+        if (this.data.settings.riskMode === 'position' && impliedRiskPct) {
+            finalRiskVal = parseFloat(impliedRiskPct.toFixed(2));
+            finalRiskMode = 'equity'; // Normalize log to equity mode
         }
 
         // Check if Updating
@@ -1367,8 +1393,8 @@ const app = {
                     stop: stop,
                     stopMeta: stopMeta,
                     initialQty: shares, // Updated Share Count
-                    riskMode: this.data.settings.riskMode,
-                    riskVal: this.data.settings.riskValue,
+                    riskMode: finalRiskMode, // Normalized
+                    riskVal: finalRiskVal,   // Normalized
                     strategy: document.getElementById('strategy').value,
                     notes: document.getElementById('notes').value,
                     exchangeRate: rate,
@@ -1397,8 +1423,8 @@ const app = {
                 stop: stop,
                 stopMeta: stopMeta, 
                 initialQty: shares, 
-                riskMode: this.data.settings.riskMode,
-                riskVal: this.data.settings.riskValue,
+                riskMode: finalRiskMode, // Normalized
+                riskVal: finalRiskVal,   // Normalized
                 strategy: document.getElementById('strategy').value,
                 notes: document.getElementById('notes').value,
                 outcome: 'open',
@@ -1802,114 +1828,134 @@ const app = {
         lucide.createIcons();
     },
     
-    // --- SMART INSIGHTS ENGINE (NEW) ---
+    // --- SMART INSIGHTS ENGINE V2 (PATCH) ---
     generateInsights(logs) {
         const insights = [];
+        const filter = document.getElementById('statsFilter').value;
+        
+        // 1. Filter for Closed Trades Only
         const closed = logs.filter(l => {
              const totalSold = l.exits ? l.exits.reduce((a,b)=>a+b.qty,0) : 0;
              return l.outcome !== 'open' || (l.initialQty > 0 && totalSold >= l.initialQty);
         });
         
+        // 2. Create Context Subset (Are we looking at ALL or just ONE strategy?)
+        const subset = filter === 'ALL' ? closed : closed.filter(l => l.strategy === filter);
+
         if(closed.length < 3) {
             document.getElementById('smartInsightsList').innerHTML = `<div class="text-center italic opacity-50">Log at least 3 closed trades to unlock AI insights.</div>`;
             return;
         }
 
-        // 1. Streak Analysis
-        const sorted = [...closed].sort((a,b) => new Date(b.date) - new Date(a.date));
-        let currentStreak = 0;
-        let type = null; 
-        
-        for(let trade of sorted) {
-             let netR = 0;
-             const riskPerShare = Math.abs(trade.entry - trade.stop);
-             if(trade.exits && trade.exits.length > 0) {
-                 let pnl = 0;
-                 trade.exits.forEach(ex => pnl += (trade.direction==='SHORT'?trade.entry-ex.price:ex.price-trade.entry)*ex.qty);
-                 netR = pnl / (trade.initialQty * riskPerShare);
-             } else if(trade.exitPrice) {
-                 netR = (trade.direction==='SHORT'?trade.entry-trade.exitPrice:trade.exitPrice-trade.entry)/riskPerShare;
-             }
+        // HELPER: HTML Generator
+        const createCard = (color, title, text) => {
+            const colors = {
+                emerald: 'border-emerald-500 text-emerald-400',
+                amber: 'border-amber-500 text-amber-400',
+                blue: 'border-blue-500 text-blue-400',
+                purple: 'border-purple-500 text-purple-400'
+            };
+            return `<div class="insight-card border-l-2 pl-3 py-2 bg-slate-900/50 rounded-r mb-2 ${colors[color]}">
+                <strong class="block text-[10px] uppercase opacity-80 mb-0.5">${title}</strong>
+                <span class="block leading-snug">${text}</span>
+            </div>`;
+        };
 
-             const isWin = netR > 0;
-             if(type === null) type = isWin;
-             
-             if(isWin === type) currentStreak++;
-             else break;
-        }
-
-        if(currentStreak >= 3) {
-            if(type) insights.push(`<div class="insight-card text-emerald-400 border-l-2 border-emerald-500 pl-2">🔥 You are on a <strong>${currentStreak} trade winning streak</strong>. Stay disciplined.</div>`);
-            else insights.push(`<div class="insight-card text-red-400 border-l-2 border-red-500 pl-2">⚠️ <strong>${currentStreak} loss streak detected</strong>. Consider reducing size by 50% to recover mental capital.</div>`);
-        }
-
-        // 2. Strategy Analysis
-        const stratMap = {};
-        closed.forEach(l => {
-            if(!l.strategy) return;
-            let netR = 0;
-            const riskPerShare = Math.abs(l.entry - l.stop);
+        // INSIGHT A: Efficiency (Avg Win vs Avg Loss)
+        let wins = [], losses = [];
+        subset.forEach(l => {
+            const risk = Math.abs(l.entry - l.stop);
+            let r = 0;
             if(l.exits && l.exits.length > 0) {
-                 let pnl = 0;
-                 l.exits.forEach(ex => pnl += (l.direction==='SHORT'?l.entry-ex.price:ex.price-l.entry)*ex.qty);
-                 netR = pnl / (l.initialQty * riskPerShare);
-            } else if(l.exitPrice) {
-                 netR = (l.direction==='SHORT'?l.entry-l.exitPrice:l.exitPrice-l.entry)/riskPerShare;
+                let pnl = 0;
+                l.exits.forEach(e => pnl += (l.direction==='SHORT'?l.entry-e.price : e.price-l.entry)*e.qty);
+                r = pnl / (l.initialQty * risk);
+            } else if (l.exitPrice) {
+                r = (l.direction==='SHORT'?l.entry-l.exitPrice : l.exitPrice-l.entry)/risk;
             }
+            if(r > 0) wins.push(r); else losses.push(Math.abs(r));
+        });
+
+        const avgWin = wins.length ? wins.reduce((a,b)=>a+b,0)/wins.length : 0;
+        const avgLoss = losses.length ? losses.reduce((a,b)=>a+b,0)/losses.length : 0;
+
+        if(wins.length > 0 && losses.length > 0) {
+            if(avgWin > avgLoss * 2) {
+                insights.push(createCard('emerald', 'High Efficiency', `Your average winner (${avgWin.toFixed(2)}R) is <strong>2x larger</strong> than your average loser.`));
+            } else if(avgLoss > avgWin) {
+                insights.push(createCard('amber', 'Negative Skew', `Warning: Your average loss (${avgLoss.toFixed(2)}R) is bigger than your average win (${avgWin.toFixed(2)}R).`));
+            }
+        }
+
+        // INSIGHT B: Strategy Context
+        if(filter === 'ALL') {
+            // Rank Strategies
+            const sMap = {};
+            closed.forEach(l => {
+                if(!l.strategy) return;
+                // Quick R Calc
+                const risk = Math.abs(l.entry - l.stop);
+                let r = 0;
+                if(l.exits && l.exits.length) { let p=0; l.exits.forEach(e=>p+=(l.direction==='SHORT'?l.entry-e.price:e.price-l.entry)*e.qty); r=p/(l.initialQty*risk); }
+                else if(l.exitPrice) r=(l.direction==='SHORT'?l.entry-l.exitPrice:l.exitPrice-l.entry)/risk;
+                
+                if(!sMap[l.strategy]) sMap[l.strategy] = 0;
+                sMap[l.strategy] += r;
+            });
             
-            if(!stratMap[l.strategy]) stratMap[l.strategy] = { wins: 0, count: 0, totalR: 0 };
-            stratMap[l.strategy].count++;
-            stratMap[l.strategy].totalR += netR;
-            if(netR > 0) stratMap[l.strategy].wins++;
-        });
-
-        let bestStrat = null;
-        let bestR = -Infinity;
-        
-        Object.keys(stratMap).forEach(s => {
-            if(stratMap[s].count >= 3 && stratMap[s].totalR > bestR) {
-                bestR = stratMap[s].totalR;
-                bestStrat = s;
+            // Find Best
+            let bestS = null, maxR = -Infinity;
+            Object.keys(sMap).forEach(k => { if(sMap[k] > maxR) { maxR = sMap[k]; bestS = k; } });
+            
+            if(bestS) {
+                insights.push(createCard('blue', 'MVP Strategy', `<strong>${bestS}</strong> is your top performer with <strong>${maxR.toFixed(1)}R</strong> total return.`));
             }
-        });
-
-        if(bestStrat) {
-            insights.push(`<div class="insight-card text-blue-400 border-l-2 border-blue-500 pl-2">🚀 <strong>${bestStrat}</strong> is your top performer with <strong>+${bestR.toFixed(2)}R</strong> total. Focus here!</div>`);
+        } else {
+            // Deep Dive: Compare Strategy vs Global Average
+            const globalWinRate = (closed.filter(l => {
+                 // Quick check win
+                 const risk = Math.abs(l.entry - l.stop);
+                 let r = 0;
+                 if(l.exits && l.exits.length) { let p=0; l.exits.forEach(e=>p+=(l.direction==='SHORT'?l.entry-e.price:e.price-l.entry)*e.qty); r=p/(l.initialQty*risk); }
+                 else if(l.exitPrice) r=(l.direction==='SHORT'?l.entry-l.exitPrice:l.exitPrice-l.entry)/risk;
+                 return r > 0;
+            }).length / closed.length) * 100;
+            
+            const stratWinRate = (wins.length / subset.length) * 100;
+            const diff = stratWinRate - globalWinRate;
+            
+            if(diff > 5) {
+                insights.push(createCard('blue', 'Outperformer', `<strong>${filter}</strong> wins ${Math.round(diff)}% more often than your average trade.`));
+            } else if (diff < -5) {
+                insights.push(createCard('blue', 'Underperformer', `<strong>${filter}</strong> has a lower win rate (${Math.round(stratWinRate)}%) than your average.`));
+            }
         }
 
-        // 3. Time Analysis
-        let morningR = 0, afternoonR = 0;
-        let morningCount = 0, afternoonCount = 0;
-
-        closed.forEach(l => {
-             if(!l.date.includes('T')) return; 
-             const hour = new Date(l.date).getHours();
+        // INSIGHT C: Seasonality (Best Month)
+        const monthMap = {};
+        subset.forEach(l => {
+             const m = new Date(l.date).toLocaleString('default', {month:'long'});
+             // Quick R Calc
+             const risk = Math.abs(l.entry - l.stop);
+             let r = 0;
+             if(l.exits && l.exits.length) { let p=0; l.exits.forEach(e=>p+=(l.direction==='SHORT'?l.entry-e.price:e.price-l.entry)*e.qty); r=p/(l.initialQty*risk); }
+             else if(l.exitPrice) r=(l.direction==='SHORT'?l.entry-l.exitPrice:l.exitPrice-l.entry)/risk;
              
-             let netR = 0;
-             const riskPerShare = Math.abs(l.entry - l.stop);
-             if(l.exits && l.exits.length > 0) {
-                 let pnl = 0;
-                 l.exits.forEach(ex => pnl += (l.direction==='SHORT'?l.entry-ex.price:ex.price-l.entry)*ex.qty);
-                 netR = pnl / (l.initialQty * riskPerShare);
-             } else if(l.exitPrice) {
-                 netR = (l.direction==='SHORT'?l.entry-l.exitPrice:l.exitPrice-l.entry)/riskPerShare;
-             }
-
-             if(hour < 12) { morningR += netR; morningCount++; }
-             else { afternoonR += netR; afternoonCount++; }
+             if(!monthMap[m]) monthMap[m] = 0;
+             monthMap[m] += r;
         });
-
-        if(morningCount > 2 && afternoonCount > 2) {
-             if(morningR > afternoonR + 2) {
-                 insights.push(`<div class="insight-card text-amber-400 border-l-2 border-amber-500 pl-2">☀️ You trade better in the <strong>Morning (+${morningR.toFixed(1)}R)</strong> vs Afternoon (${afternoonR.toFixed(1)}R).</div>`);
-             } else if (afternoonR > morningR + 2) {
-                 insights.push(`<div class="insight-card text-amber-400 border-l-2 border-amber-500 pl-2">🌇 You trade better in the <strong>Afternoon (+${afternoonR.toFixed(1)}R)</strong> vs Morning (${morningR.toFixed(1)}R).</div>`);
-             }
+        
+        let bestM = null, maxM = -Infinity;
+        Object.keys(monthMap).forEach(k => { if(monthMap[k] > maxM) { maxM = monthMap[k]; bestM = k; } });
+        
+        if(bestM && maxM > 2) {
+            insights.push(createCard('purple', 'Seasonality', `<strong>${bestM}</strong> is your strongest month (+${maxM.toFixed(1)}R).`));
         }
 
+        // Render to DOM
         const container = document.getElementById('smartInsightsList');
         if(insights.length === 0) {
-             container.innerHTML = `<div class="text-center text-slate-500">Collecting more data for insights...</div>`;
+             container.innerHTML = `<div class="text-center text-slate-500 text-[10px]">No significant patterns found yet. Keep trading!</div>`;
         } else {
              container.innerHTML = insights.join('');
         }
