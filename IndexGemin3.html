@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <title>Trade Risk Manager v8</title>
+  <title>RiskDesk v10</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -77,6 +77,26 @@
         from { opacity: 0; transform: translateY(5px); }
         to { opacity: 1; transform: translateY(0); }
     }
+
+    /* --- PATCH: PASTE ZONE STYLES --- */
+    .paste-zone {
+        border: 2px dashed #475569;
+        border-radius: 0.75rem;
+        padding: 1rem;
+        text-align: center;
+        color: #64748b;
+        transition: all 0.2s;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100px;
+        margin-top: 1rem;
+        background-color: rgba(15, 23, 42, 0.5);
+    }
+    .paste-zone:hover { border-color: #3b82f6; color: #60a5fa; }
+    .paste-zone.has-image { border-color: #10b981; background-color: rgba(16, 185, 129, 0.1); color: #34d399; }
   </style>
 </head>
 <body class="flex flex-col h-screen overflow-hidden text-slate-200">
@@ -89,7 +109,7 @@
             stroke="#3b82f6" stroke-width="2" fill="rgba(59, 130, 246, 0.15)"/>
       <path d="M10 17L14 13L18 17L22 11" 
             stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      <text x="34" y="22" fill="url(#logo_grad)" font-family="ui-sans-serif, system-ui, sans-serif" font-weight="800" font-size="18" letter-spacing="-0.5">RISK MGR</text>
+      <text x="34" y="22" fill="url(#logo_grad)" font-family="ui-sans-serif, system-ui, sans-serif" font-weight="800" font-size="18" letter-spacing="-0.5">RISKDESK</text>
       <defs>
         <linearGradient id="logo_grad" x1="34" y1="0" x2="160" y2="0" gradientUnits="userSpaceOnUse">
           <stop stop-color="#60a5fa" />
@@ -230,10 +250,16 @@
          <textarea id="notes" rows="2" placeholder="Trade context, mental state..." class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-sm focus:border-blue-500 outline-none"></textarea>
       </div>
 
-      <!-- Action Button -->
-      <button id="mainActionBtn" onclick="app.calculateOrUpdate()" class="w-full py-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-lg shadow-lg shadow-blue-900/50 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
-        Calculate
-      </button>
+      <!-- Action Buttons -->
+      <div class="space-y-3">
+          <button id="mainActionBtn" onclick="app.calculateOrUpdate()" class="w-full py-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-lg shadow-lg shadow-blue-900/50 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+            Calculate
+          </button>
+          
+          <button onclick="app.resetForm()" class="w-full py-3 rounded-xl border border-slate-700 hover:bg-slate-800 text-slate-400 font-bold text-sm transition-colors">
+            Clear Inputs
+          </button>
+      </div>
 
       <!-- Results Modal -->
       <div id="calculationResults" class="hidden mt-4 animate-in fade-in slide-in-from-bottom-4">
@@ -275,13 +301,23 @@
         </div>
 
         <div class="bg-slate-800 rounded-xl p-4 border border-slate-700 mb-6">
-            <h2 class="text-sm font-bold text-slate-300 mb-4 uppercase">Global Base Currency</h2>
-            <select id="settingsBaseCurrency" onchange="app.updateBaseCurrency(this.value)" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-              <option value="GBP">GBP (£)</option>
-              <option value="USD">USD ($)</option>
-              <option value="EUR">EUR (€)</option>
-            </select>
-            <p class="text-[10px] text-slate-500 mt-2">All Account sizes are assumed to be in this currency.</p>
+            <h2 class="text-sm font-bold text-slate-300 mb-4 uppercase">Currency Settings</h2>
+            
+            <div class="mb-4">
+                <label class="text-xs text-slate-500 uppercase font-bold block mb-1">Global Base Currency</label>
+                <select id="settingsBaseCurrency" onchange="app.updateBaseCurrency(this.value)" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                  <!-- Populated by JS -->
+                </select>
+                <p class="text-[10px] text-slate-500 mt-1">All Account sizes are assumed to be in this currency.</p>
+            </div>
+            
+            <div>
+                <label class="text-xs text-slate-500 uppercase font-bold block mb-1">Default Trade Currency</label>
+                <select id="settingsDefaultTradeCurrency" onchange="app.updateDefaultTradeCurrency(this.value)" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                   <!-- Populated by JS -->
+                </select>
+                <p class="text-[10px] text-slate-500 mt-1">Default currency selected when calculator opens.</p>
+            </div>
         </div>
 
         <div class="bg-slate-800 rounded-xl p-4 border border-slate-700 mb-6">
@@ -299,9 +335,6 @@
         <!-- Danger Zone -->
         <div class="bg-red-900/10 rounded-xl p-4 border border-red-900/50 mt-8">
             <h2 class="text-xs font-bold text-red-400 mb-3 uppercase">Danger Zone</h2>
-            <button onclick="app.resetForm()" class="w-full bg-red-900/20 hover:bg-red-900/40 text-red-300 border border-red-900/50 py-3 rounded-lg text-sm">
-                Clear Calculator Inputs
-            </button>
             <button onclick="app.wipeAllData()" class="w-full mt-3 bg-red-900 hover:bg-red-800 text-white py-3 rounded-lg text-sm font-bold shadow-lg">
                 Factory Reset App (Delete All Logs)
             </button>
@@ -326,6 +359,17 @@
                     <li>It uses <strong>Principal Risk</strong>: (Entry - Stop) × Remaining Shares.</li>
                     <li>If you move your stop to break-even or profit, that trade's heat becomes 0%.</li>
                     <li>Professionals typically cap total heat at 6%.</li>
+                </ul>
+            </div>
+
+            <!-- PATCH 8: Chart Guide -->
+            <div class="bg-slate-800 rounded-xl p-4 border border-slate-700">
+                <h3 class="font-bold text-cyan-400 mb-2 flex items-center gap-2"><i data-lucide="image-plus" class="w-4 h-4"></i> Charts</h3>
+                <p class="text-sm text-slate-300 mb-2">You can attach chart screenshots to your trades.</p>
+                <ul class="text-xs text-slate-400 list-disc ml-4 space-y-1">
+                    <li><strong>Copy:</strong> For example if you use TradingView, use "Copy Image" (Shift+S).</li>
+                    <li><strong>Paste:</strong> Tap the dashed "Paste Zone" in the Calculator or Manage Trade screen and select Paste.</li>
+                    <li><strong>View:</strong> Tap the thumbnail to see it full screen.</li>
                 </ul>
             </div>
 
@@ -376,7 +420,7 @@
                 </div>
             </div>
 
-            <!-- SMART INSIGHTS GUIDE (NEW) -->
+            <!-- SMART INSIGHTS GUIDE -->
             <div class="bg-slate-800 rounded-xl p-4 border border-slate-700">
                 <h3 class="font-bold text-indigo-400 mb-2 flex items-center gap-2"><i data-lucide="brain-circuit" class="w-4 h-4"></i> Smart Insights (AI)</h3>
                 <p class="text-xs text-slate-400 mb-2">The App automatically scans your trade logs to find patterns you might miss. It activates once you have logged at least 3 closed trades.</p>
@@ -476,7 +520,7 @@
     <!-- VIEW: STATS -->
     <div id="view-stats" class="hidden p-4 max-w-lg mx-auto pb-24">
         
-        <!-- SMART INSIGHTS -->
+        <!-- SMART INSIGHTS (NEW in v8) -->
         <div class="bg-indigo-900/20 border border-indigo-500/30 p-4 rounded-xl mb-6">
             <h3 class="font-bold text-indigo-300 mb-3 flex items-center gap-2 text-sm"><i data-lucide="brain-circuit" class="w-5 h-5"></i> AI Analyst Insights</h3>
             <div id="smartInsightsList" class="space-y-2 text-xs text-slate-300">
@@ -579,7 +623,42 @@
       </button>
   </nav>
 
+  <!-- --- PATCH 2: IMAGE VIEWER MODAL --- -->
+<div id="imgModal" class="hidden fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm" onclick="this.classList.add('hidden')">
+    <img id="imgModalSrc" class="max-w-full max-h-full rounded-lg shadow-2xl border border-slate-700" src="" />
+</div>
+
 <script>
+// --- PATCH 3: IMAGE DATABASE ENGINE ---
+const imgDB = {
+    db: null,
+    async open() { return new Promise((resolve, reject) => {
+        const req = indexedDB.open('RiskDeskImages', 1);
+        req.onupgradeneeded = (e) => e.target.result.createObjectStore('images', { keyPath: 'id' });
+        req.onsuccess = (e) => { this.db = e.target.result; resolve(); };
+        req.onerror = (e) => reject(e);
+    });},
+    async save(blob) {
+        if(!this.db) await this.open();
+        const id = crypto.randomUUID();
+        return new Promise((resolve, reject) => {
+            const tx = this.db.transaction('images', 'readwrite');
+            tx.objectStore('images').put({ id, blob, date: new Date() });
+            tx.oncomplete = () => resolve(id);
+            tx.onerror = (e) => reject(e);
+        });
+    },
+    async get(id) {
+        if(!this.db) await this.open();
+        return new Promise((resolve) => {
+            const tx = this.db.transaction('images', 'readonly');
+            const req = tx.objectStore('images').get(id);
+            req.onsuccess = () => resolve(req.result ? URL.createObjectURL(req.result.blob) : null);
+            req.onerror = () => resolve(null);
+        });
+    }
+};
+
 /**
  * Trade Risk Manager v8.1
  */
@@ -594,6 +673,7 @@ const app = {
         settings: {
             baseCurrency: 'GBP', 
             tradeCurrency: 'USD',
+            defaultTradeCurrency: 'USD', // New Setting
             riskMode: 'equity',
             riskValue: 0.25,
             stopMode: 'single',
@@ -609,7 +689,8 @@ const app = {
     charts: {},
 
     // --- INITIALIZATION ---
-    init() {
+    async init() { // PATCH 4A: Async Init
+        await imgDB.open(); // Init Image DB
         // Load Logs
         const savedLogs = localStorage.getItem('tradeLogs');
         if (savedLogs) {
@@ -645,12 +726,51 @@ const app = {
         
         // UI Init
         document.getElementById('settingsBaseCurrency').value = this.data.settings.baseCurrency;
+        
+        // Init Default Trade Currency Dropdown in Settings
+        this.populateDefaultTradeCurrencySettings();
+        document.getElementById('settingsDefaultTradeCurrency').value = this.data.settings.defaultTradeCurrency || 'USD';
+
         document.getElementById('dispBaseCcy').textContent = this.data.settings.baseCurrency;
+        
+        // Set initial Trade Currency based on default setting
+        document.getElementById('tradeCurrency').value = this.data.settings.defaultTradeCurrency || 'USD';
         
         lucide.createIcons();
         this.restoreFormData();
         this.toggleRiskMode();
         this.setDirection('LONG');
+    },
+    
+    // --- PATCH 4B: IMAGE HELPERS ---
+    async handlePaste(e, type, logId = null) {
+        e.preventDefault();
+        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+        for (const item of items) {
+            if (item.type.indexOf("image") === 0) {
+                const blob = item.getAsFile();
+                const id = await imgDB.save(blob);
+                
+                const zone = e.target.closest('.paste-zone') || e.target;
+                zone.innerHTML = `<i data-lucide="check-circle" class="w-6 h-6 text-emerald-400 mb-1"></i><span class="text-xs text-emerald-400 font-bold">Chart Attached!</span>`;
+                zone.classList.add('has-image');
+                lucide.createIcons();
+
+                if(type === 'entry') this.data.tempCalculation.entryImgId = id;
+                if(type === 'exit' && logId) {
+                    const log = this.data.logs.find(l => l.id === logId);
+                    if(log) { log.exitImg = id; localStorage.setItem('tradeLogs', JSON.stringify(this.data.logs)); this.openManageView(logId); }
+                }
+                return;
+            }
+        }
+        alert("No image found in clipboard.");
+    },
+    
+    showImg(src) {
+        const m = document.getElementById('imgModal');
+        document.getElementById('imgModalSrc').src = src;
+        m.classList.remove('hidden');
     },
 
     setupListeners() {
@@ -981,6 +1101,21 @@ const app = {
         this.populateCurrencySelect();
         this.saveSettings();
     },
+    
+    updateDefaultTradeCurrency(val) {
+        this.data.settings.defaultTradeCurrency = val;
+        this.saveSettings();
+    },
+
+    populateDefaultTradeCurrencySettings() {
+         const options = ['USD', 'GBP', 'EUR', 'CAD', 'JPY'];
+         const settingsSelect = document.getElementById('settingsDefaultTradeCurrency');
+         if (settingsSelect) {
+            settingsSelect.innerHTML = options.map(c => 
+                `<option value="${c}" ${c === (this.data.settings.defaultTradeCurrency || 'USD') ? 'selected' : ''}>${c}</option>`
+            ).join('');
+         }
+    },
 
     renderSettingsAccounts() {
         const list = document.getElementById('settingsAccountsList');
@@ -1088,9 +1223,17 @@ const app = {
 
     populateCurrencySelect() {
         const tradeSel = document.getElementById('tradeCurrency');
-        const options = ['USD', 'GBP', 'EUR'];
+        const options = ['USD', 'GBP', 'EUR', 'CAD', 'JPY'];
+        const settingsSel = document.getElementById('settingsBaseCurrency');
+        
+        // Re-populate Calculator Trade Currency
         tradeSel.innerHTML = options.map(c => 
             `<option value="${c}" ${c === this.data.settings.tradeCurrency ? 'selected' : ''}>${c}</option>`
+        ).join('');
+
+        // Re-populate Settings Base Currency
+        settingsSel.innerHTML = options.map(c =>
+             `<option value="${c}" ${c === this.data.settings.baseCurrency ? 'selected' : ''}>${c}</option>`
         ).join('');
     },
 
@@ -1323,6 +1466,10 @@ const app = {
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-slate-400 border-t border-slate-700 pt-2">
+                    <div class="flex justify-between col-span-2 border-b border-slate-700/50 pb-1 mb-1">
+                        <span class="font-mono text-emerald-400">1 ${baseCcy} = ${rate.toFixed(4)} ${tradeCcy}</span>
+                        <span class="font-mono text-slate-300">Size: ${posSizePct.toFixed(2)}%</span>
+                    </div>
                     <div class="flex justify-between col-span-2 mt-1">
                         <span>Sell 1/3 @ ${derisk13Price.toFixed(2)}:</span>
                         <span class="font-mono text-emerald-400">${Math.floor(shares/3)}</span>
@@ -1343,6 +1490,13 @@ const app = {
             const btnText = this.data.isEditingParams ? "Update Trade Record" : `Add to Log (Master: ${masterShares} shares)`;
             const btnColor = this.data.isEditingParams ? "bg-amber-600 hover:bg-amber-500 shadow-amber-900/50" : "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-900/50";
             
+            // --- PATCH 5: PASTE ZONE HTML ---
+            html += `
+            <div id="pasteArea" class="paste-zone mt-4 mb-2" contenteditable="true" onpaste="app.handlePaste(event, 'entry')">
+                <i data-lucide="image-plus" class="w-6 h-6 mb-1"></i>
+                <span class="text-xs">Paste Entry Chart Here</span>
+            </div>`;
+
             html += `<button onclick="app.saveToLog(${entry}, ${stopPrice}, ${masterShares})" class="w-full mt-4 text-white font-bold py-3 rounded-xl shadow-lg transition-colors ${btnColor}">
                 ${btnText}
             </button>`;
@@ -1353,6 +1507,7 @@ const app = {
         resultsDiv.innerHTML = html;
         resultsDiv.classList.remove('hidden');
         resultsDiv.scrollIntoView({ behavior: 'smooth' });
+        lucide.createIcons();
     },
 
     saveToLog(entry, stop, shares) {
@@ -1399,8 +1554,9 @@ const app = {
                     notes: document.getElementById('notes').value,
                     exchangeRate: rate,
                     derisk13: derisk13Price,
-                    derisk14: derisk14Price
+                    derisk14: derisk14Price,
                     // Preserves: id, date, exits, outcome (mostly)
+                    entryImg: this.data.tempCalculation.entryImgId // PATCH 6
                 };
                 
                 this.data.logs[existingIndex] = updatedLog;
@@ -1431,7 +1587,8 @@ const app = {
                 exits: [], 
                 exchangeRate: rate,
                 derisk13: derisk13Price,
-                derisk14: derisk14Price
+                derisk14: derisk14Price,
+                entryImg: this.data.tempCalculation.entryImgId // PATCH 6
             };
             this.data.logs.unshift(logEntry);
             
@@ -1450,6 +1607,11 @@ const app = {
         this.generateInsights(this.data.logs);
         
         document.getElementById('calculationResults').classList.add('hidden');
+        // We no longer clear Ticker and Price here immediately if user wants to tweak, 
+        // but usually "Logged" implies done. Let's clear to keep UI fresh.
+        // The Clear Inputs button is now available if they want to clear without logging.
+        // But standard flow is Log -> Clear. 
+        // Let's clear fields for next trade.
         document.getElementById('ticker').value = '';
         document.getElementById('purchasePrice').value = '';
     },
@@ -1603,7 +1765,7 @@ const app = {
         lucide.createIcons();
     },
 
-    openManageView(id) {
+    async openManageView(id) {
         this.data.editingId = id;
         const log = this.data.logs.find(l => l.id === id);
         if(!log) return;
@@ -1613,6 +1775,22 @@ const app = {
         
         document.getElementById('exitInputQty').value = remaining > 0 ? remaining : '';
         document.getElementById('exitInputPrice').value = '';
+
+        // --- PATCH 7: FETCH & DISPLAY CHARTS ---
+        const entryImgUrl = log.entryImg ? await imgDB.get(log.entryImg) : null;
+        const exitImgUrl = log.exitImg ? await imgDB.get(log.exitImg) : null;
+
+        const chartHtml = `
+        <div class="grid grid-cols-2 gap-3 mb-4">
+            <div class="bg-slate-900 p-2 rounded-xl border border-slate-700 text-center relative">
+                <div class="text-[10px] text-slate-500 mb-2 font-bold uppercase">Entry Chart</div>
+                ${entryImgUrl ? `<img src="${entryImgUrl}" class="rounded h-24 w-full object-cover cursor-pointer border border-slate-600" onclick="app.showImg('${entryImgUrl}')">` : `<div class="h-24 flex items-center justify-center text-xs italic text-slate-600 border border-dashed border-slate-700 rounded">No Image</div>`}
+            </div>
+            <div class="bg-slate-900 p-2 rounded-xl border border-slate-700 text-center relative">
+                <div class="text-[10px] text-slate-500 mb-2 font-bold uppercase">Closure Chart</div>
+                ${exitImgUrl ? `<img src="${exitImgUrl}" class="rounded h-24 w-full object-cover cursor-pointer border border-slate-600" onclick="app.showImg('${exitImgUrl}')">` : `<div class="paste-zone h-24 min-h-0 border-slate-600" contenteditable="true" onpaste="app.handlePaste(event, 'exit', ${log.id})"><span class="text-[10px]">Paste Exit<br>Chart</span></div>`}
+            </div>
+        </div>`;
 
         // Stop Display
         let stopHtml = '';
@@ -1650,7 +1828,7 @@ const app = {
                     <div class="text-lg font-mono">${log.entry}</div>
                 </div>
             </div>
-            <div class="grid grid-cols-3 gap-2 text-center bg-slate-900/50 p-2 rounded-lg">
+            <div class="grid grid-cols-3 gap-2 text-center bg-slate-900/50 p-2 rounded-lg mb-3">
                 <div>
                     <div class="text-[10px] text-slate-500">MASTER QTY</div>
                     <div class="font-bold text-white">${log.initialQty || '-'}</div>
@@ -1664,11 +1842,13 @@ const app = {
                     <div class="font-bold text-blue-400">${remaining}</div>
                 </div>
             </div>
+            ${chartHtml}
             ${stopHtml}
         `;
 
         this.renderExitHistory(log);
         document.getElementById('view-manage').classList.remove('hidden');
+        lucide.createIcons();
     },
 
     renderExitHistory(log) {
