@@ -552,8 +552,35 @@
                     </div>
                 </div>
             </div>
+			
+			
 
-            <div class="bg-slate-800 p-3 rounded-xl border border-slate-700">
+</div> 
+	<div class="bg-slate-800 p-3 rounded-xl border border-slate-700 mt-6 mb-6">
+    <h3 class="text-sm font-semibold mb-2 text-slate-300 flex items-center gap-2">
+        <i data-lucide="hourglass" class="w-4 h-4 text-pink-400"></i> Time vs. Money (Duration)
+    </h3>
+    <div class="h-64">
+        <canvas id="chartDuration"></canvas>
+    </div>
+    <p class="text-[10px] text-slate-500 mt-2 text-center italic">
+        "Cut losers fast (Left Red), Let winners run (Right Green)"
+    </p>
+</div>
+
+<div class="bg-slate-800 p-3 rounded-xl border border-slate-700 mt-6 mb-6">
+    <h3 class="text-sm font-semibold mb-2 text-slate-300 flex items-center gap-2">
+        <i data-lucide="bar-chart-2" class="w-4 h-4 text-indigo-400"></i> R-Distribution (The Edge Curve)
+    </h3>
+    <div class="h-64">
+        <canvas id="chartDistribution"></canvas>
+    </div>
+    <p class="text-[10px] text-slate-500 mt-2 text-center italic">
+        "Left = Discipline Errors. Right = Home Runs."
+    </p>
+</div>
+
+            <div class="bg-slate-800 p-3 rounded-xl border border-slate-700 mt-6 mb-6">
                 <h3 class="text-sm font-semibold mb-2 text-slate-300 flex items-center gap-2">
                     <i data-lucide="calendar-days" class="w-4 h-4 text-emerald-400"></i> Monthly Performance (%)
                 </h3>
@@ -2001,7 +2028,7 @@ const app = {
                 totalWinR += rTrade;
             } else {
                 lossCount++;
-                totalLossR += Math.abs(rTrade); // Store as positive magnitude
+                totalLossR += Math.abs(rTrade);
             }
         });
 
@@ -2028,12 +2055,195 @@ const app = {
         this.drawContributionChart(closedTrades);
         this.drawMonthlyChart(closedTrades); 
         
+        // NEW CHART CALL
+        this.drawDurationChart(closedTrades);
+		this.drawDistributionChart(closedTrades);
+        
         // Generate Insights
         this.generateInsights(relevantLogs);
 
         lucide.createIcons();
+    }, // <--- THIS COMMA IS CRITICAL
+
+    drawDurationChart(logs) {
+        const ctx = document.getElementById('chartDuration');
+        if(!ctx) return; // Prevents crash if HTML is missing
+        if(this.charts.duration) this.charts.duration.destroy();
+
+        const dataPoints = [];
+        const pointColors = [];
+        const labels = []; 
+
+        logs.forEach(l => {
+            // Must have exits to calculate duration
+            if (!l.exits || l.exits.length === 0) return;
+            
+            // Calculate R
+            let netR = 0;
+            const riskPerShare = Math.abs(l.entry - l.stop);
+            const totalRisk = l.initialQty * riskPerShare;
+            let pnl = 0;
+            
+            // Find last exit time
+            const sortedExits = [...l.exits].sort((a,b) => new Date(a.date) - new Date(b.date));
+            const lastExit = sortedExits[sortedExits.length - 1];
+            
+            l.exits.forEach(ex => {
+                 pnl += (l.direction === 'SHORT' ? (l.entry - ex.price) : (ex.price - l.entry)) * ex.qty;
+            });
+            
+            if(totalRisk > 0) netR = pnl / totalRisk;
+            
+            // Calculate Duration
+            const entryTime = new Date(l.date).getTime();
+            if(!lastExit.date) return;
+            const exitTime = new Date(lastExit.date).getTime();
+            const durationMins = (exitTime - entryTime) / 1000 / 60; 
+
+            if(durationMins > 0) {
+                dataPoints.push({ x: durationMins, y: netR });
+                pointColors.push(netR >= 0 ? 'rgba(52, 211, 153, 0.7)' : 'rgba(248, 113, 113, 0.7)');
+                labels.push(`${l.ticker} (${l.strategy || 'N/A'})`);
+            }
+        });
+
+        this.charts.duration = new Chart(ctx, {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    label: 'Trade',
+                    data: dataPoints,
+                    backgroundColor: pointColors,
+                    pointRadius: 5,
+                    pointHoverRadius: 7
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const idx = context.dataIndex;
+                                const r = context.raw.y.toFixed(2);
+                                const min = Math.round(context.raw.x);
+                                return `${labels[idx]}: ${r}R in ${min}m`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        type: 'linear',
+                        position: 'bottom',
+                        title: { display: true, text: 'Mins', color: '#64748b' },
+                        grid: { color: '#334155' },
+                        ticks: { color: '#94a3b8' }
+                    },
+                    y: {
+                        title: { display: true, text: 'R', color: '#64748b' },
+                        grid: { color: '#334155' },
+                        ticks: { color: '#94a3b8' }
+                    }
+                }
+            }
+        });
     },
     
+	drawDistributionChart(logs) {
+        const ctx = document.getElementById('chartDistribution');
+        if(!ctx) return;
+        if(this.charts.distribution) this.charts.distribution.destroy();
+
+        // 7 Bins: 
+        // 0: Disaster (<-1.2)
+        // 1: Full Stop (-1.2 to -0.8)
+        // 2: Small Loss (-0.8 to -0.2) 
+        // 3: Scratch/BE (-0.2 to 0.2)
+        // 4: Base Hit (0.2 to 1.3)
+        // 5: Target Hit (1.3 to 2.3)
+        // 6: Home Run (> 2.3)
+        const bins = [0, 0, 0, 0, 0, 0, 0];
+        const labels = ['<-1R', '-1R', 'Small Loss', 'Scratch', '1R', '2R', '3R+'];
+        
+        logs.forEach(l => {
+             // Calculate R
+             let r = 0;
+             const riskPerShare = Math.abs(l.entry - l.stop);
+             
+             if(l.exits && l.exits.length > 0) {
+                 const totalRisk = l.initialQty * riskPerShare;
+                 let pnl = 0;
+                 l.exits.forEach(ex => pnl += (l.direction==='SHORT'?l.entry-ex.price : ex.price-l.entry)*ex.qty);
+                 if(totalRisk > 0) r = pnl/totalRisk;
+             } else if (l.exitPrice) {
+                 r = (l.direction==='SHORT'?l.entry-l.exitPrice : l.exitPrice-l.entry)/riskPerShare;
+             } else {
+                 return; // Skip open trades
+             }
+
+             // Sort into Bins
+             if (r < -1.2) bins[0]++;
+             else if (r >= -1.2 && r < -0.8) bins[1]++;
+             else if (r >= -0.8 && r < -0.2) bins[2]++;
+             else if (r >= -0.2 && r <= 0.2) bins[3]++;
+             else if (r > 0.2 && r < 1.3) bins[4]++;
+             else if (r >= 1.3 && r < 2.3) bins[5]++;
+             else if (r >= 2.3) bins[6]++;
+        });
+
+        // Color coding: Red for bad losses, Gray for scratch, Green for wins
+        const colors = [
+            '#7f1d1d', // Deep Red (Disaster)
+            '#ef4444', // Red (Full Stop)
+            '#fca5a5', // Pale Red (Small Loss)
+            '#94a3b8', // Gray (BE)
+            '#34d399', // Green (1R)
+            '#10b981', // Emerald (2R)
+            '#059669'  // Dark Green (3R+)
+        ];
+
+        this.charts.distribution = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Trades',
+                    data: bins,
+                    backgroundColor: colors,
+                    borderRadius: 4,
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { 
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => `${ctx.raw} Trades`
+                        }
+                    }
+                },
+                scales: { 
+                    y: { 
+                        grid: { color: '#334155' },
+                        ticks: { stepSize: 1, color: '#94a3b8' },
+                        title: { display: true, text: 'Count', color: '#64748b' }
+                    }, 
+                    x: { 
+                        grid: { display: false },
+                        ticks: { color: '#94a3b8', font: { size: 11, weight: 'bold' } } 
+                    } 
+                }
+            }
+        });
+    },
+	
+	
     // --- SMART INSIGHTS ENGINE V2 (PATCH) ---
     generateInsights(logs) {
         const insights = [];
