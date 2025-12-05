@@ -2424,7 +2424,7 @@ const app = {
                     },
                     y: {
                         grid: { color: '#334155' },
-                        ticks: { callback: (val) => val + '%' }
+                        ticks: { callback: (val) => val.toFixed(2) + '%' }
                     }
                 }
             }
@@ -2495,7 +2495,7 @@ const app = {
                     x: { grid: { display: false } }, 
                     y: { 
                         grid: { color: '#334155' },
-                        ticks: { callback: (val) => val + '%' }
+                        ticks: { callback: (val) => val.toFixed(2) + '%' }
                     } 
                 }
             }
@@ -2626,4 +2626,3 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
-
