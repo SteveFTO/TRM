@@ -976,79 +976,89 @@ const app = {
     // --- HEAT CALCULATION ---
     calculateCurrentHeat() {
         const masterAcc = this.data.accounts.find(a => a.isMaster);
-        if(!masterAcc || masterAcc.size <= 0) return 0;
+        if(!masterAcc || masterAcc.size <= 0) return { total: 0, ner: 0 }; // Return object now
 
-        let totalHeatVal = 0; // In Base Currency
+        let totalHeatVal = 0; // Gross Exposure
+        let totalNERVal = 0;  // Net Unfinanced Exposure
 
         this.data.logs.forEach(l => {
             if(l.outcome === 'open') {
                 const initQty = typeof l.initialQty === 'number' ? l.initialQty : 0;
-                const totalSold = l.exits.reduce((a,b)=>a+b.qty,0);
-                const remaining = initQty - totalSold;
                 
+                // 1. Calculate Realized P&L (Banked Finance)
+                let realizedPnL = 0;
+                let totalSold = 0;
+                
+                if (l.exits && l.exits.length > 0) {
+                    l.exits.forEach(ex => {
+                        totalSold += ex.qty;
+                        const pnl = l.direction === 'SHORT' 
+                            ? (l.entry - ex.price) * ex.qty 
+                            : (ex.price - l.entry) * ex.qty;
+                        realizedPnL += pnl;
+                    });
+                }
+
+                const remaining = initQty - totalSold;
                 if(remaining <= 0) return;
 
+                // 2. Calculate Potential Loss on Remaining (Gross Risk)
                 let riskDist = 0;
                 if(l.direction === 'LONG') {
-                    riskDist = l.entry - l.stop; 
+                    // If stop is above entry (locked in profit), risk is 0 for heat purposes
+                    riskDist = Math.max(0, l.entry - l.stop); 
                 } else {
-                    riskDist = l.stop - l.entry;
+                    riskDist = Math.max(0, l.stop - l.entry);
                 }
                 
-                if(riskDist < 0) riskDist = 0;
+                const grossRiskVal = remaining * riskDist;
+                
+                // 3. NER Calculation: Gross Risk minus Banked Profit
+                // If we have banked more than we can lose, NER is 0.
+                let netExposureVal = grossRiskVal - realizedPnL;
+                if (netExposureVal < 0) netExposureVal = 0;
 
-                const valueAtRisk = remaining * riskDist;
+                // 4. Convert to Base Currency
                 const rate = l.exchangeRate || 1;
-                const heatInBase = valueAtRisk / rate;
-                
-                if(!isNaN(heatInBase)) {
-                    totalHeatVal += heatInBase;
-                }
+                totalHeatVal += (grossRiskVal / rate);
+                totalNERVal += (netExposureVal / rate);
             }
         });
 
-        return (totalHeatVal / masterAcc.size) * 100;
+        return {
+            total: (totalHeatVal / masterAcc.size) * 100,
+            ner: (totalNERVal / masterAcc.size) * 100
+        };
     },
 
     updateHeatWidget() {
-        const currentHeat = this.calculateCurrentHeat();
-        let ner = 0;
-        
-        // Logic to show calculated/implied risk if available from calculation
-        // Otherwise try to estimate from slider
-        if (this.data.tempCalculation && this.data.tempCalculation.impliedRiskPct) {
-             ner = this.data.tempCalculation.impliedRiskPct;
-        } else if (this.data.settings.riskMode === 'equity') {
-             ner = this.data.settings.riskValue;
-        } else {
-             // In pos mode, if no calculation done yet, we can't guess NER accurately
-             ner = 0; 
-        }
-
-        const totalProjected = currentHeat + ner;
-        
-        document.getElementById('heatCurrent').textContent = currentHeat.toFixed(2) + '%';
-        
-        let nerDisplay = '';
-        if (this.data.settings.riskMode === 'equity') {
-             nerDisplay = `+ ${ner.toFixed(2)}% (New)`;
-        } else {
-             if(ner > 0) nerDisplay = `+ ${ner.toFixed(2)}% (Calc)`;
-             else nerDisplay = '+ ??? (Pos Mode)';
-        }
-        
-        document.getElementById('heatMath').textContent = nerDisplay;
-        document.getElementById('heatTotal').textContent = totalProjected.toFixed(2) + '%';
-        
+        const { total, ner } = this.calculateCurrentHeat();
         const widget = document.getElementById('heatWidget');
-        const totalEl = document.getElementById('heatTotal');
-        if(totalProjected > 6.0) {
+        
+        // Thresholds for warning colors
+        const isHeatHigh = total > 6.0;
+        const isNerHigh = ner > 3.0;
+
+        // Apply Warning Styles to Container
+        if (isHeatHigh || isNerHigh) {
             widget.classList.add('border-red-500', 'bg-red-900/20');
-            totalEl.classList.replace('text-blue-400', 'text-red-500');
+            widget.classList.remove('border-slate-800');
         } else {
             widget.classList.remove('border-red-500', 'bg-red-900/20');
-            totalEl.classList.replace('text-red-500', 'text-blue-400');
+            widget.classList.add('border-slate-800');
         }
+
+        // Render Clean Layout
+        widget.innerHTML = `
+            <div>
+                <div class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Open Heat (Gross)</div>
+                <div class="text-lg font-mono font-bold ${isHeatHigh ? 'text-red-400' : 'text-slate-200'}">${total.toFixed(2)}%</div>
+            </div>
+            <div class="text-right">
+                <div class="text-[10px] text-amber-500/70 uppercase font-bold tracking-wider">NER (Net Risk)</div>
+                <div class="text-lg font-mono font-bold ${isNerHigh ? 'text-red-400' : 'text-amber-400'}">${ner.toFixed(2)}%</div>
+            </div>
+        `;
     },
 
     // --- VIEW MANAGEMENT ---
@@ -1657,7 +1667,7 @@ const app = {
 
     // --- LOGS & MANAGEMENT ---
     
-    renderLogs() {
+   renderLogs() {
         const container = document.getElementById('logsContainer');
         const search = document.getElementById('logSearch').value.toUpperCase();
         
@@ -1672,45 +1682,63 @@ const app = {
             const riskPerShare = Math.abs(log.entry - log.stop);
             
             // Time Formatting
-            let dateDisplay = log.date.substring(5, 10); // Default Legacy MM-DD
+            let dateDisplay = log.date.substring(5, 10); 
             if (log.date.includes('T')) {
-                // New Format: DD/MM HH:MM
                 const d = new Date(log.date);
                 dateDisplay = `${d.getDate()}/${d.getMonth()+1} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
             }
 
+            // --- NER LOGIC START ---
+            let realizedPnL = 0;
             if (log.exits && log.exits.length > 0) {
                 let totalRVal = 0;
                 log.exits.forEach(ex => {
                     let rChunk;
                     if(log.direction === 'SHORT') {
                         rChunk = (log.entry - ex.price) / riskPerShare;
+                        realizedPnL += (log.entry - ex.price) * ex.qty;
                     } else {
                         rChunk = (ex.price - log.entry) / riskPerShare;
+                        realizedPnL += (ex.price - log.entry) * ex.qty;
                     }
                     totalRVal += (rChunk * ex.qty);
                 });
-                const totalRiskAmount = log.initialQty * riskPerShare;
-                let realizedPnL = 0;
-                log.exits.forEach(ex => {
-                    realizedPnL += (log.direction === 'SHORT' ? (log.entry - ex.price) : (ex.price - log.entry)) * ex.qty;
-                });
                 
+                const totalRiskAmount = log.initialQty * riskPerShare;
                 if (totalRiskAmount > 0) {
                     realizedR = realizedPnL / totalRiskAmount;
                 }
-            }
-
-            let rDisplay = '-';
-            let rClass = 'text-slate-500';
-            let statusBadge = `<span class="bg-blue-900/50 text-blue-400 text-[10px] px-2 py-1 rounded">OPEN</span>`;
-            
-            if(!log.initialQty && log.exitPrice) {
+            } else if (!log.initialQty && log.exitPrice) {
+                 // Legacy/Quick log handling
                  const diff = log.direction === 'SHORT' ? (log.entry - log.exitPrice) : (log.exitPrice - log.entry);
                  realizedR = diff / riskPerShare;
                  isOpen = false;
             }
 
+            // NER Badge Calculation
+            let nerBadge = '';
+            if (isOpen) {
+                const remaining = (log.initialQty || 0) - totalSold;
+                if (remaining > 0) {
+                    // Calculate current gross risk
+                    let currentRiskDist = 0;
+                    if(log.direction === 'LONG') currentRiskDist = Math.max(0, log.entry - log.stop);
+                    else currentRiskDist = Math.max(0, log.stop - log.entry);
+                    
+                    const grossRisk = remaining * currentRiskDist;
+                    const netExposure = grossRisk - realizedPnL;
+                    
+                    if (netExposure > 0) {
+                        nerBadge = `<span class="bg-amber-900/40 text-amber-400 border border-amber-500/30 text-[9px] px-1.5 py-0.5 rounded font-bold ml-1 tracking-wider" title="Unfinanced Risk">NER</span>`;
+                    }
+                }
+            }
+            // --- NER LOGIC END ---
+
+            let rDisplay = '-';
+            let rClass = 'text-slate-500';
+            let statusBadge = `<span class="bg-blue-900/50 text-blue-400 text-[10px] px-2 py-1 rounded">OPEN</span>`;
+            
             if (!isOpen || (log.exits && log.exits.length > 0)) {
                 const rVal = realizedR.toFixed(2);
                 if(rVal > 0) {
@@ -1734,10 +1762,14 @@ const app = {
             return `
             <div class="grid grid-cols-12 gap-2 p-3 bg-slate-800/50 border-b border-slate-700 items-center hover:bg-slate-800 transition-colors">
                 <div class="col-span-2 text-xs text-slate-400 font-mono leading-tight">${dateDisplay}</div>
-                <div class="col-span-2 font-bold text-white">${log.ticker} <span class="text-[8px] text-slate-500 block">${log.direction}</span></div>
+                <div class="col-span-2 font-bold text-white relative">
+                    ${log.ticker} 
+                    <span class="text-[8px] text-slate-500 block">${log.direction}</span>
+                </div>
                 <div class="col-span-2 text-right text-xs font-mono">${log.riskVal}${log.riskMode === 'equity' ? '%' : 'sz'}</div>
                 <div class="col-span-2 text-right text-sm font-mono ${rClass}">${rDisplay}</div>
                 <div class="col-span-4 flex justify-end gap-2 items-center">
+                    ${nerBadge}
                     ${statusBadge}
                     <button onclick="app.openManageView(${log.id})" class="text-slate-400 hover:text-blue-400 bg-slate-700/50 p-1.5 rounded-full"><i data-lucide="pencil" class="w-3 h-3"></i></button>
                 </div>
