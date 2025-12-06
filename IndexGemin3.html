@@ -1119,7 +1119,7 @@ const app = {
                     <input type="text" value="${acc.name}" onchange="app.updateAccountData(${idx}, 'name', this.value)" 
                         class="w-full bg-transparent text-sm font-bold text-white outline-none border-b border-transparent focus:border-blue-500 placeholder-slate-600" placeholder="Account Name">
                     <input type="number" value="${acc.size}" onchange="app.updateAccountData(${idx}, 'size', this.value)" 
-                        class="w-full bg-transparent text-xs font-mono text-slate-400 outline-none border-b border-transparent focus:border-blue-500" placeholder="Size">
+                        class="w-full bg-transparent text-xs font-mono text-slate-400 outline-none border-b border-transparent focus:border-blue-500" placeholder="Current Equity" title="Manually update this when you deposit funds or realize P&L">
                 </div>
                 
                 <button onclick="app.removeAccount(${idx})" class="text-slate-600 hover:text-red-500">
@@ -2838,5 +2838,6 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
+
 
 
