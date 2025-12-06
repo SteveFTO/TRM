@@ -309,7 +309,20 @@
                 </div>
             <p class="text-[10px] text-slate-500 mt-4">Select the radio button to nominate the <strong>Master Account</strong>. Logs will track this account's P&L.</p>
         </div>
-
+		<div class="bg-slate-800 rounded-xl p-4 border border-slate-700 mt-6">
+            <h2 class="text-sm font-bold text-slate-300 mb-4 uppercase flex items-center gap-2">
+                <i data-lucide="list-checks" class="w-4 h-4 text-purple-400"></i> Strategy Manager
+            </h2>
+            <div id="settingsStrategiesList" class="space-y-2 mb-4">
+                </div>
+            <div class="flex gap-2">
+                <input type="text" id="newStrategyInput" placeholder="New Strategy Name..." 
+                    class="flex-1 bg-slate-900 border border-slate-600 rounded p-2 text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                <button onclick="app.addStrategy()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 rounded text-xs font-bold uppercase tracking-wider">
+                    Add
+                </button>
+            </div>
+        </div>
         <div class="bg-red-900/10 rounded-xl p-4 border border-red-900/50 mt-8">
             <h2 class="text-xs font-bold text-red-400 mb-3 uppercase">Danger Zone</h2>
             <button onclick="app.wipeAllData()" class="w-full mt-3 bg-red-900 hover:bg-red-800 text-white py-3 rounded-lg text-sm font-bold shadow-lg">
@@ -577,31 +590,57 @@
                </div>
         </div>
 
-        <div class="mb-4">
-             <label class="text-xs text-slate-500 uppercase font-bold">Filter by Strategy</label>
-             <select id="statsFilter" onchange="app.renderStats()" class="w-full bg-slate-800 border-none text-sm rounded-lg p-2 mt-1">
-                 <option value="ALL">All Strategies</option>
-             </select>
+        <div class="grid grid-cols-2 gap-3 mb-4">
+            <div>
+                 <label class="text-xs text-slate-500 uppercase font-bold">Strategy</label>
+                 <select id="statsFilter" onchange="app.renderStats()" class="w-full bg-slate-800 border-none text-sm rounded-lg p-2 mt-1 outline-none focus:ring-1 focus:ring-blue-500">
+                     <option value="ALL">All Strategies</option>
+                 </select>
+            </div>
+            <div>
+                 <label class="text-xs text-slate-500 uppercase font-bold">Recency</label>
+                 <select id="statsRecency" onchange="app.renderStats()" class="w-full bg-slate-800 border-none text-sm rounded-lg p-2 mt-1 outline-none focus:ring-1 focus:ring-blue-500">
+                     <option value="ALL">All Time</option>
+                     <option value="10">Last 10 Trades</option>
+                     <option value="20">Last 20 Trades</option>
+                     <option value="50">Last 50 Trades</option>
+                 </select>
+            </div>
         </div>
 
         <div class="grid grid-cols-2 gap-3 mb-6">
             <div class="bg-slate-800 p-3 rounded-lg text-center border border-slate-700">
                 <div class="text-xs text-slate-500">Win Rate</div>
-                <div class="text-xl font-bold text-emerald-400" id="statWinRate">0%</div>
+                <div class="flex flex-col items-center justify-center h-full">
+                     <div class="text-xl font-bold text-emerald-400" id="statWinRate">0%</div>
+                     <div class="text-[9px] font-bold mt-1" id="statWinRateDiff"></div>
+                </div>
             </div>
             <div class="bg-slate-800 p-3 rounded-lg text-center border border-slate-700">
                 <div class="text-xs text-slate-500">Profit Factor</div>
-                <div class="text-xl font-bold text-blue-400" id="statPF">0.00</div>
+                <div class="flex flex-col items-center justify-center h-full">
+                     <div class="text-xl font-bold text-blue-400" id="statPF">0.00</div>
+                     <div class="text-[9px] font-bold mt-1" id="statPFDiff"></div>
+                </div>
             </div>
             <div class="bg-slate-800 p-3 rounded-lg text-center border border-slate-700">
                 <div class="text-xs text-slate-500">Expectancy</div>
-                <div class="text-xl font-bold text-amber-400" id="statExpectancy">0R</div>
+                <div class="flex flex-col items-center justify-center h-full">
+                     <div class="text-xl font-bold text-amber-400" id="statExpectancy">0R</div>
+                     <div class="text-[9px] font-bold mt-1" id="statExpectancyDiff"></div>
+                </div>
             </div>
             <div class="bg-slate-800 p-3 rounded-lg text-center border border-slate-700">
-                <div class="text-xs text-slate-500">Trades</div>
-                <div class="text-xl font-bold text-white" id="statTotal">0</div>
+                <div class="text-xs text-slate-500">Sample Size</div>
+                <div class="flex flex-col items-center justify-center h-full">
+                     <div class="text-xl font-bold text-white" id="statTotal">0</div>
+                     <div class="text-[9px] text-slate-500 mt-1">Trades</div>
+                </div>
             </div>
         </div>
+		<div id="directionStats" class="grid grid-cols-2 gap-3 mb-6 animate-in fade-in slide-in-from-bottom-2">
+            </div>
+		
 
         <div class="space-y-6">
             <div class="bg-slate-800 p-3 rounded-xl border border-slate-700">
@@ -779,7 +818,10 @@ const app = {
         // Load Settings & Accounts
         const savedSettings = localStorage.getItem('appSettings');
         if (savedSettings) this.data.settings = {...this.data.settings, ...JSON.parse(savedSettings)};
-
+		if (!this.data.settings.strategies) {
+            // Default set if none exist
+            this.data.settings.strategies = ['FB Breakout', '21d Pullback', 'Gap & Go', 'Reversal', 'Other'];
+        }
         const savedAccs = localStorage.getItem('accounts');
         if (savedAccs) {
             this.data.accounts = JSON.parse(savedAccs);
@@ -814,6 +856,7 @@ const app = {
         this.restoreFormData();
         this.toggleRiskMode();
         this.setDirection('LONG');
+		this.populateStrategySelect();
     },
     
     // --- PATCH 4B: IMAGE HELPERS ---
@@ -1165,7 +1208,7 @@ const app = {
 
         if (viewName === 'logs') this.renderLogs();
         if (viewName === 'stats') this.renderStats();
-        if (viewName === 'settings') this.renderSettingsAccounts();
+        if (viewName === 'settings') this.renderSettingsAccounts(); this.renderSettingsStrategies();
         if (viewName === 'calculator') {
             this.renderAccountsReadOnly();
             this.updateHeatWidget();
@@ -1319,6 +1362,63 @@ const app = {
         settingsSel.innerHTML = options.map(c =>
              `<option value="${c}" ${c === this.data.settings.baseCurrency ? 'selected' : ''}>${c}</option>`
         ).join('');
+    },
+
+	// --- STRATEGY MANAGEMENT ---
+    populateStrategySelect() {
+        const sel = document.getElementById('strategy');
+        if(!sel) return;
+        
+        // Preserve current selection if reloading
+        const currentVal = sel.value; 
+        
+        sel.innerHTML = '<option value="">Select Strategy...</option>' + 
+            this.data.settings.strategies.map(s => `<option value="${s}">${s}</option>`).join('');
+            
+        if(currentVal && this.data.settings.strategies.includes(currentVal)) {
+            sel.value = currentVal;
+        }
+    },
+
+    renderSettingsStrategies() {
+        const list = document.getElementById('settingsStrategiesList');
+        if(!list) return;
+        
+        list.innerHTML = this.data.settings.strategies.map((strat, idx) => `
+            <div class="flex justify-between items-center bg-slate-900 p-2 rounded border border-slate-700 group">
+                <span class="text-sm text-slate-300 pl-2 border-l-2 border-purple-500/50">${strat}</span>
+                <button onclick="app.removeStrategy(${idx})" class="text-slate-600 hover:text-red-400 p-1 opacity-50 group-hover:opacity-100 transition-opacity">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+            </div>
+        `).join('');
+        lucide.createIcons();
+    },
+
+    addStrategy() {
+        const input = document.getElementById('newStrategyInput');
+        const val = input.value.trim();
+        if(!val) return;
+        
+        // Prevent duplicates
+        if(this.data.settings.strategies.some(s => s.toLowerCase() === val.toLowerCase())) {
+            return alert("Strategy already exists.");
+        }
+        
+        this.data.settings.strategies.push(val);
+        input.value = '';
+        this.saveSettings();
+        this.renderSettingsStrategies();
+        this.populateStrategySelect();
+    },
+
+    removeStrategy(idx) {
+        if(confirm("Remove this strategy? (It will remain on old logs but won't be selectable for new trades)")) {
+            this.data.settings.strategies.splice(idx, 1);
+            this.saveSettings();
+            this.renderSettingsStrategies();
+            this.populateStrategySelect();
+        }
     },
 
     setStopMode(mode) {
@@ -1750,15 +1850,21 @@ const app = {
 
     // --- LOGS & MANAGEMENT ---
     
-   renderLogs() {
+		renderLogs(limit = 50) {
         const container = document.getElementById('logsContainer');
-        const search = document.getElementById('logSearch').value.toUpperCase();
+        const searchVal = document.getElementById('logSearch').value.toUpperCase();
         
-        const filtered = this.data.logs.filter(l => 
-            l.ticker.includes(search) || (l.strategy && l.strategy.toUpperCase().includes(search))
-        );
+        // 1. Sort & Filter (Search scans EVERYTHING)
+        // We sort by date descending so the "Top 50" are always the newest
+        const allMatches = this.data.logs
+            .sort((a,b) => new Date(b.date) - new Date(a.date)) 
+            .filter(l => l.ticker.includes(searchVal) || (l.strategy && l.strategy.toUpperCase().includes(searchVal)));
 
-        container.innerHTML = filtered.map(log => {
+        // 2. Apply the Limit (Slice the array)
+        const visibleLogs = allMatches.slice(0, limit);
+        
+        // 3. Render the Visible Slice
+        const htmlRows = visibleLogs.map(log => {
             let totalSold = log.exits ? log.exits.reduce((acc, ex) => acc + ex.qty, 0) : 0;
             let isOpen = log.outcome === 'open';
             let realizedR = 0;
@@ -1771,7 +1877,7 @@ const app = {
                 dateDisplay = `${d.getDate()}/${d.getMonth()+1} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
             }
 
-            // --- NER LOGIC START ---
+            // --- NER LOGIC ---
             let realizedPnL = 0;
             if (log.exits && log.exits.length > 0) {
                 let totalRVal = 0;
@@ -1786,37 +1892,28 @@ const app = {
                     }
                     totalRVal += (rChunk * ex.qty);
                 });
-                
                 const totalRiskAmount = log.initialQty * riskPerShare;
-                if (totalRiskAmount > 0) {
-                    realizedR = realizedPnL / totalRiskAmount;
-                }
+                if (totalRiskAmount > 0) realizedR = realizedPnL / totalRiskAmount;
             } else if (!log.initialQty && log.exitPrice) {
-                 // Legacy/Quick log handling
                  const diff = log.direction === 'SHORT' ? (log.entry - log.exitPrice) : (log.exitPrice - log.entry);
                  realizedR = diff / riskPerShare;
                  isOpen = false;
             }
 
-            // NER Badge Calculation
             let nerBadge = '';
             if (isOpen) {
                 const remaining = (log.initialQty || 0) - totalSold;
                 if (remaining > 0) {
-                    // Calculate current gross risk
                     let currentRiskDist = 0;
                     if(log.direction === 'LONG') currentRiskDist = Math.max(0, log.entry - log.stop);
                     else currentRiskDist = Math.max(0, log.stop - log.entry);
-                    
                     const grossRisk = remaining * currentRiskDist;
                     const netExposure = grossRisk - realizedPnL;
-                    
                     if (netExposure > 0) {
                         nerBadge = `<span class="bg-amber-900/40 text-amber-400 border border-amber-500/30 text-[9px] px-1.5 py-0.5 rounded font-bold ml-1 tracking-wider" title="Unfinanced Risk">NER</span>`;
                     }
                 }
             }
-            // --- NER LOGIC END ---
 
             let rDisplay = '-';
             let rClass = 'text-slate-500';
@@ -1824,13 +1921,8 @@ const app = {
             
             if (!isOpen || (log.exits && log.exits.length > 0)) {
                 const rVal = realizedR.toFixed(2);
-                if(rVal > 0) {
-                    rDisplay = `+${rVal}R`;
-                    rClass = 'text-emerald-400 font-bold';
-                } else {
-                    rDisplay = `${rVal}R`;
-                    rClass = 'text-red-400 font-bold';
-                }
+                if(rVal > 0) { rDisplay = `+${rVal}R`; rClass = 'text-emerald-400 font-bold'; } 
+                else { rDisplay = `${rVal}R`; rClass = 'text-red-400 font-bold'; }
             }
             
             if(!isOpen) {
@@ -1859,7 +1951,22 @@ const app = {
             </div>
             `;
         }).join('');
-        
+
+        // 4. Handle "Load More" Button
+        let loadMoreHtml = '';
+        if (allMatches.length > limit) {
+            const remaining = allMatches.length - limit;
+            loadMoreHtml = `
+            <div class="p-2 text-center">
+                <button onclick="app.renderLogs(${limit + 50})" class="text-xs font-bold text-blue-400 hover:text-white border border-slate-700 bg-slate-800 rounded-full px-4 py-2 transition-all">
+                    Show Older Trades (${remaining} more)
+                </button>
+            </div>`;
+        } else if (allMatches.length === 0) {
+            loadMoreHtml = `<div class="p-8 text-center text-slate-500 text-sm">No trades found.</div>`;
+        }
+
+        container.innerHTML = htmlRows + loadMoreHtml;
         lucide.createIcons();
     },
 
@@ -2105,82 +2212,174 @@ const app = {
             Array.from(strategies).map(s => `<option value="${s}">${s}</option>`).join('');
     },
 
-    renderStats() {
-        const strategyFilter = document.getElementById('statsFilter').value;
-        let relevantLogs = this.data.logs;
+	calculateBatchStats(logs) {
+        let winCount = 0, lossCount = 0, totalWinR = 0, totalLossR = 0, totalR = 0;
         
-        if(strategyFilter !== 'ALL') {
-            relevantLogs = relevantLogs.filter(l => l.strategy === strategyFilter);
-        }
-
-        const closedTrades = relevantLogs.filter(l => {
+        // Only consider CLOSED trades for stats
+        const closed = logs.filter(l => {
             const totalSold = l.exits ? l.exits.reduce((a,b)=>a+b.qty,0) : 0;
+            // A trade is "Statistically Closed" if it is outcome!=open OR fully sold
             return l.outcome !== 'open' || (l.initialQty > 0 && totalSold >= l.initialQty);
         });
-        
-        let totalR = 0;
-        let winCount = 0;
-        let totalWinR = 0;
-        let totalLossR = 0;
-        let lossCount = 0;
-        
-        closedTrades.forEach(l => {
+
+        closed.forEach(l => {
             let rTrade = 0;
             const riskPerShare = Math.abs(l.entry - l.stop);
             
+            // Calculate R
             if(l.exits && l.exits.length > 0) {
                  const totalRisk = l.initialQty * riskPerShare;
                  let realizedPnL = 0;
-                 l.exits.forEach(ex => {
-                     realizedPnL += (l.direction === 'SHORT' ? (l.entry - ex.price) : (ex.price - l.entry)) * ex.qty;
-                 });
+                 l.exits.forEach(ex => realizedPnL += (l.direction === 'SHORT' ? (l.entry - ex.price) : (ex.price - l.entry)) * ex.qty);
                  if(totalRisk > 0) rTrade = realizedPnL / totalRisk;
             } else if (l.exitPrice) {
                  rTrade = (l.direction==='SHORT' ? (l.entry - l.exitPrice) : (l.exitPrice - l.entry)) / riskPerShare;
             }
             
             totalR += rTrade;
-            if(rTrade > 0) {
-                winCount++;
-                totalWinR += rTrade;
-            } else {
-                lossCount++;
-                totalLossR += Math.abs(rTrade);
-            }
+            if(rTrade > 0) { winCount++; totalWinR += rTrade; } 
+            else { lossCount++; totalLossR += Math.abs(rTrade); }
         });
 
-        const winRate = closedTrades.length > 0 ? (winCount/closedTrades.length) : 0;
-        const lossRate = closedTrades.length > 0 ? (lossCount/closedTrades.length) : 0;
+        const count = closed.length;
+        const winRate = count > 0 ? (winCount / count) * 100 : 0;
         const avgWin = winCount > 0 ? totalWinR / winCount : 0;
         const avgLoss = lossCount > 0 ? totalLossR / lossCount : 0;
-        
-        const expectancy = (winRate * avgWin) - (lossRate * avgLoss);
-        const profitFactor = totalLossR === 0 ? totalWinR : (totalWinR / totalLossR);
-        const pfDisplay = totalLossR === 0 && totalWinR > 0 ? "∞" : profitFactor.toFixed(2);
+        const profitFactor = totalLossR === 0 ? (totalWinR > 0 ? 999 : 0) : (totalWinR / totalLossR);
+        const expectancy = (winRate/100 * avgWin) - ((1-(winRate/100)) * avgLoss);
 
-        document.getElementById('statWinRate').textContent = `${Math.round(winRate*100)}%`;
-        document.getElementById('statPF').textContent = `${pfDisplay}`;
-        document.getElementById('statExpectancy').textContent = `${expectancy > 0 ? '+' : ''}${expectancy.toFixed(2)}R`;
-        document.getElementById('statTotal').textContent = relevantLogs.length;
+        return { winRate, profitFactor, expectancy, count, logs: closed };
+    },
 
-        // Draw Charts
-        this.drawGrowthChart(relevantLogs);
-        this.drawWinLossChart(relevantLogs);
-        this.drawDrawdownChart(relevantLogs);
-        this.drawStrategyChart(relevantLogs);
-        this.drawDayOfWeekChart(relevantLogs);
-        this.drawContributionChart(closedTrades);
-        this.drawMonthlyChart(closedTrades); 
+    renderStats() {
+        const strategyFilter = document.getElementById('statsFilter').value;
+        const recencyFilter = document.getElementById('statsRecency').value;
         
-        // NEW CHART CALL
-        this.drawDurationChart(closedTrades);
-		this.drawDistributionChart(closedTrades);
+        // 1. Get Base Logs (Strategy Filtered)
+        let baseLogs = [...this.data.logs];
+        if(strategyFilter !== 'ALL') {
+            baseLogs = baseLogs.filter(l => l.strategy === strategyFilter);
+        }
+
+        // 2. Calculate BASELINE Stats (All Time for this strategy)
+        const baseline = this.calculateBatchStats(baseLogs);
+
+        // 3. Apply Recency Filter (Targeting CLOSED trades)
+        // FIX: We must filter for closed trades BEFORE slicing to ensure we get a full sample.
+        let closedLogs = baseLogs.filter(l => {
+             const totalSold = l.exits ? l.exits.reduce((a,b)=>a+b.qty,0) : 0;
+             return l.outcome !== 'open' || (l.initialQty > 0 && totalSold >= l.initialQty);
+        });
+
+        // Sort Newest First
+        closedLogs.sort((a,b) => new Date(b.date) - new Date(a.date));
+        
+        let recentStatsLogs = closedLogs;
+        if (recencyFilter !== 'ALL') {
+            const limit = parseInt(recencyFilter);
+            recentStatsLogs = closedLogs.slice(0, limit);
+        }
+        
+        // 4. Calculate CURRENT Stats
+        const current = this.calculateBatchStats(recentStatsLogs);
+
+        // 5. Render Cards (Diff Logic)
+        const setDiff = (elId, curr, base, type) => {
+            const el = document.getElementById(elId);
+            // Safety check: if no baseline count, or no current count, hide diff
+            if(recencyFilter === 'ALL' || base.count === 0 || curr.count === 0) { el.innerHTML = ''; return; }
+            
+            const diff = curr - base;
+            let color = '', icon = '', text = '';
+            
+            if(Math.abs(diff) < 0.01) { el.innerHTML = '<span class="text-slate-500">= No Change</span>'; return; }
+            
+            const isBetter = diff > 0;
+            color = isBetter ? 'text-emerald-400' : 'text-red-400';
+            icon = isBetter ? '▲' : '▼';
+            
+            if (type === '%') text = `${icon} ${Math.abs(diff).toFixed(1)}%`;
+            else if (type === 'R') text = `${icon} ${Math.abs(diff).toFixed(2)}R`;
+            else text = `${icon} ${Math.abs(diff).toFixed(2)}`;
+
+            el.innerHTML = `<span class="${color} bg-slate-900/50 px-1 rounded">${text} vs Avg</span>`;
+        };
+
+        document.getElementById('statWinRate').textContent = `${Math.round(current.winRate)}%`;
+        setDiff('statWinRateDiff', current.winRate, baseline.winRate, '%');
+
+        document.getElementById('statPF').textContent = current.profitFactor >= 999 ? "∞" : current.profitFactor.toFixed(2);
+        setDiff('statPFDiff', current.profitFactor, baseline.profitFactor, 'x');
+
+        document.getElementById('statExpectancy').textContent = `${current.expectancy > 0 ? '+' : ''}${current.expectancy.toFixed(2)}R`;
+        setDiff('statExpectancyDiff', current.expectancy, baseline.expectancy, 'R');
+
+        document.getElementById('statTotal').textContent = current.count;
+
+        // 6. Draw Charts
+        // We pass the filtered "recentStatsLogs" to charts so they match the stat cards
+		// --- PATCH START: DIRECTIONAL SPLIT ---
+        // Filter the ALREADY filtered 'recentStatsLogs' (which respects recency & closed status)
+        const longLogs = recentStatsLogs.filter(l => l.direction === 'LONG');
+        const shortLogs = recentStatsLogs.filter(l => l.direction === 'SHORT');
+
+        const longStats = this.calculateBatchStats(longLogs);
+        const shortStats = this.calculateBatchStats(shortLogs);
+
+        const renderDirCard = (title, stats, colorClass) => {
+            // Handle empty data
+            if (stats.count === 0) {
+                return `
+                <div class="bg-slate-800 p-3 rounded-lg border border-slate-700 opacity-50">
+                    <div class="text-[10px] text-slate-500 font-bold uppercase mb-1">${title}</div>
+                    <div class="text-xs text-slate-500 italic">No closed trades</div>
+                </div>`;
+            }
+
+            return `
+            <div class="bg-slate-800 p-3 rounded-lg border border-slate-700 flex flex-col justify-between">
+                <div class="flex justify-between items-start mb-2">
+                    <span class="text-[10px] ${colorClass} font-bold uppercase px-1.5 py-0.5 bg-${colorClass.split('-')[1]}-900/30 rounded">${title}</span>
+                    <span class="text-[10px] text-slate-500">${stats.count} Trades</span>
+                </div>
+                <div class="grid grid-cols-3 gap-1 text-center">
+                    <div>
+                        <div class="text-[9px] text-slate-500 uppercase">Win Rate</div>
+                        <div class="text-sm font-bold text-slate-200">${Math.round(stats.winRate)}%</div>
+                    </div>
+                    <div>
+                        <div class="text-[9px] text-slate-500 uppercase">PF</div>
+                        <div class="text-sm font-bold ${stats.profitFactor >= 1.5 ? 'text-blue-400' : 'text-slate-400'}">${stats.profitFactor >= 999 ? '∞' : stats.profitFactor.toFixed(2)}</div>
+                    </div>
+                    <div>
+                        <div class="text-[9px] text-slate-500 uppercase">Exp</div>
+                        <div class="text-sm font-bold ${stats.expectancy > 0 ? 'text-emerald-400' : 'text-red-400'}">${stats.expectancy.toFixed(2)}R</div>
+                    </div>
+                </div>
+            </div>`;
+        };
+
+        const dirContainer = document.getElementById('directionStats');
+        if (dirContainer) {
+            dirContainer.innerHTML = 
+                renderDirCard('Longs', longStats, 'text-emerald-400') + 
+                renderDirCard('Shorts', shortStats, 'text-red-400');
+        }
+        this.drawGrowthChart(recentStatsLogs);
+        this.drawWinLossChart(recentStatsLogs);
+        this.drawDrawdownChart(recentStatsLogs);
+        this.drawStrategyChart(recentStatsLogs);
+        this.drawDayOfWeekChart(recentStatsLogs);
+        this.drawContributionChart(recentStatsLogs);
+        this.drawMonthlyChart(recentStatsLogs); 
+        this.drawDurationChart(recentStatsLogs);
+        this.drawDistributionChart(recentStatsLogs);
         
         // Generate Insights
-        this.generateInsights(relevantLogs);
+        this.generateInsights(recentStatsLogs);
 
         lucide.createIcons();
-    }, // <--- THIS COMMA IS CRITICAL
+    },
 
     drawDurationChart(logs) {
         const ctx = document.getElementById('chartDuration');
