@@ -818,7 +818,7 @@ const licenseService = {
             const response = await fetch('https://api.gumroad.com/v2/licenses/verify', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: `product_permalink=YOUR_PRODUCT_PERMALINK_HERE&license_key=${key}`
+                body: `product_permalink=https://gum.co/pnvhue&license_key=${key}`
             });
             
             // NOTE: You MUST replace 'YOUR_PRODUCT_PERMALINK_HERE' with your actual Gumroad product permalink 
@@ -3255,6 +3255,7 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
+
 
 
 
