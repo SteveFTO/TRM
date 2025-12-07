@@ -784,21 +784,23 @@
 <script>
 // --- LICENSE SERVICE ---
 const licenseService = {
-    // Replace with your actual Gumroad Product Permalink if needed, 
-    // or just rely on the API verification which checks the key globally.
-    // For client-side only, we use Gumroad's verify endpoint.
-    
+    // 1. Initialization: Check if user is already activated
     async init() {
         const key = localStorage.getItem('rd_license');
+        
         if (!key) {
-            // No key found, show gate
+            // No key found -> Show Gate
             document.getElementById('licenseGate').classList.remove('hidden');
         } else {
-            // Optional: Re-verify periodically? For now, trust local storage to keep it offline-friendly.
+            // Key found -> Allow access (Gate remains hidden by default CSS)
             console.log('RiskDesk Activated');
+            
+            // Optional: You could silently re-verify in background here if you wanted, 
+            // but for offline-first apps, trusting localStorage is better UX.
         }
     },
 
+    // 2. Verification: Called when user clicks "Activate License" button
     async verify() {
         const input = document.getElementById('licenseKeyInput');
         const btn = document.getElementById('activateBtn');
@@ -814,29 +816,28 @@ const licenseService = {
         lucide.createIcons();
 
         try {
-            // Call Gumroad API
+            // Call Gumroad API using PRODUCT_ID
             const response = await fetch('https://api.gumroad.com/v2/licenses/verify', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                // USE product_id HERE INSTEAD OF product_permalink
                 body: `product_id=3iNSQXfyfIc0nRcFEZa7SQ==&license_key=${key}`
             });
-            
-            // NOTE: You MUST replace 'YOUR_PRODUCT_PERMALINK_HERE' with your actual Gumroad product permalink 
-            // (e.g., 'riskdesk'). If you don't have it yet, the API call will fail.
-            // For testing BEFORE you have a product, you can uncomment this line to bypass:
-            // const data = { success: true }; // TEST MODE BYPASS
             
             const data = await response.json();
 
             if (data.success && !data.purchase.refunded) {
-                // Success! Save and unlock.
+                // Success! Save Key locally
                 localStorage.setItem('rd_license', key);
-                document.getElementById('licenseGate').classList.add('fade-out');
+                
+                // Hide Gate
+                document.getElementById('licenseGate').classList.add('fade-out'); // Add CSS transition class if you have one
                 setTimeout(() => document.getElementById('licenseGate').classList.add('hidden'), 500);
             } else {
                 throw new Error("Invalid Key");
             }
         } catch (e) {
+            console.error(e);
             err.textContent = "Invalid or refunded license key.";
             err.classList.remove('hidden');
             btn.disabled = false;
@@ -3255,6 +3256,7 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
+
 
 
 
