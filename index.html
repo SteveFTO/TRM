@@ -1,2082 +1,241 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Trade Risk Manager" />
-  <link rel="manifest" href="/manifest.json" />
-  <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
-  <title>Trade Risk Manager</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    body {
-      background: linear-gradient(135deg, #1e3c72, #2a5298, #4b3f72);
-      color: #eee;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      padding: 15px;
-      margin: 0;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      touch-action: manipulation;
-    }
-    h1 {
-      text-align: center;
-      margin-bottom: 15px;
-      font-size: 1.6rem;
-      color: #ffffff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-    }
-    .help-icon {
-      background: #34c759;
-      color: #fff;
-      border: none;
-      border-radius: 50%;
-      width: 30px;
-      height: 30px;
-      font-size: 1.2rem;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background 0.3s ease;
-    }
-    .help-icon:hover {
-      background: #28a745;
-    }
-    .modal {
-      display: none;
-      position: fixed;
-      z-index: 1000;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.5);
-      animation: fadeIn 0.3s;
-    }
-    .modal-content {
-      background-color: #121212;
-      margin: 10% auto;
-      padding: 20px;
-      border-radius: 12px;
-      width: 90%;
-      max-width: 480px;
-      max-height: 80vh;
-      overflow-y: auto;
-      position: relative;
-      color: #eee;
-    }
-    .close {
-      color: #aaa;
-      float: right;
-      font-size: 28px;
-      font-weight: bold;
-      cursor: pointer;
-      position: absolute;
-      right: 15px;
-      top: 10px;
-    }
-    .close:hover {
-      color: #fff;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-    .app-container {
-      max-width: 480px;
-      width: 100%;
-      padding: 12px;
-      background: #121212;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    }
-    form {
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-    }
-    .accounts-section {
-      margin-bottom: 8px;
-    }
-    .accounts-toggle {
-      width: 100%;
-      padding: 8px;
-      font-size: 1rem;
-      font-weight: 600;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      user-select: none;
-      touch-action: manipulation;
-      transition: background 0.3s ease;
-      background: #2a2a2a;
-      color: #eee;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .accounts-toggle:hover {
-      background: #3a3a3a;
-    }
-    .accounts-toggle::after {
-      content: '▼';
-      font-size: 0.8rem;
-      transition: transform 0.3s ease;
-    }
-    .accounts-toggle.expanded::after {
-      transform: rotate(180deg);
-    }
-    .account-grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 8px;
-      max-height: 0;
-      overflow: hidden;
-      transition: max-height 0.3s ease, opacity 0.3s ease;
-      opacity: 0;
-    }
-    .account-grid.expanded {
-      max-height: 600px;
-      opacity: 1;
-    }
-    .input-group {
-      flex: 1 1 45%;
-      min-width: 140px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-    .currency-select-group {
-      margin-top: 4px;
-    }
-    .stop-type-group {
-      display: flex;
-      gap: 15px;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 10px;
-    }
-    .stop-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: flex-end;
-    }
-    .stop-row .input-group {
-      flex: 1 1 100%;
-    }
-    .staggered-stops {
-      display: none;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .staggered-stops.show {
-      display: flex;
-    }
-    .staggered-level {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: flex-end;
-    }
-    .staggered-level .input-group {
-      flex: 1 1 45%;
-      min-width: 140px;
-    }
-    .staggered-level .percent-group {
-      flex: 1 1 45%;
-      min-width: 80px;
-    }
-    .add-level-btn {
-      align-self: flex-start;
-      width: auto;
-      padding: 6px 12px;
-      font-size: 1rem;
-      background: #34c759;
-      color: #fff;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      transition: background 0.3s ease;
-    }
-    .add-level-btn:hover {
-      background: #28a745;
-    }
-    label, [contenteditable="true"] {
-      font-size: 1.1rem;
-      margin-bottom: 4px;
-      color: #ffffff;
-      cursor: text;
-      display: inline-block;
-      padding: 2px 4px;
-      border-radius: 5px;
-    }
-    [contenteditable="true"]:focus {
-      outline: none;
-      background: #3a3a3a;
-      border: none;
-    }
-    input[type="number"], select, input[type="text"] {
-      width: 100%;
-      font-size: 1.1rem;
-      padding: 8px;
-      border-radius: 5px;
-      border: none;
-      background: #2a2a2a;
-      color: #eee;
-      box-sizing: border-box;
-      appearance: none;
-      transition: background 0.3s ease;
-    }
-    input[type="number"]:focus, select:focus, input[type="text"]:focus {
-      background: #3a3a3a;
-      outline: none;
-    }
-    input[type="number"]::-webkit-outer-spin-button,
-    input[type="number"]::-webkit-inner-spin-button {
-      appearance: none;
-    }
-    input[type="range"] {
-      width: 100%;
-      height: 8px;
-      background: #444;
-      border-radius: 5px;
-      outline: none;
-      appearance: none;
-    }
-    input[type="range"]::-webkit-slider-thumb {
-      appearance: none;
-      width: 20px;
-      height: 20px;
-      background: #34c759;
-      border-radius: 50%;
-      cursor: pointer;
-    }
-    input[type="range"]::-moz-range-thumb {
-      width: 20px;
-      height: 20px;
-      background: #34c759;
-      border-radius: 50%;
-      cursor: pointer;
-    }
-    .range-value {
-      font-size: 1rem;
-      color: #eee;
-      margin-top: 4px;
-      text-align: center;
-    }
-    .mode-group {
-      display: flex;
-      flex-direction: row;
-      gap: 15px;
-      align-items: center;
-      justify-content: center;
-    }
-    .mode-option {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    input[type="radio"] {
-      appearance: none;
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      border: 2px solid #eee;
-      background: #2a2a2a;
-      cursor: pointer;
-      transition: background 0.3s ease;
-    }
-    input[type="radio"]:checked {
-      background: #34c759;
-      border-color: #34c759;
-    }
-    .btn {
-      width: 100%;
-      padding: 12px;
-      font-size: 1.2rem;
-      background: #34c759;
-      color: #fff;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      transition: background 0.3s ease;
-    }
-    .btn:hover {
-      background: #28a745;
-    }
-    .btn.reset {
-      background: #ff3b30;
-    }
-    .btn.reset:hover {
-      background: #d32e26;
-    }
-    .btn.trade-log {
-      background: #007aff;
-    }
-    .btn.trade-log:hover {
-      background: #0066d6;
-    }
-    .btn.charts {
-      background: #007aff;
-    }
-    .btn.charts:hover {
-      background: #0066d6;
-    }
-    .results {
-      display: none;
-      margin-top: 15px;
-      background: #1c1c1e;
-      border-radius: 5px;
-      padding: 15px;
-      gap: 8px;
-    }
-    .tab-nav {
-      display: flex;
-      overflow-x: auto;
-      margin-bottom: 10px;
-      border-bottom: 1px solid #444;
-    }
-    .tab-btn {
-      flex: 1;
-      padding: 8px 12px;
-      background: none;
-      border: none;
-      color: #aaa;
-      cursor: pointer;
-      font-size: 1rem;
-      text-align: center;
-      transition: color 0.3s ease, border-bottom 0.3s ease;
-      white-space: nowrap;
-    }
-    .tab-btn.active {
-      color: #34c759;
-      border-bottom: 2px solid #34c759;
-    }
-    .tab-pane {
-      display: none;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .tab-pane.active {
-      display: flex;
-    }
-    .result-row {
-      display: flex;
-      justify-content: space-between;
-      font-size: 1rem;
-      padding: 4px 0;
-      border-bottom: 1px solid #333;
-    }
-    .result-row:last-child {
-      border-bottom: none;
-    }
-    .result-row span:first-child {
-      font-weight: 600;
-      color: #ddd;
-    }
-    .result-row span:last-child {
-      text-align: right;
-      color: #34c759;
-    }
-    .input-row {
-      display: flex;
-      gap: 10px;
-    }
-    /* Trade Log Styles */
-    #tradeLogPage {
-      display: none;
-      max-width: 480px;
-      width: 100%;
-      padding: 12px;
-      background: #121212;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-      margin-top: 20px;
-    }
-    #tradeLogPage h2 {
-      text-align: center;
-      color: #ffffff;
-      margin-bottom: 15px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-    }
-    .log-form {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      margin-bottom: 15px;
-      border-bottom: 1px solid #2a2a2a;
-      padding-bottom: 12px;
-    }
-    .log-row {
-      display: flex;
-      gap: 10px;
-    }
-    .log-input-group {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      flex: 1;
-    }
-    .log-input-group input,
-    .log-input-group select {
-      width: 100%;
-      padding: 8px;
-      border-radius: 5px;
-      border: none;
-      background: #2a2a2a;
-      color: #eee;
-    }
-    #addLogBtn {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background: #34c759;
-      color: #fff;
-      border: none;
-      border-radius: 50%;
-      width: 50px;
-      height: 50px;
-      font-size: 1.5rem;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-      z-index: 100;
-      transition: background 0.3s ease;
-    }
-    #addLogBtn:hover {
-      background: #28a745;
-    }
-    #backBtn {
-      background: #007aff;
-      color: #fff;
-      padding: 10px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      margin-bottom: 15px;
-    }
-    #backBtn:hover {
-      background: #0066d6;
-    }
-    .search-bar {
-      width: 80%;
-      padding: 8px;
-      border-radius: 5px;
-      border: none;
-      background: #2a2a2a;
-      color: #eee;
-      margin-bottom: 10px;
-    }
-    .summary-stats {
-      display: flex;
-      justify-content: space-between;
-      background: #1c1c1c;
-      padding: 10px;
-      border-radius: 5px;
-      margin-bottom: 15px;
-      font-size: 0.95rem;
-    }
-    .summary-stats span {
-      flex: 1;
-      text-align: center;
-    }
-    #logTable {
-      width: 75%;
-      border-collapse: collapse;
-    }
-    #logTable th,
-    #logTable td {
-      padding: 4px 6px;
-      text-align: left;
-      border-bottom: 1px solid #2a2a2a;
-      color: #eee;
-      font-size: 0.95rem;
-    }
-    #logTable th {
-      background: #1c1c1c;
-      font-weight: 600;
-      cursor: pointer;
-      text-align: center;
-    }
-    #logTable tr:nth-child(even) {
-      background: #1c1c1e;
-    }
-    #logTable th.numeric,
-    #logTable td.numeric {
-      text-align: right;
-    }
-    #logTable th:nth-child(2),
-    #logTable td:nth-child(2) {
-      width: 120px;
-      white-space: nowrap;
-    }
-    #logTable td.actions {
-      width: 50px;
-      text-align: center;
-      padding: 4px;
-    }
-    .edit-btn,
-    .delete-btn,
-    .save-btn,
-    .cancel-btn {
-      background: none;
-      border: none;
-      cursor: pointer;
-      font-size: 1.1rem;
-      margin-left: 0;
-    }
-    .edit-btn {
-      color: #007aff;
-    }
-    .delete-btn {
-      color: #ff3b30;
-    }
-    .save-btn {
-      color: #34c759;
-    }
-    .cancel-btn {
-      color: #aaa;
-    }
-    .outcome-tick {
-      color: #34c759;
-    }
-    .outcome-x {
-      color: #ff3b30;
-    }
-    .result-positive {
-      color: #34c759;
-    }
-    .result-negative {
-      color: #ff3b30;
-    }
-    #logTable td input,
-    #logTable td select {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 4px;
-      background: #2a2a2a;
-      color: #eee;
-      border: none;
-      border-radius: 3px;
-      font-size: 0.95rem;
-    }
-    #toast {
-      position: fixed;
-      bottom: 80px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #1c1c1c;
-      color: #eee;
-      padding: 10px 20px;
-      border-radius: 5px;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-      z-index: 100;
-    }
-    #toast.show {
-      opacity: 1;
-    }
-    #exportBtn {
-      background: #007aff;
-      color: #fff;
-      padding: 10px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      margin-top: 15px;
-      width: 100%;
-    }
-    #exportBtn:hover {
-      background: #0066d6;
-    }
-    #selectBtn {
-      background: #007aff;
-      color: #fff;
-      padding: 8px 12px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      margin-bottom: 10px;
-      font-size: 0.95rem;
-    }
-    #selectBtn:hover {
-      background: #0066d6;
-    }
-    #deleteSelectedBtn {
-      background: #ff3b30;
-      color: #fff;
-      padding: 8px 12px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      margin-bottom: 10px;
-      font-size: 0.95rem;
-      display: none;
-    }
-    #deleteSelectedBtn:hover {
-      background: #d32e26;
-    }
-    .hidden {
-      display: none;
-    }
-    .multi-select-checkbox {
-      margin-right: 4px;
-    }
-    #addToLogBtn {
-      width: 100%;
-      padding: 12px;
-      font-size: 1.2rem;
-      background: #34c759;
-      color: #fff;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      transition: background 0.3s ease;
-      margin-top: 15px;
-      display: none;
-    }
-    #addToLogBtn:hover {
-      background: #28a745;
-    }
-    #chartsSection {
-      margin-top: 20px;
-    }
-    .chart-container {
-      background: #1c1c1c;
-      padding: 10px;
-      border-radius: 5px;
-      margin-bottom: 15px;
-    }
-    #chartsPage {
-      display: none;
-      max-width: 480px;
-      width: 100%;
-      padding: 12px;
-      background: #121212;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-      margin-top: 20px;
-    }
-    #chartsPage h2 {
-      text-align: center;
-      color: #ffffff;
-      margin-bottom: 15px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-    }
-    .benchmark-section {
-      background: #2a2a2a;
-      padding: 10px;
-      border-radius: 5px;
-      margin-bottom: 15px;
-    }
-    .benchmark-section label {
-      display: block;
-      margin-bottom: 5px;
-      font-size: 0.9rem;
-      color: #ddd;
-    }
-    .benchmark-section input[type="checkbox"] {
-      margin-right: 5px;
-    }
-    .benchmark-section button {
-      width: 100%;
-      padding: 8px;
-      background: #007aff;
-      color: #fff;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      margin-top: 10px;
-      font-size: 1rem;
-    }
-    .benchmark-section button:hover {
-      background: #0066d6;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RiskDesk - Mobile first, position size management, trade logging & statistical analysis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://gumroad.com/js/gumroad.js"></script>
 
-  <style>
-    /* Hide row-level delete buttons (delete via modal only) */
-    #logTable .delete-btn { display: none !important; }
-    /* Small responsive tweaks for new columns */
-    #logTable th.strategy-col, #logTable td.strategy-col { max-width:120px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    #logTable th.notes-col, #logTable td.notes-col { max-width:220px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    @media (max-width:420px) {
-      #logTable td.notes-col { display: none; }
-    }
-    @media (orientation: landscape) {
-      #tradeLogPage { max-width: 100vw; width: 100%; margin: 8px; border-radius: 4px; }
-      #logTable td.notes-col { display: table-cell; }
-    }
-  </style>
+    <style>
+        body {
+            background-color: #0f172a; /* Slate 900 */
+            color: #e2e8f0; /* Slate 200 */
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        
+        /* Infographic Styles */
+        .card-gradient { background: linear-gradient(145deg, #1e293b, #0f172a); }
+        .icon-box { display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 12px; margin-bottom: 1rem; }
+        .feature-list li { display: flex; align-items: start; gap: 0.5rem; margin-bottom: 0.5rem; font-size: 0.875rem; color: #94a3b8; text-align: left; }
+        .feature-list li i { min-width: 16px; margin-top: 3px; }
 
-<style>
-#logTable th, #logTable td { text-align:left !important; }
-#logTable th.actions, #logTable td.actions { display:none !important; }
-.edit-btn { display:none !important; }
-.strategy-col, .notes-col { max-width:100% !important; }
-</style>
-
-<style>
-/* Remove small action columns and widen strategy/notes */
-#logTable th.actions, #logTable td.actions { display:none !important; width:0 !important; padding:0 !important; margin:0 !important; }
-#logTable th:nth-last-child(-n+2), #logTable td:nth-last-child(-n+2) { /* fallback */ display:table-cell; }
-#logTable th.strategy-col, #logTable td.strategy-col, #logTable th.notes-col, #logTable td.notes-col { max-width: 100% !important; white-space:normal !important; }
-#logTable th, #logTable td { text-align:left; }
-</style>
-
-<style>
-/* Make table responsive and allow Strategy/Notes to expand in landscape */
-#tradeLogPage { max-width: 100vw !important; width: 100% !important; padding: 8px !important; }
-#logTable { width: 100% !important; table-layout: auto !important; }
-#logTable th.strategy-col, #logTable td.strategy-col, #logTable th.notes-col, #logTable td.notes-col {
-  white-space: normal !important;
-  max-width: none !important;
-}
-@media (orientation: landscape) {
-  #logTable th, #logTable td { font-size: 0.95rem; }
-  #logTable td { padding: 8px 10px; }
-}
-#entryNotes, #modalNotes { font-size:16px !important; }
-</style>
-
-<style>
-/* Remove action columns and edit icons */
-#logTable th.actions, #logTable td.actions, .edit-btn, .delete-btn { display:none !important; }
-#logTable th.strategy-col, #logTable td.strategy-col, #logTable th.notes-col, #logTable td.notes-col {
-  white-space: normal !important; max-width: none !important;
-}
-/* Ensure table uses full width in landscape */
-@media (orientation: landscape) {
-  #tradeLogPage { width:100vw !important; max-width:100vw !important; }
-  #logTable { width:100% !important; table-layout:auto !important; }
-}
-</style>
+        /* Website Effects */
+        .glow-effect {
+            box-shadow: 0 0 40px -10px rgba(59, 130, 246, 0.3);
+        }
+    </style>
 </head>
-<body>
-  <div class="app-container" id="mainPage">
-    <h1>Trade Risk Manager <button class="help-icon" onclick="openHelp()">?</button></h1>
+<body class="antialiased selection:bg-blue-500 selection:text-white">
 
-    <div id="helpModal" class="modal">
-      <div class="modal-content">
-        <span class="close" onclick="closeHelp()">&times;</span>
-        <h2>How to Use Trade Risk Manager</h2>
-        <p>This app helps you calculate position sizes and risk for trades across multiple accounts with different currencies.</p>
-        <p><strong>Accounts:</strong> Click the toggle to expand and edit account sizes and labels. Labels are editable by clicking on them.</p>
-        <p><strong>Account Currency:</strong> Select the base currency for your accounts.</p>
-        <p><strong>Trade Currency:</strong> Select the currency of the asset you're trading. If different from account currency, exchange rates will be used (assumed rates for simplicity).</p>
-        <p><strong>Purchase Price:</strong> Enter the entry price for the trade.</p>
-        <p><strong>Stop Type:</strong> Choose single stop or staggered stops.</p>
-        <p>- For single: Enter one stop loss price.</p>
-        <p>- For staggered: Enter up to 3 stop levels with percentages (must sum to 100%).</p>
-        <p><strong>Mode:</strong> Choose between Equity Risk % or Position Size %.</p>
-        <p>- Equity Risk: Set the percentage of account equity to risk.</p>
-        <p>- Position Size: Set the percentage of account for position size.</p>
-        <p>Click Calculate to see results per account, including shares, position size, avg stop, % to stop, and derisk points.</p>
-        <p>Results are shown in tabs for each account.</p>
-        <p>Data is saved locally and persists across sessions. Use Reset to clear.</p>
-      </div>
-    </div>
-
-    <form id="tradeForm">
-      <div class="accounts-section">
-        <button type="button" id="accountsToggle" class="accounts-toggle">Accounts</button>
-        <div id="accountGrid" class="account-grid">
-          <div class="input-group">
-            <span id="acc1Label" contenteditable="true">Acc 1</span>
-            <input type="number" id="acc1Size" placeholder="Account Size" min="0" step="any" />
-          </div>
-          <div class="input-group">
-            <span id="acc2Label" contenteditable="true">Acc 2</span>
-            <input type="number" id="acc2Size" placeholder="Account Size" min="0" step="any" />
-          </div>
-          <div class="input-group">
-            <span id="acc3Label" contenteditable="true">Acc 3</span>
-            <input type="number" id="acc3Size" placeholder="Account Size" min="0" step="any" />
-          </div>
-          <div class="input-group">
-            <span id="acc4Label" contenteditable="true">Acc 4</span>
-            <input type="number" id="acc4Size" placeholder="Account Size" min="0" step="any" />
-          </div>
-          <div class="input-group">
-            <span id="acc5Label" contenteditable="true">Acc 5</span>
-            <input type="number" id="acc5Size" placeholder="Account Size" min="0" step="any" />
-          </div>
-          <div class="input-group">
-            <span id="acc6Label" contenteditable="true">Acc 6</span>
-            <input type="number" id="acc6Size" placeholder="Account Size" min="0" step="any" />
-          </div>
+    <nav class="fixed w-full z-50 bg-slate-900/90 backdrop-blur border-b border-slate-800">
+        <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <i data-lucide="shield-check" class="w-6 h-6 text-blue-500"></i>
+                <span class="font-bold text-xl tracking-tight">RISK<span class="text-slate-400">DESK</span></span>
+            </div>
+            <div>
+                <a href="https://gum.co/YOUR_PRODUCT_LINK" target="_blank" class="bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold py-2 px-4 rounded-lg transition-all">
+                    Get Access
+                </a>
+            </div>
         </div>
-      </div>
+    </nav>
 
-      <div class="currency-select-group input-group">
-        <label for="accountCurrency">Account Currency</label>
-        <select id="accountCurrency">
-          <option value="GBP">GBP (£)</option>
-          <option value="USD">USD ($)</option>
-          <option value="EUR">EUR (€)</option>
-        </select>
-      </div>
-
-      <div class="input-row">
-        <div class="input-group">
-          <label for="ticker">Ticker</label>
-          <input type="text" id="ticker" placeholder="Ticker" />
+    <section class="pt-32 pb-16 px-6 text-center max-w-4xl mx-auto">
+        
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-xs font-medium text-emerald-400 mb-8">
+            <span class="relative flex h-2 w-2">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            v10 Now Available
         </div>
-        <div class="input-group">
-          <label for="purchasePrice">Purchase Price</label>
-          <input type="number" id="purchasePrice" placeholder="Purchase Price" min="0" step="any" required />
+        
+        <div class="flex justify-center mb-6">
+            <div class="inline-flex items-center justify-center p-4 bg-slate-800/50 rounded-full border border-slate-700 shadow-[0_0_15px_rgba(59,130,246,0.2)]">
+                <i data-lucide="shield-check" class="w-12 h-12 text-blue-400"></i>
+            </div>
         </div>
-      </div>
 
-      <div class="currency-select-group input-group">
-        <label for="tradeCurrency">Trade Currency</label>
-        <select id="tradeCurrency"></select>
-      </div>
-
-      <div class="stop-type-group">
-        <label class="mode-option"><input type="radio" name="stopType" value="single" checked /> Single Stop</label>
-        <label class="mode-option"><input type="radio" name="stopType" value="staggered" /> Staggered Stops</label>
-      </div>
-
-      <div id="stopRow" class="stop-row">
-        <div class="input-group">
-          <label for="stopLoss">Stop Loss</label>
-          <input type="number" id="stopLoss" placeholder="Stop Loss" min="0" step="any" required />
+        <h1 class="text-5xl md:text-7xl font-extrabold mb-4 tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-emerald-400 to-amber-400">
+            RISK DESK
+        </h1>
+        
+        <h2 class="text-2xl md:text-3xl text-slate-300 font-medium mb-4">Professional Grade Risk Management</h2>
+        <p class="text-sm md:text-base text-slate-500 uppercase tracking-widest font-bold mb-10">Trade Calm. Manage Risk. Find Your Edge.</p>
+        
+        <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <a href="https://gum.co/YOUR_PRODUCT_LINK" target="_blank" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-8 rounded-xl shadow-lg shadow-blue-500/20 transition-transform hover:scale-105 flex items-center justify-center gap-2">
+                Download Now
+                <i data-lucide="download" class="w-5 h-5"></i>
+            </a>
+            <a href="#demo" class="w-full sm:w-auto bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-semibold py-4 px-8 rounded-xl transition-colors flex items-center justify-center gap-2">
+                <i data-lucide="play-circle" class="w-5 h-5 text-slate-400"></i>
+                Watch Demo
+            </a>
         </div>
-      </div>
+    </section>
 
-      <div id="staggeredStops" class="staggered-stops">
-        <div id="level1" class="staggered-level">
-          <div class="input-group">
-            <label>Stop Level 1</label>
-            <input class="stopLevel" data-level="1" type="number" placeholder="Stop Price" min="0" step="any" />
-          </div>
-          <div class="percent-group input-group">
-            <label>%</label>
-            <input class="stopPercent" data-level="1" type="number" placeholder="%" min="0" max="100" step="any" value="50" />
-          </div>
+    <section id="demo" class="py-12 px-6">
+        <div class="max-w-5xl mx-auto bg-slate-800 p-2 rounded-2xl border border-slate-700 glow-effect">
+            <div class="aspect-video bg-slate-900 rounded-xl overflow-hidden relative">
+                <iframe 
+                    class="w-full h-full" 
+                    src="https://www.youtube.com/embed/dQw4w9WgXcQ?rel=0" 
+                    title="RiskDesk Demo" 
+                    frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowfullscreen>
+                </iframe>
+            </div>
         </div>
-        <div id="level2" class="staggered-level">
-          <div class="input-group">
-            <label>Stop Level 2</label>
-            <input class="stopLevel" data-level="2" type="number" placeholder="Stop Price" min="0" step="any" />
-          </div>
-          <div class="percent-group input-group">
-            <label>%</label>
-            <input class="stopPercent" data-level="2" type="number" placeholder="%" min="0" max="100" step="any" value="50" />
-          </div>
+    </section>
+
+    <section class="py-24 bg-slate-900 relative overflow-hidden">
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-blue-900/10 rounded-full blur-[100px] pointer-events-none"></div>
+
+        <div class="max-w-6xl mx-auto px-6 relative z-10">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold mb-4 text-white">The Complete Desk</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                <div class="card-gradient p-8 rounded-2xl border border-slate-700/50 shadow-xl hover:border-blue-500/30 transition-all duration-300">
+                    <div class="icon-box bg-blue-900/20 border border-blue-500/30 text-blue-400">
+                        <i data-lucide="calculator" class="w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-white mb-3">Precision Execution</h3>
+                    <p class="text-slate-400 mb-6 leading-relaxed">Professional sizing engine.</p>
+                    <ul class="feature-list space-y-2">
+                        <li><i data-lucide="check" class="w-4 h-4 text-blue-500"></i><span><strong>Dual Models:</strong> Choose Equity Risk % (Fixed Fractional) or Position Size % (Allocation).</span></li>
+                        <li><i data-lucide="check" class="w-4 h-4 text-blue-500"></i><span><strong>Multi-Currency:</strong> Auto-fetches live FX rates (e.g., Trade US Stocks in GBP accounts).</span></li>
+                        <li><i data-lucide="check" class="w-4 h-4 text-blue-500"></i><span><strong>Smart Stops:</strong> Supports Single or Staggered (weighted average) stop losses.</span></li>
+                        <li><i data-lucide="check" class="w-4 h-4 text-blue-500"></i><span><strong>Master Sizing:</strong> Calculates share counts for multiple accounts simultaneously.</span></li>
+                    </ul>
+                </div>
+
+                <div class="card-gradient p-8 rounded-2xl border border-slate-700/50 shadow-xl hover:border-red-500/30 transition-all duration-300 relative overflow-hidden">
+                    <div class="absolute -right-4 -top-4 w-32 h-32 bg-red-500/10 rounded-full blur-3xl"></div>
+                    
+                    <div class="icon-box bg-red-900/20 border border-red-500/30 text-red-400">
+                        <i data-lucide="flame" class="w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-white mb-3">Dynamic Risk Guard </h3>
+                    <p class="text-slate-400 mb-6 leading-relaxed">Live dashboard tracking your exposure in real-time. Know your breaking point.</p>
+                    
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div class="bg-slate-900 p-4 rounded-lg border border-slate-800">
+                            <div class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Open Heat (Gross)</div>
+                            <div class="text-2xl font-mono font-bold text-white mt-1">1.50%</div>
+                            <div class="text-[10px] text-slate-600 leading-tight mt-2">Total equity at risk if all stops hit.</div>
+                        </div>
+                        <div class="bg-slate-900 p-4 rounded-lg border border-amber-900/30">
+                            <div class="text-[10px] text-amber-500/70 uppercase font-bold tracking-wider">NER (Net Risk)</div>
+                            <div class="text-2xl font-mono font-bold text-amber-400 mt-1">0.75%</div>
+                            <div class="text-[10px] text-slate-600 leading-tight mt-2">Unfinanced risk remaining on table.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-gradient p-8 rounded-2xl border border-slate-700/50 shadow-xl hover:border-purple-500/30 transition-all duration-300">
+                    <div class="icon-box bg-purple-900/20 border border-purple-500/30 text-purple-400">
+                        <i data-lucide="layers" class="w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-white mb-3">Frictionless Journaling</h3>
+                    <p class="text-slate-400 mb-6 leading-relaxed">Log trades in seconds, not minutes. Capture the "Why" behind the "What".</p>
+                    <ul class="feature-list space-y-2">
+                        <li><i data-lucide="image-plus" class="w-4 h-4 text-purple-500"></i><span><strong>Chart Database:</strong> Paste screenshots (Ctrl+V) directly. Store Entry vs. Exit charts.</span></li>
+                        <li><i data-lucide="scissors" class="w-4 h-4 text-purple-500"></i><span><strong>Partial Exits:</strong> Log scaled outs. Auto-calculates R-Multiple for every chunk sold.</span></li>
+                        <li><i data-lucide="target" class="w-4 h-4 text-purple-500"></i><span><strong>De-Risk Targets:</strong> Auto-calculates levels to sell 1/3 or 1/4 to reach "Risk Free".</span></li>
+                        <li><i data-lucide="tag" class="w-4 h-4 text-purple-500"></i><span><strong>Strategy Tagging:</strong> Customize your playbook (e.g., "Gap & Go") in Settings.</span></li>
+                    </ul>
+                </div>
+
+                <div class="card-gradient p-8 rounded-2xl border border-slate-700/50 shadow-xl hover:border-emerald-500/30 transition-all duration-300">
+                    <div class="icon-box bg-emerald-900/20 border border-emerald-500/30 text-emerald-400">
+                        <i data-lucide="bar-chart-2" class="w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-white mb-3">Data-Driven Growth</h3>
+                    <p class="text-slate-400 mb-6 leading-relaxed">Turn your history into an edge. Find your leaks and double down on strengths.</p>
+                    
+                    <div class="space-y-3">
+                        <div class="flex items-center gap-4 bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
+                            <i data-lucide="split" class="w-6 h-6 text-emerald-400"></i>
+                            <div>
+                                <strong class="text-sm text-white block">Directional Bias</strong>
+                                <span class="text-xs text-slate-400">Long vs. Short split for Win Rate & Expectancy.</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4 bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
+                            <i data-lucide="history" class="w-6 h-6 text-emerald-400"></i>
+                            <div>
+                                <strong class="text-sm text-white block">Recency Filters</strong>
+                                <span class="text-xs text-slate-400">"Last 20 Trades" view to spot current form vs. lifetime habits.</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4 bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
+                            <i data-lucide="brain-circuit" class="w-6 h-6 text-emerald-400"></i>
+                            <div>
+                                <strong class="text-sm text-white block">Pattern Recognition</strong>
+                                <span class="text-xs text-slate-400">Auto-scans for winning streaks, tilt, and MVP strategies.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
         </div>
-        <div id="level3" class="staggered-level" style="display: none;">
-          <div class="input-group">
-            <label>Stop Level 3</label>
-            <input class="stopLevel" data-level="3" type="number" placeholder="Stop Price" min="0" step="any" />
-          </div>
-          <div class="percent-group input-group">
-            <label>%</label>
-            <input class="stopPercent" data-level="3" type="number" placeholder="%" min="0" max="100" step="any" />
-          </div>
+    </section>
+
+    <section id="pricing" class="py-20 px-6">
+        <div class="max-w-3xl mx-auto bg-gradient-to-b from-slate-800 to-slate-900 border border-slate-700 rounded-3xl p-8 md:p-12 text-center shadow-2xl relative overflow-hidden">
+            <div class="absolute top-0 right-0 p-4 opacity-10">
+                <svg width="200" height="200" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zm0 9l2.5-1.25L12 8.5l-2.5 1.25L12 11zm0 2.5l-5-2.5-5 2.5L12 22l10-8.5-5-2.5-5 2.5z"/></svg>
+            </div>
+
+            <h2 class="text-3xl font-bold mb-4 text-white">Get Lifetime Access</h2>
+            <div class="flex justify-center items-baseline gap-2 mb-6">
+                <span class="text-5xl font-extrabold text-white">$29</span>
+                <span class="text-slate-500 font-medium">/ once</span>
+            </div>
+            
+            <ul class="text-left max-w-xs mx-auto space-y-3 mb-8 text-slate-300 text-sm">
+                <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-400"></i> Single File - Add to your mobile home screen</li>
+                <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-400"></i> Lifetime Updates</li>
+                <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-400"></i> No Subscription Fees</li>
+            </ul>
+
+            <a href="https://gum.co/YOUR_PRODUCT_LINK" target="_blank" class="block w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-500/25 transition-all transform hover:-translate-y-1">
+                Get Instant Access
+            </a>
+            
+            <p class="text-xs text-slate-500 mt-4">Secure payment via Gumroad. 100% Money-back guarantee.</p>
         </div>
-        <button type="button" id="addLevelBtn" class="add-level-btn">+ Add Level</button>
-      </div>
-
-      <div class="mode-group">
-        <label class="mode-option"><input type="radio" name="mode" value="equityRisk" checked /> Equity Risk %</label>
-        <label class="mode-option"><input type="radio" name="mode" value="positionSize" /> Position Size %</label>
-      </div>
-
-      <div id="equityRiskGroup">
-        <label>Equity Risk %</label>
-        <input type="range" id="equityRiskSlider" min="0.1" max="2" step="0.025" value="1" />
-        <div class="range-value" id="equityRiskVal">1%</div>
-      </div>
-
-      <div id="positionSizeGroup" style="display: none;">
-        <label>Position Size %</label>
-        <input type="range" id="positionSizeSlider" min="3" max="50" step="0.5" value="10" />
-        <div class="range-value" id="positionSizeVal">10%</div>
-      </div>
-
-
-      <!-- INSERTED: Strategy & Notes (between Position Size and Calculate) -->
-      <div id="strategyNotesBlock" style="margin-top:12px;">
-        <label for="entryStrategy" style="font-size:15px;">Strategy / Setup</label>
-        <select id="entryStrategy" style="width:100%;padding:8px;margin-top:4px;">
-          <option value="">(none)</option>
-          <option value="FB Breakout">FB Breakout</option>
-          <option value="21d Pullback">21d Pullback</option>
-          <option value="Add">Add</option>
-          <option value="Other">Other</option>
-        </select>
-        <input id="entryStrategyOther" type="text" placeholder="Other strategy"
-          style="margin-top:8px; width:100%; padding:8px; display:none;" />
-        <label for="entryNotes" style="margin-top:12px; font-size:15px;">Notes</label>
-        <textarea id="entryNotes" rows="2" style="width:100%; padding:8px; margin-top:4px;max-width:100%;box-sizing:border-box;resize:vertical;" placeholder="Short notes (trigger, setup, context...)"></textarea>
-      </div>
-      <button type="button" id="calculateBtn" class="btn">Calculate</button>
-      <button type="button" id="resetBtn" class="btn reset">Reset</button>
-      <button type="button" id="tradeLogBtn" class="btn trade-log">Trade Log</button>
-    </form>
-
-    <div id="results" class="results"></div>
-  </div>
-
-  <div id="tradeLogPage" class="page" style="display:none;">
-    <h2>Trade Log <button id="backBtn">Back</button></h2>
-    <input type="text" id="searchBar" class="search-bar" placeholder="Search by Ticker or Date..." aria-label="Search trades">
-    <button id="selectBtn" class="hidden">Select</button>
-    <button id="deleteSelectedBtn">Delete Selected</button>
-    <div class="summary-stats">
-      <span id="totalTrades">Total Trades: 0</span>
-      <span id="winRate">Win Rate: 0%</span>
-      <span id="avgR">Avg R: 0</span>
-    </div>
-    <table id="logTable">
-      <thead>
-        <tr>
-          <th data-sort="ticker">Ticker</th>
-          <th data-sort="date" class="sortable desc">Date</th>
-          <th data-sort="ecRisk" class="numeric">EC Risk %</th>
-          <th>Outcome</th>
-          <th data-sort="result" class="numeric">Result %</th>
-          <th data-sort="strategy" class="strategy-col">Strategy</th>
-          <th class="notes-col">Notes</th>
-        </tr>
-      </thead>
-      <tbody id="logTableBody"></tbody>
-    </table>
-    <button id="chartsBtn" class="btn charts">Charts</button>
-    <button id="exportBtn">Export Logs</button>
-    <div id="toast">Trade Added!</div>
-  </div>
-
-  <div id="chartsPage" class="page" style="display:none;">
-    <h2>Trade Charts <button id="chartsBackBtn">Back</button></h2>
-    <div class="benchmark-section">
-      <label>Benchmark Overlays</label>
-      <label><input type="checkbox" id="spyCb" value="SPY"> SPY</label>
-      <label><input type="checkbox" id="qqqCb" value="QQQ"> QQQ</label>
-      <label><input type="checkbox" id="qqqeCb" value="QQQE"> QQQE</label>
-      <label><input type="checkbox" id="ftseCb" value="^FTSE"> FTSE100</label>
-      <button id="updateBenchmarksBtn">Update Charts</button>
-    </div>
-    <div class="chart-container">
-      <canvas id="equityCurveChart"></canvas>
-    </div>
-    <div class="chart-container">
-      <canvas id="drawdownChart"></canvas>
-    </div>
-    <div class="chart-container">
-      <canvas id="rMultiplesChart"></canvas>
-    </div>
-    <div class="chart-container">
-      <canvas id="winLossPieChart"></canvas>
-    </div>
-  </div>
-
-  <script>
-    (() => {
-      const form = document.getElementById('tradeForm');
-      const accountsToggle = document.getElementById('accountsToggle');
-      const accountGrid = document.getElementById('accountGrid');
-      const accountCurrencySelect = document.getElementById('accountCurrency');
-      const tradeCurrencySelect = document.getElementById('tradeCurrency');
-      const stopSingle = document.querySelector('input[name="stopType"][value="single"]');
-      const stopStaggered = document.querySelector('input[name="stopType"][value="staggered"]');
-      const stopRow = document.getElementById('stopRow');
-      const staggeredStops = document.getElementById('staggeredStops');
-      const level3 = document.getElementById('level3');
-      const addLevelBtn = document.getElementById('addLevelBtn');
-      const modeEquityRisk = document.querySelector('input[name="mode"][value="equityRisk"]');
-      const modePositionSize = document.querySelector('input[name="mode"][value="positionSize"]');
-      const equityRiskGroup = document.getElementById('equityRiskGroup');
-      const positionSizeGroup = document.getElementById('positionSizeGroup');
-      const equityRiskSlider = document.getElementById('equityRiskSlider');
-      const equityRiskVal = document.getElementById('equityRiskVal');
-      const positionSizeSlider = document.getElementById('positionSizeSlider');
-      const positionSizeVal = document.getElementById('positionSizeVal');
-      const calculateBtn = document.getElementById('calculateBtn');
-      const resetBtn = document.getElementById('resetBtn');
-      const resultsDiv = document.getElementById('results');
-
-      let numStaggeredLevels = 2;
-      let lastEquityRisk = 0;
-      let lastTicker = '';
-
-      const accInputs = [
-        { id: 'acc1Size', labelId: 'acc1Label', defaultLabel: 'Acc 1' },
-        { id: 'acc2Size', labelId: 'acc2Label', defaultLabel: 'Acc 2' },
-        { id: 'acc3Size', labelId: 'acc3Label', defaultLabel: 'Acc 3' },
-        { id: 'acc4Size', labelId: 'acc4Label', defaultLabel: 'Acc 4' },
-        { id: 'acc5Size', labelId: 'acc5Label', defaultLabel: 'Acc 5' },
-        { id: 'acc6Size', labelId: 'acc6Label', defaultLabel: 'Acc 6' }
-      ];
-
-      const currencySymbols = {
-        GBP: '£',
-        USD: '$',
-        EUR: '€'
-      };
-
-      async function getExchangeRate(from, to) {
-        if (from === to) return 1;
-        try {
-          const response = await fetch(`https://api.frankfurter.app/latest?from=${from}&to=${to}`);
-          const data = await response.json();
-          return data.rates[to] || 1;
-        } catch (error) {
-          console.error('Error fetching exchange rate:', error);
-          return 1; // Fallback to 1 if error
-        }
-      }
-
-      function updateTradeCurrencyOptions() {
-        const accCurrency = accountCurrencySelect.value;
-        tradeCurrencySelect.innerHTML = '';
-        const currencies = ['GBP', 'USD', 'EUR'];
-        currencies.forEach(curr => {
-          if (curr !== accCurrency) {
-            const option = document.createElement('option');
-            option.value = curr;
-            option.textContent = `${curr} (${currencySymbols[curr]})`;
-            tradeCurrencySelect.appendChild(option);
-          }
-        });
-        const sameOption = document.createElement('option');
-        sameOption.value = accCurrency;
-        sameOption.textContent = `${accCurrency} (${currencySymbols[accCurrency]})`;
-        tradeCurrencySelect.appendChild(sameOption);
-        tradeCurrencySelect.value = localStorage.getItem('tradeCurrency') || accCurrency;
-      }
-
-      accountCurrencySelect.addEventListener('change', updateTradeCurrencyOptions);
-
-      accountsToggle.addEventListener('click', () => {
-        accountGrid.classList.toggle('expanded');
-        accountsToggle.classList.toggle('expanded');
-      });
-
-      stopSingle.addEventListener('change', () => {
-        if (stopSingle.checked) {
-          stopRow.style.display = 'flex';
-          staggeredStops.classList.remove('show');
-        }
-      });
-
-      stopStaggered.addEventListener('change', () => {
-        if (stopStaggered.checked) {
-          stopRow.style.display = 'none';
-          staggeredStops.classList.add('show');
-        }
-      });
-
-      addLevelBtn.addEventListener('click', () => {
-        if (numStaggeredLevels < 3) {
-          numStaggeredLevels++;
-          level3.style.display = 'flex';
-          addLevelBtn.style.display = 'none';
-        }
-      });
-
-      modeEquityRisk.addEventListener('change', () => {
-        if (modeEquityRisk.checked) {
-          equityRiskGroup.style.display = 'block';
-          positionSizeGroup.style.display = 'none';
-        }
-      });
-
-      modePositionSize.addEventListener('change', () => {
-        if (modePositionSize.checked) {
-          equityRiskGroup.style.display = 'none';
-          positionSizeGroup.style.display = 'block';
-        }
-      });
-
-      equityRiskSlider.addEventListener('input', () => {
-        equityRiskVal.textContent = `${equityRiskSlider.value}%`;
-      });
-
-      positionSizeSlider.addEventListener('input', () => {
-        positionSizeVal.textContent = `${positionSizeSlider.value}%`;
-      });
-
-      function formatNumber(num) {
-        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-      }
-
-      function initTabs() {
-        const tabBtns = document.querySelectorAll('.tab-btn');
-        const tabPanes = document.querySelectorAll('.tab-pane');
-        tabBtns.forEach((btn, index) => {
-          btn.addEventListener('click', () => {
-            tabBtns.forEach(b => b.classList.remove('active'));
-            tabPanes.forEach(p => p.classList.remove('active'));
-            btn.classList.add('active');
-            tabPanes[index].classList.add('active');
-          });
-        });
-      }
-
-      calculateBtn.addEventListener('click', async () => {
-        const mode = document.querySelector('input[name="mode"]:checked').value;
-        const purchasePrice = parseFloat(document.getElementById('purchasePrice').value);
-        const stopType = document.querySelector('input[name="stopType"]:checked').value;
-        const accountCurrency = accountCurrencySelect.value;
-        const tradeCurrency = tradeCurrencySelect.value;
-        const accountSymbol = currencySymbols[accountCurrency];
-        const tradeSymbol = currencySymbols[tradeCurrency];
-        lastTicker = document.getElementById('ticker').value.trim();
-
-        if (isNaN(purchasePrice) || purchasePrice <= 0) {
-          alert('Please enter a valid purchase price.');
-          return;
-        }
-
-        let avgStopLoss;
-        let percentToStop;
-        let riskPerShare;
-        let stops = [];
-
-        if (stopType === 'single') {
-          avgStopLoss = parseFloat(document.getElementById('stopLoss').value);
-          if (isNaN(avgStopLoss) || avgStopLoss >= purchasePrice) {
-            alert('Please enter a valid stop loss below purchase price.');
-            return;
-          }
-          percentToStop = Math.abs((purchasePrice - avgStopLoss) / purchasePrice * 100);
-          riskPerShare = Math.abs(purchasePrice - avgStopLoss);
-        } else {
-          let totalPct = 0;
-          for (let i = 1; i <= numStaggeredLevels; i++) {
-            const stopEl = document.querySelector(`.stopLevel[data-level="${i}"]`);
-            const pctEl = document.querySelector(`.stopPercent[data-level="${i}"]`);
-            const stop = parseFloat(stopEl.value);
-            const pct = parseFloat(pctEl.value);
-            if (isNaN(stop) || stop >= purchasePrice || isNaN(pct) || pct <= 0) {
-              alert(`Please enter valid stop level ${i} and percentage.`);
-              return;
-            }
-            stops.push({ stop, percent: pct });
-            totalPct += pct;
-          }
-          if (Math.abs(totalPct - 100) > 0.01) {
-            alert('Staggered percentages must sum to 100%.');
-            return;
-          }
-          avgStopLoss = stops.reduce((sum, s) => sum + s.stop * (s.percent / 100), 0);
-          percentToStop = Math.abs((purchasePrice - avgStopLoss) / purchasePrice * 100);
-          riskPerShare = Math.abs(purchasePrice - avgStopLoss);
-        }
-
-        const exchangeRate = await getExchangeRate(accountCurrency, tradeCurrency);
-
-        const accounts = accInputs.map(acc => {
-          const size = parseFloat(document.getElementById(acc.id).value);
-          const label = localStorage.getItem(acc.labelId) || acc.defaultLabel;
-          return { size, label };
-        }).filter(acc => !isNaN(acc.size) && acc.size > 0);
-
-        if (accounts.length === 0) {
-          alert('Please enter at least one account size.');
-          return;
-        }
-
-        const tabNav = document.createElement('div');
-        tabNav.classList.add('tab-nav');
-        const tabContent = document.createElement('div');
-        tabContent.classList.add('tab-content');
-
-        accounts.forEach((acc, index) => {
-          const accountSize = acc.size;
-          let riskAmount, positionSizePercent;
-
-          if (mode === 'equityRisk') {
-            const equityRisk = parseFloat(equityRiskSlider.value) / 100;
-            riskAmount = accountSize * equityRisk;
-            if (index === 0) lastEquityRisk = parseFloat(equityRiskSlider.value);
-          } else {
-            positionSizePercent = parseFloat(positionSizeSlider.value) / 100;
-            const positionSize = accountSize * positionSizePercent;
-            const positionSizeConverted = positionSize * exchangeRate;
-            const shares = Math.floor(positionSizeConverted / purchasePrice);
-            riskAmount = (shares * riskPerShare) / exchangeRate;
-            if (index === 0) lastEquityRisk = (riskAmount / accountSize) * 100;
-          }
-
-          const riskAmountConverted = riskAmount * exchangeRate;
-          let shares = Math.floor(riskAmountConverted / riskPerShare);
-
-          const positionSize = shares * purchasePrice;
-          positionSizePercent = mode === 'positionSize' ? parseFloat(positionSizeSlider.value) : (positionSize / (accountSize * exchangeRate)) * 100;
-
-          const derisk13Price = purchasePrice + (purchasePrice - avgStopLoss);
-          const derisk13Shares = Math.floor(shares / 3);
-
-          const derisk14Price = purchasePrice + (purchasePrice - avgStopLoss) * (4 / 3);
-          const derisk14Shares = Math.floor(shares / 4);
-
-          const tabBtn = document.createElement('button');
-          tabBtn.classList.add('tab-btn');
-          tabBtn.textContent = acc.label;
-          if (index === 0) tabBtn.classList.add('active');
-          tabNav.appendChild(tabBtn);
-
-          const stopLabel = stopType === 'single' ? 'Stop Loss' : 'Avg Stop Loss';
-
-          let staggeredHTML = '';
-          if (stopType === 'staggered') {
-            stops.forEach((s, idx) => {
-              const sharesToSell = Math.floor(shares * (s.percent / 100));
-              staggeredHTML += `
-                <div class="result-row"><span>Stop Level ${idx + 1}:</span> <span>${tradeSymbol}${formatNumber(s.stop.toFixed(2))} (Sell ${formatNumber(sharesToSell)})</span></div>
-              `;
-            });
-          }
-
-          const tabPane = document.createElement('div');
-          tabPane.classList.add('tab-pane');
-          if (index === 0) tabPane.classList.add('active');
-          tabPane.innerHTML = `
-            <div class="result-row"><span>Exchange Rate (${accountCurrency} to ${tradeCurrency}):</span> <span>${exchangeRate.toFixed(4)}</span></div>
-            <div class="result-row"><span>Risk Amount:</span> <span>${accountSymbol}${formatNumber(riskAmount.toFixed(2))}</span></div>
-            <div class="result-row"><span>Shares:</span> <span>${formatNumber(shares)}</span></div>
-            <div class="result-row"><span>Position Size:</span> <span>${tradeSymbol}${formatNumber(positionSize.toFixed(2))}</span></div>
-            <div class="result-row"><span>Position Size %:</span> <span>${positionSizePercent.toFixed(2)}%</span></div>
-            <div class="result-row"><span>${stopLabel}:</span> <span>${tradeSymbol}${formatNumber(avgStopLoss.toFixed(2))}</span></div>
-            ${staggeredHTML}
-            <div class="result-row"><span>% to Stop:</span> <span>${percentToStop.toFixed(2)}%</span></div>
-            <div class="result-row"><span>Derisk 1/3 (breakeven) at:</span> <span>${tradeSymbol}${formatNumber(derisk13Price.toFixed(2))}</span></div>
-            <div class="result-row"><span>Sell Shares (1/3):</span> <span>${formatNumber(derisk13Shares)}</span></div>
-            <div class="result-row"><span>Derisk 1/4 (breakeven) at:</span> <span>${tradeSymbol}${formatNumber(derisk14Price.toFixed(2))}</span></div>
-            <div class="result-row"><span>Sell Shares (1/4):</span> <span>${formatNumber(derisk14Shares)}</span></div>
-          `;
-          tabContent.appendChild(tabPane);
-        });
-
-        resultsDiv.innerHTML = '';
-        resultsDiv.appendChild(tabNav);
-        resultsDiv.appendChild(tabContent);
-        initTabs();
-        resultsDiv.style.display = 'block';
-
-        // Add 'Add to Trade Log' button
-        let addToLogBtn = document.getElementById('addToLogBtn');
-        if (!addToLogBtn) {
-          addToLogBtn = document.createElement('button');
-          addToLogBtn.id = 'addToLogBtn';
-          addToLogBtn.classList.add('btn');
-          addToLogBtn.textContent = 'Add to Trade Log';
-          resultsDiv.appendChild(addToLogBtn);
-        }
-        addToLogBtn.style.display = 'block';
-      });
-
-      resetBtn.addEventListener('click', () => {
-        // Reset trade-related fields only
-        document.getElementById('ticker').value = '';
-        document.getElementById('purchasePrice').value = '';
-        document.getElementById('stopLoss').value = '';
-        document.querySelectorAll('.stopLevel').forEach(el => el.value = '');
-        const percents = document.querySelectorAll('.stopPercent');
-        percents[0].value = 50;
-        percents[1].value = 50;
-        percents[2].value = '';
-        equityRiskSlider.value = 1;
-        equityRiskVal.textContent = '1%';
-        positionSizeSlider.value = 10;
-        positionSizeVal.textContent = '10%';
-        document.querySelector('input[name="mode"][value="equityRisk"]').checked = true;
-        equityRiskGroup.style.display = 'block';
-        positionSizeGroup.style.display = 'none';
-        document.querySelector('input[name="stopType"][value="single"]').checked = true;
-        stopRow.style.display = 'flex';
-        staggeredStops.classList.remove('show');
-        level3.style.display = 'none';
-        addLevelBtn.style.display = 'block';
-        numStaggeredLevels = 2;
-        tradeCurrencySelect.value = accountCurrencySelect.value;
-        resultsDiv.style.display = 'none';
-
-        // Remove trade-related items from localStorage
-        localStorage.removeItem('ticker');
-        localStorage.removeItem('purchasePrice');
-        localStorage.removeItem('stopLoss');
-        localStorage.removeItem('stopType');
-        localStorage.removeItem('numStaggeredLevels');
-        for (let i = 1; i <= 3; i++) {
-          localStorage.removeItem(`staggeredStop${i}`);
-          localStorage.removeItem(`staggeredPct${i}`);
-        }
-        localStorage.removeItem('equityRisk');
-        localStorage.removeItem('positionSize');
-        localStorage.removeItem('mode');
-        localStorage.removeItem('tradeCurrency');
-      });
-
-      function loadSavedData() {
-        const savedAccCurrency = localStorage.getItem('accountCurrency') || 'GBP';
-        accountCurrencySelect.value = savedAccCurrency;
-
-        const savedStopType = localStorage.getItem('stopType') || 'single';
-        document.querySelector(`input[name="stopType"][value="${savedStopType}"]`).checked = true;
-        stopRow.style.display = savedStopType === 'single' ? 'flex' : 'none';
-        staggeredStops.classList.toggle('show', savedStopType === 'staggered');
-
-        if (savedStopType === 'staggered') {
-          numStaggeredLevels = parseInt(localStorage.getItem('numStaggeredLevels') || 2);
-          if (numStaggeredLevels === 3) {
-            level3.style.display = 'flex';
-            addLevelBtn.style.display = 'none';
-          }
-          for (let i = 1; i <= numStaggeredLevels; i++) {
-            const savedStop = localStorage.getItem(`staggeredStop${i}`);
-            const savedPct = localStorage.getItem(`staggeredPct${i}`);
-            if (savedStop) document.querySelector(`.stopLevel[data-level="${i}"]`).value = savedStop;
-            if (savedPct) document.querySelector(`.stopPercent[data-level="${i}"]`).value = savedPct;
-          }
-        } else {
-          const savedStopLoss = localStorage.getItem('stopLoss');
-          if (savedStopLoss) document.getElementById('stopLoss').value = savedStopLoss;
-        }
-
-        accInputs.forEach(acc => {
-          const savedSize = localStorage.getItem(acc.id);
-          if (savedSize) document.getElementById(acc.id).value = savedSize;
-          const savedLabel = localStorage.getItem(acc.labelId);
-          if (savedLabel) document.getElementById(acc.labelId).innerText = savedLabel || acc.defaultLabel;
-        });
-
-        const savedTicker = localStorage.getItem('ticker');
-        if (savedTicker) document.getElementById('ticker').value = savedTicker;
-
-        const savedPurchase = localStorage.getItem('purchasePrice');
-        if (savedPurchase) document.getElementById('purchasePrice').value = savedPurchase;
-
-        const savedRisk = localStorage.getItem('equityRisk');
-        if (savedRisk) {
-          equityRiskSlider.value = savedRisk;
-          equityRiskVal.textContent = `${savedRisk}%`;
-        }
-
-        const savedPosition = localStorage.getItem('positionSize');
-        if (savedPosition) {
-          positionSizeSlider.value = savedPosition;
-          positionSizeVal.textContent = `${savedPosition}%`;
-        }
-
-        const savedMode = localStorage.getItem('mode') || 'equityRisk';
-        document.querySelector(`input[name="mode"][value="${savedMode}"]`).checked = true;
-        equityRiskGroup.style.display = savedMode === 'equityRisk' ? 'block' : 'none';
-        positionSizeGroup.style.display = savedMode === 'positionSize' ? 'block' : 'none';
-
-        const accountsExpanded = localStorage.getItem('accountsExpanded') === 'true';
-        if (accountsExpanded) {
-          accountGrid.classList.add('expanded');
-          accountsToggle.classList.add('expanded');
-        }
-
-        // Update trade options after loading
-        updateTradeCurrencyOptions();
-      }
-      loadSavedData();
-
-      form.addEventListener('input', () => {
-        localStorage.setItem('accountCurrency', accountCurrencySelect.value);
-        localStorage.setItem('stopType', document.querySelector('input[name="stopType"]:checked').value);
-        if (document.querySelector('input[name="stopType"]:checked').value === 'staggered') {
-          localStorage.setItem('numStaggeredLevels', numStaggeredLevels);
-          for (let i = 1; i <= numStaggeredLevels; i++) {
-            localStorage.setItem(`staggeredStop${i}`, document.querySelector(`.stopLevel[data-level="${i}"]`).value);
-            localStorage.setItem(`staggeredPct${i}`, document.querySelector(`.stopPercent[data-level="${i}"]`).value);
-          }
-        } else {
-          localStorage.setItem('stopLoss', document.getElementById('stopLoss').value);
-        }
-        accInputs.forEach(acc => {
-          localStorage.setItem(acc.id, document.getElementById(acc.id).value);
-          localStorage.setItem(acc.labelId, document.getElementById(acc.labelId).innerText.trim());
-        });
-        localStorage.setItem('ticker', document.getElementById('ticker').value);
-        localStorage.setItem('purchasePrice', document.getElementById('purchasePrice').value);
-        localStorage.setItem('equityRisk', equityRiskSlider.value);
-        localStorage.setItem('positionSize', positionSizeSlider.value);
-        localStorage.setItem('mode', document.querySelector('input[name="mode"]:checked').value);
-      });
-
-      accountsToggle.addEventListener('click', () => {
-        const isExpanded = accountGrid.classList.contains('expanded');
-        localStorage.setItem('accountsExpanded', isExpanded);
-      });
-
-      window.openHelp = () => document.getElementById('helpModal').style.display = 'block';
-      window.closeHelp = () => document.getElementById('helpModal').style.display = 'none';
-      document.querySelector('.close').addEventListener('click', closeHelp);
-      window.addEventListener('click', (e) => {
-        if (e.target === document.getElementById('helpModal')) closeHelp();
-      });
-
-      // New Trade Log Functionality
-      const mainPage = document.getElementById('mainPage');
-      const tradeLogPage = document.getElementById('tradeLogPage');
-      const chartsPage = document.getElementById('chartsPage');
-      const tradeLogBtn = document.getElementById('tradeLogBtn');
-      const backBtn = document.getElementById('backBtn');
-      const chartsBtn = document.getElementById('chartsBtn');
-      const chartsBackBtn = document.getElementById('chartsBackBtn');
-      const logTableBody = document.getElementById('logTableBody');
-      const searchBar = document.getElementById('searchBar');
-      const selectBtn = document.getElementById('selectBtn');
-      const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
-      const exportBtn = document.getElementById('exportBtn');
-      const totalTrades = document.getElementById('totalTrades');
-      const winRate = document.getElementById('winRate');
-      const avgR = document.getElementById('avgR');
-      const toast = document.getElementById('toast');
-
-      const LOG_STORAGE_KEY = 'tradeLogs';
-      let sortColumn = 'date';
-      let sortDirection = 'desc';
-      let multiSelectMode = false;
-      let selectedRows = new Set();
-      let equityChart, drawdownChart, rMultiplesChart, winLossChart;
-
-      // Benchmark configurations
-      const benchmarks = {
-        SPY: { color: '#007AFF', name: 'SPY' },
-        QQQ: { color: '#34C759', name: 'QQQ' },
-        QQQE: { color: '#FF9500', name: 'QQQE' },
-        '^FTSE': { color: '#AF52DE', name: 'FTSE100' }
-      };
-
-      // Fetch benchmark data
-      async function fetchBenchmarkData(ticker, startDate, endDate) {
-        try {
-          const apiKey = 'BEVOFjMu0YaIrO0pym9ZbjgvCY8qDjoJ'; // Replace with your Polygon API key
-          let polygonTicker = ticker;
-          if (ticker === '^FTSE') {
-            polygonTicker = 'I:FTSE';
-          }
-          const url = `https://api.polygon.io/v2/aggs/ticker/${polygonTicker}/range/1/day/${startDate}/${endDate}?adjusted=true&sort=asc&limit=50000&apiKey=${apiKey}`;
-          const response = await fetch(url);
-          const data = await response.json();
-          if (!data.results) {
-            console.error(`No results for ${ticker}`);
-            return {};
-          }
-          const benchmarkData = {};
-          data.results.forEach(result => {
-            const date = new Date(result.t).toISOString().split('T')[0];
-            benchmarkData[date] = result.c; // close price
-          });
-          return benchmarkData;
-        } catch (error) {
-          console.error(`Error fetching ${ticker}:`, error);
-          return {};
-        }
-      }
-
-      // Get benchmark value for a trade date (latest available <= date)
-      function getBenchmarkValue(benchmarkData, tradeDate) {
-        const date = new Date(tradeDate);
-        let latestClose = null;
-        let latestDate = null;
-        for (const d in benchmarkData) {
-          const bDate = new Date(d);
-          if (bDate <= date && (!latestDate || bDate > latestDate)) {
-            latestClose = benchmarkData[d];
-            latestDate = bDate;
-          }
-        }
-        return latestClose;
-      }
-
-      // Compute percentage returns and drawdowns for benchmark
-      function computeBenchmarkMetrics(benchmarkData, tradeDates) {
-        const returns = [];
-        const drawdowns = [];
-        let equity = 1;
-        let peak = 1;
-        returns.push(0);
-        drawdowns.push(0);
-        for (let i = 1; i < tradeDates.length; i++) {
-          const prevDate = tradeDates[i-1];
-          const currDate = tradeDates[i];
-          const prevValue = getBenchmarkValue(benchmarkData, prevDate);
-          const currValue = getBenchmarkValue(benchmarkData, currDate);
-          let multiplier = 1;
-          if (prevValue && currValue && prevValue !== 0) {
-            multiplier = currValue / prevValue;
-          }
-          equity *= multiplier;
-          peak = Math.max(peak, equity);
-          returns.push((equity - 1) * 100);
-          drawdowns.push((equity - peak) / peak * 100);
-        }
-        return { returns, drawdowns };
-      }
-
-      // Load logs from localStorage
-      function loadLogs(filter = '') {
-        let originalLogs = JSON.parse(localStorage.getItem(LOG_STORAGE_KEY)) || [];
-        originalLogs = originalLogs.map((log, origIndex) => ({ ...log, _origIndex: origIndex }));
-        let logs = originalLogs;
-        if (filter) {
-          const lowerFilter = filter.toLowerCase();
-          logs = logs.filter(log => log.ticker.toLowerCase().includes(lowerFilter) || log.date.includes(lowerFilter));
-        }
-        let sortedLogs = sortLogs(logs);
-        logTableBody.innerHTML = '';
-        sortedLogs.forEach((log, sortedIndex) => {
-          addLogRow(log, sortedIndex);
-        });
-        updateSummaryStats(sortedLogs);
-        if (multiSelectMode) {
-          document.querySelectorAll('.multi-select-checkbox').forEach(checkbox => checkbox.classList.remove('hidden'));
-          deleteSelectedBtn.style.display = 'block';
-        } else {
-          document.querySelectorAll('.multi-select-checkbox').forEach(checkbox => checkbox.classList.add('hidden'));
-          deleteSelectedBtn.style.display = 'none';
-        }
-        return sortedLogs;
-      }
-
-      // Sort logs
-      function sortLogs(logs) {
-        return logs.sort((a, b) => {
-          let valA = a[sortColumn];
-          let valB = b[sortColumn];
-          if (sortColumn === 'date') {
-            valA = new Date(valA);
-            valB = new Date(valB);
-          } else if (sortColumn === 'result') {
-            valA = a.result || 0;
-            valB = b.result || 0;
-          }
-          if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
-          if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
-          return 0;
-        });
-      }
-
-      // Update summary stats
-      function updateSummaryStats(logs) {
-        const total = logs.length;
-        const wins = logs.filter(log => log.outcome === 'profit').length;
-        const winPct = total > 0 ? (wins / total * 100).toFixed(1) : 0;
-        const rValues = logs.filter(log => log.outcome && log.result !== null).map(log => log.result / log.ecRisk);
-        const avgRVal = rValues.length > 0 ? (rValues.reduce((sum, r) => sum + r, 0) / rValues.length).toFixed(2) : 0;
-
-        totalTrades.textContent = `Total Trades: ${total}`;
-        winRate.textContent = `Win Rate: ${winPct}%`;
-        avgR.textContent = `Avg R: ${avgRVal}`;
-      }
-
-      // Update charts
-      async function updateCharts(logs) {
-        // Destroy existing charts if they exist
-        if (equityChart) equityChart.destroy();
-        if (drawdownChart) drawdownChart.destroy();
-        if (rMultiplesChart) rMultiplesChart.destroy();
-        if (winLossChart) winLossChart.destroy();
-
-        if (logs.length === 0) return;
-
-        let sortedLogs = [...logs].sort((a, b) => new Date(a.date) - new Date(b.date));
-        const tradeDates = sortedLogs.map(log => log.date).filter(date => date);
-        const minDate = tradeDates[0];
-        const maxDate = tradeDates[tradeDates.length - 1];
-
-        // Fetch benchmark data for selected benchmarks
-        const selectedBenchmarks = [];
-        if (document.getElementById('spyCb').checked) selectedBenchmarks.push('SPY');
-        if (document.getElementById('qqqCb').checked) selectedBenchmarks.push('QQQ');
-        if (document.getElementById('qqqeCb').checked) selectedBenchmarks.push('QQQE');
-        if (document.getElementById('ftseCb').checked) selectedBenchmarks.push('^FTSE');
-
-        const benchmarkData = {};
-        for (const ticker of selectedBenchmarks) {
-          benchmarkData[ticker] = await fetchBenchmarkData(ticker, minDate, maxDate);
-        }
-
-        // User equity and drawdown with compounding
-        let userEquity = 1;
-        let userPeak = 1;
-        const userReturns = [];
-        const userDrawdowns = [];
-        sortedLogs.forEach(log => {
-          const result = log.result ?? 0;
-          userEquity *= (1 + result / 100);
-          userPeak = Math.max(userPeak, userEquity);
-          userReturns.push((userEquity - 1) * 100);
-          userDrawdowns.push((userEquity - userPeak) / userPeak * 100);
-        });
-
-        // Equity Curve Chart (Line)
-        const equityCtx = document.getElementById('equityCurveChart').getContext('2d');
-        const equityData = {
-          labels: tradeDates,
-          datasets: [{
-            label: 'Equity Curve (%)',
-            data: userReturns.length > 0 ? userReturns : [0],
-            borderColor: '#34c759',
-            backgroundColor: 'rgba(52, 199, 89, 0.2)',
-            fill: true,
-            yAxisID: 'y'
-          }]
-        };
-
-        // Add benchmark datasets to equity chart
-        selectedBenchmarks.forEach(ticker => {
-          const { returns } = computeBenchmarkMetrics(benchmarkData[ticker], tradeDates);
-          equityData.datasets.push({
-            label: `${benchmarks[ticker].name} (%)`,
-            data: returns,
-            borderColor: benchmarks[ticker].color,
-            backgroundColor: benchmarks[ticker].color + '20',
-            fill: false,
-            yAxisID: 'y',
-            borderDash: [5, 5]
-          });
-        });
-
-        equityChart = new Chart(equityCtx, {
-          type: 'line',
-          data: equityData,
-          options: {
-            responsive: true,
-            scales: {
-              y: {
-                beginAtZero: true,
-                type: 'linear',
-                display: true,
-                position: 'left',
-              }
-            }
-          }
-        });
-
-        // Drawdown Chart (Line)
-        const drawdownCtx = document.getElementById('drawdownChart').getContext('2d');
-        const drawdownData = {
-          labels: tradeDates,
-          datasets: [{
-            label: 'Drawdown (%)',
-            data: userDrawdowns,
-            borderColor: '#ff3b30',
-            backgroundColor: 'rgba(255, 59, 48, 0.2)',
-            fill: true,
-            yAxisID: 'y'
-          }]
-        };
-
-        // Add benchmark drawdowns
-        selectedBenchmarks.forEach(ticker => {
-          const { drawdowns } = computeBenchmarkMetrics(benchmarkData[ticker], tradeDates);
-          drawdownData.datasets.push({
-            label: `${benchmarks[ticker].name} Drawdown (%)`,
-            data: drawdowns,
-            borderColor: benchmarks[ticker].color,
-            backgroundColor: benchmarks[ticker].color + '20',
-            fill: false,
-            yAxisID: 'y',
-            borderDash: [5, 5]
-          });
-        });
-
-        drawdownChart = new Chart(drawdownCtx, {
-          type: 'line',
-          data: drawdownData,
-          options: {
-            responsive: true,
-            scales: {
-              y: {
-                beginAtZero: false,
-                type: 'linear',
-                display: true,
-                position: 'left',
-              }
-            }
-          }
-        });
-
-        // R-Multiples Bar Chart
-        const rMultiplesCtx = document.getElementById('rMultiplesChart').getContext('2d');
-        const rMultiples = sortedLogs.filter(log => log.outcome && log.result !== null).map(log => log.result / log.ecRisk);
-        rMultiplesChart = new Chart(rMultiplesCtx, {
-          type: 'bar',
-          data: {
-            labels: sortedLogs.filter(log => log.outcome && log.result !== null).map(log => log.ticker),
-            datasets: [{
-              label: 'R-Multiples',
-              data: rMultiples,
-              backgroundColor: rMultiples.map(r => r > 0 ? '#34c759' : '#ff3b30')
-            }]
-          },
-          options: {
-            responsive: true,
-            scales: {
-              y: {
-                beginAtZero: true
-              }
-            }
-          }
-        });
-
-        // Win/Loss Pie Chart
-        const winLossCtx = document.getElementById('winLossPieChart').getContext('2d');
-        const wins = logs.filter(log => log.outcome === 'profit').length;
-        const losses = logs.filter(log => log.outcome === 'loss').length;
-        winLossChart = new Chart(winLossCtx, {
-          type: 'pie',
-          data: {
-            labels: ['Wins', 'Losses'],
-            datasets: [{
-              data: [wins, losses],
-              backgroundColor: ['#34c759', '#ff3b30']
-            }]
-          },
-          options: {
-            responsive: true
-          }
-        });
-      }
-
-      // Add row to table
-      function addLogRow(log, sortedIndex) {
-        const outcomeDisplay = log.outcome ? (log.outcome === 'profit' ? '✓' : '✗') : '-';
-        const outcomeClass = log.outcome ? (log.outcome === 'profit' ? 'outcome-tick' : 'outcome-x') : '';
-        let resultDisplay = log.result !== null ? log.result.toFixed(3) : '-';
-        let resultClass = '';
-        if (log.result !== null) {
-          resultClass = log.result > 0 ? 'result-positive' : (log.result < 0 ? 'result-negative' : '');
-        }
-
-        const tr = document.createElement('tr');
-        tr.dataset.sortedIndex = sortedIndex;
-        tr.dataset.origIndex = log._origIndex;
-        tr.innerHTML = `
-          <td class="multi-select-checkbox hidden"><input type="checkbox" class="multi-select-checkbox" onclick="toggleSelect(${sortedIndex})"></td>
-          <td>${log.ticker}</td>
-          <td>${log.date}</td>
-          <td class="numeric">${log.ecRisk.toFixed(3)}</td>
-          <td class="${outcomeClass}">${outcomeDisplay}</td>
-          <td class="numeric ${resultClass}">${resultDisplay}</td>
-          <td>${log.strategy || ""}</td>
-          <td>${log.notes ? (log.notes.length>80 ? log.notes.substring(0,77) + "..." : log.notes) : ""}</td>
-        `;
-        logTableBody.appendChild(tr);
-      }
-
-      // Toggle select for multi-select
-      window.toggleSelect = (sortedIndex) => {
-        if (selectedRows.has(sortedIndex)) {
-          selectedRows.delete(sortedIndex);
-        } else {
-          selectedRows.add(sortedIndex);
-        }
-      };
-
-      // Delete selected
-      deleteSelectedBtn.addEventListener('click', () => {
-        if (confirm('Delete selected entries?')) {
-          let logs = JSON.parse(localStorage.getItem(LOG_STORAGE_KEY)) || [];
-          const toDelete = Array.from(selectedRows).sort((a, b) => b - a); // delete from end
-          toDelete.forEach(sortedIndex => {
-            const row = logTableBody.rows[sortedIndex];
-            const origIndex = parseInt(row.dataset.origIndex);
-            logs.splice(origIndex, 1);
-          });
-          localStorage.setItem(LOG_STORAGE_KEY, JSON.stringify(logs));
-          selectedRows.clear();
-          loadLogs(searchBar.value);
-          showToast('Selected Trades Deleted!');
-        }
-      });
-
-      // Edit row
-      window.editRow = (sortedIndex) => {
-        const row = logTableBody.rows[sortedIndex];
-
-        // Ticker
-        const tickerVal = row.cells[1].innerText;
-        row.cells[1].innerHTML = `<input type="text" value="${tickerVal}">`;
-
-        // Date
-        const dateVal = row.cells[2].innerText;
-        row.cells[2].innerHTML = `<input type="date" value="${dateVal}">`;
-
-        // EC Risk
-        const ecRiskVal = row.cells[3].innerText;
-        row.cells[3].innerHTML = `<input type="number" step="0.01" min="0" value="${ecRiskVal}">`;
-
-        // Outcome
-        const outcomeVal = row.cells[4].innerText === '✓' ? 'profit' : (row.cells[4].innerText === '✗' ? 'loss' : '');
-        row.cells[4].innerHTML = `<select><option value="">-</option><option value="profit" ${outcomeVal === 'profit' ? 'selected' : ''}>✓ (Profit)</option><option value="loss" ${outcomeVal === 'loss' ? 'selected' : ''}>✗ (Loss)</option></select>`;
-        row.cells[4].className = '';
-
-        // Result
-        const resultVal = row.cells[5].innerText === '-' ? '' : row.cells[5].innerText;
-        row.cells[5].innerHTML = `<input type="number" step="0.01" value="${resultVal}">`;
-
-        // Buttons
-        row.cells[6].querySelector('.edit-btn').classList.add('hidden');
-        row.cells[6].querySelector('.save-btn').classList.remove('hidden');
-        row.cells[6].querySelector('.cancel-btn').classList.remove('hidden');
-      };
-
-      // Cancel edit
-      window.cancelEdit = (sortedIndex) => {
-        loadLogs(searchBar.value); // Reload to revert changes
-      };
-
-      // Save edited row
-      window.saveRow = (sortedIndex) => {
-        const row = logTableBody.rows[sortedIndex];
-        const origIndex = parseInt(row.dataset.origIndex);
-
-        // Get values
-        const tickerInput = row.cells[1].querySelector('input');
-        const ticker = tickerInput.value.trim();
-
-        const dateInput = row.cells[2].querySelector('input');
-        const date = dateInput.value;
-
-        const ecRiskInput = row.cells[3].querySelector('input');
-        const ecRisk = parseFloat(ecRiskInput.value);
-
-        const outcomeSelect = row.cells[4].querySelector('select');
-        const outcome = outcomeSelect.value || null;
-
-        const resultInput = row.cells[5].querySelector('input');
-        const resultVal = resultInput.value.trim();
-        const result = resultVal ? parseFloat(resultVal) : null;
-
-        // Validate
-        if (!ticker || !date || isNaN(ecRisk) || (result !== null && isNaN(result))) {
-          alert('Invalid data. Please correct.');
-          return;
-        }
-
-        // Save to storage
-        const logs = JSON.parse(localStorage.getItem(LOG_STORAGE_KEY)) || [];
-        logs[origIndex] = { ticker, date, ecRisk, outcome, result };
-        localStorage.setItem(LOG_STORAGE_KEY, JSON.stringify(logs));
-
-        loadLogs(searchBar.value);
-        showToast('Trade Updated!');
-      };
-
-      // Delete row
-      window.deleteRow = (sortedIndex) => {
-        if (confirm('Delete this entry?')) {
-          const row = logTableBody.rows[sortedIndex];
-          const origIndex = parseInt(row.dataset.origIndex);
-          const logs = JSON.parse(localStorage.getItem(LOG_STORAGE_KEY)) || [];
-          logs.splice(origIndex, 1);
-          localStorage.setItem(LOG_STORAGE_KEY, JSON.stringify(logs));
-          loadLogs(searchBar.value);
-          showToast('Trade Deleted!');
-        }
-      };
-
-      // Show toast
-      function showToast(message) {
-        toast.textContent = message;
-        toast.classList.add('show');
-        setTimeout(() => toast.classList.remove('show'), 2000);
-      }
-
-      // Get today's date
-      function getTodayDate() {
-        const today = new Date();
-        return today.toISOString().split('T')[0];
-      }
-
-      // Search bar
-      searchBar.addEventListener('input', () => loadLogs(searchBar.value));
-
-      // Sortable headers
-      document.querySelectorAll('#logTable th[data-sort]').forEach(th => {
-        th.addEventListener('click', () => {
-          const column = th.dataset.sort;
-          if (column === sortColumn) {
-            sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
-          } else {
-            sortColumn = column;
-            sortDirection = 'asc';
-          }
-          document.querySelectorAll('#logTable th').forEach(header => header.classList.remove('asc', 'desc'));
-          th.classList.add(sortDirection);
-          loadLogs(searchBar.value);
-        });
-      });
-
-      // Multi-select mode
-      selectBtn.addEventListener('click', () => {
-        multiSelectMode = !multiSelectMode;
-        selectBtn.textContent = multiSelectMode ? 'Cancel' : 'Select';
-        selectedRows.clear();
-        loadLogs(searchBar.value);
-      });
-
-      // Export logs
-      exportBtn.addEventListener('click', () => {
-        const logs = JSON.parse(localStorage.getItem(LOG_STORAGE_KEY)) || [];
-        const csv = 'Ticker,Date,EC Risk %,Outcome,Result %\n' + logs.map(log => `${log.ticker},${log.date},${log.ecRisk},${log.outcome || ''},${log.result || ''}`).join('\n');
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'trade_logs.csv';
-        a.click();
-        URL.revokeObjectURL(url);
-      });
-
-      // Swipe-to-delete
-      let touchStartX = 0;
-      logTableBody.addEventListener('touchstart', e => {
-        touchStartX = e.changedTouches[0].screenX;
-      });
-      logTableBody.addEventListener('touchend', e => {
-        const touchEndX = e.changedTouches[0].screenX;
-        if (touchStartX - touchEndX > 50) { // Swipe left
-          const row = e.target.closest('tr');
-          if (row) {
-            const sortedIndex = parseInt(row.dataset.sortedIndex);
-            deleteRow(sortedIndex);
-          }
-        }
-      });
-
-      // Navigation and initial load
-      tradeLogBtn.addEventListener('click', () => {
-        mainPage.style.display = 'none';
-        tradeLogPage.style.display = 'block';
-        loadLogs();
-      });
-
-      backBtn.addEventListener('click', () => {
-        tradeLogPage.style.display = 'none';
-        mainPage.style.display = 'block';
-        multiSelectMode = false;
-        selectBtn.textContent = 'Select';
-        selectBtn.classList.add('hidden');
-        deleteSelectedBtn.style.display = 'none';
-      });
-
-      // Charts navigation
-      chartsBtn.addEventListener('click', () => {
-        tradeLogPage.style.display = 'none';
-        chartsPage.style.display = 'block';
-        const logs = loadLogs(); // Reload logs to ensure latest data for charts
-        updateCharts(logs);
-      });
-
-      chartsBackBtn.addEventListener('click', () => {
-        chartsPage.style.display = 'none';
-        tradeLogPage.style.display = 'block';
-      });
-
-      // Update benchmarks button
-      document.getElementById('updateBenchmarksBtn').addEventListener('click', () => {
-        const logs = loadLogs();
-        updateCharts(logs);
-      });
-
-      // Add to Trade Log button logic
-      resultsDiv.addEventListener('click', (e) => {
-        if (e.target.id === 'addToLogBtn') {
-          mainPage.style.display = 'none';
-          tradeLogPage.style.display = 'block';
-          const newLog = {
-            ticker: lastTicker,
-            date: getTodayDate(),
-            ecRisk: lastEquityRisk,
-            outcome: null,
-            result: null,
-            strategy: (function(){ try { var s = document.getElementById('entryStrategy'); if(s){ var v=s.value; if(v==='Other'){ var o=document.getElementById('entryStrategyOther'); return o? (o.value||null): null; } return v||null; } } catch(e){} return null; })(),
-            notes: (function(){ try { var n = document.getElementById('entryNotes'); return n? (n.value||'').trim() : null; } catch(e){} return null; })()
-          };
-          const logs = JSON.parse(localStorage.getItem(LOG_STORAGE_KEY)) || [];
-          logs.push(newLog);
-          localStorage.setItem(LOG_STORAGE_KEY, JSON.stringify(logs));
-          loadLogs();
-          showToast('Trade Added to Log!');
-        }
-      });
-    })();
-  </script>
-
-
-
-<script>
-(function(){
-  // Delegate clicks on table rows to open edit page
-  const tbody = document.getElementById('logTableBody');
-  if(tbody){
-    tbody.addEventListener('click', function(e){
-      // ignore clicks on buttons or inputs
-      if(e.target.closest('button') || e.target.closest('input') || e.target.closest('a')) return;
-      const tr = e.target.closest('tr');
-      if(!tr) return;
-      const idx = tr.dataset.origIndex || tr.getAttribute('data-orig-index') || tr.getAttribute('data-origIndex');
-      if(idx === undefined || idx === null) return;
-      // navigate to edit page with index
-      window.location.href = 'trade_edit.html?index=' + encodeURIComponent(idx);
-    });
-  }
-})();
-</script>
-
-  <script>
-document.addEventListener("DOMContentLoaded", function() {
-    const hash = window.location.hash.replace('#','');
-
-    if (hash) {
-        const targetPage = document.getElementById(hash);
-        if (targetPage) {
-            // Hide all pages
-            document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
-            // Show the target page
-            targetPage.style.display = 'block';
-        }
-    }
-});
-</script>
-
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-    const hash = window.location.hash.replace('#', '');
-
-    if (hash) {
-        const targetPage = document.getElementById(hash);
-        if (targetPage) {
-            document.querySelectorAll('.page').forEach(p => {
-                p.style.display = 'none';
-            });
-            targetPage.style.display = 'block';
-        }
-    }
-});
-</script>
-
+    </section>
+
+    <footer class="py-12 text-center border-t border-slate-800">
+        <div class="flex justify-center gap-8 mb-6 max-w-2xl mx-auto px-6">
+            <div class="text-center">
+                <i data-lucide="lock" class="w-5 h-5 text-slate-500 mx-auto mb-2"></i>
+                <span class="text-[10px] text-slate-400 uppercase font-bold block">Local Storage</span>
+            </div>
+            <div class="text-center">
+                <i data-lucide="download-cloud" class="w-5 h-5 text-slate-500 mx-auto mb-2"></i>
+                <span class="text-[10px] text-slate-400 uppercase font-bold block">JSON Backup</span>
+            </div>
+            <div class="text-center">
+                <i data-lucide="file-spreadsheet" class="w-5 h-5 text-slate-500 mx-auto mb-2"></i>
+                <span class="text-[10px] text-slate-400 uppercase font-bold block">CSV Export</span>
+            </div>
+        </div>
+        <p class="text-xs text-slate-600">© 2025 Risk Desk. All rights reserved.</p>
+    </footer>
+
+    <script>
+        lucide.createIcons();
+    </script>
 </body>
 </html>
-
