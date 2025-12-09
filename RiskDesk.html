@@ -1607,7 +1607,7 @@ const app = {
         this.updateHeatWidget();
     },
 
-    async calculateOrUpdate() {
+	async calculateOrUpdate() {
         const ticker = document.getElementById('ticker').value.toUpperCase();
         const entry = parseFloat(document.getElementById('purchasePrice').value);
         const direction = this.data.settings.direction;
@@ -1637,6 +1637,9 @@ const app = {
         // Rate Logic: Global Base -> Trade Ccy
         const baseCcy = this.data.settings.baseCurrency;
         const tradeCcy = document.getElementById('tradeCurrency').value;
+        const baseSym = this.getSymbol(baseCcy);  // <--- NEW: Get Symbol (e.g. £)
+        const tradeSym = this.getSymbol(tradeCcy); // <--- NEW: Get Symbol (e.g. $)
+
         let rate = 1;
         
         if(baseCcy !== tradeCcy) {
@@ -1680,7 +1683,6 @@ const app = {
             </div>
         </div>`;
 
-        // Capture implied risk for Heat widget
         let impliedRiskPct = 0;
 
         html += `<div class="space-y-3">`;
@@ -1701,22 +1703,20 @@ const app = {
                 const totalPosValueTradeCcy = shares * entry;
                 const totalPosValueBaseCcy = totalPosValueTradeCcy / rate;
                 posSizePct = (totalPosValueBaseCcy / acc.size) * 100;
-                eqRiskPct = this.data.settings.riskValue; // Known constant
+                eqRiskPct = this.data.settings.riskValue; 
                 impliedRiskPct = eqRiskPct; 
             } else {
                 // Position Size Mode
                 const posPct = this.data.settings.riskValue / 100;
                 posSizePct = this.data.settings.riskValue;
-                posSize = acc.size * posPct * rate; // Trade Ccy target
+                posSize = acc.size * posPct * rate; 
                 shares = Math.floor(posSize / entry);
                 
-                // Back-calculate true risk
                 const totalRiskInTradeCcy = shares * riskPerShare;
                 const totalRiskInBaseCcy = totalRiskInTradeCcy / rate;
                 eqRiskPct = (totalRiskInBaseCcy / acc.size) * 100;
                 riskAmt = totalRiskInBaseCcy;
                 
-                // Store implied risk (first valid account usually reps the strategy)
                 if(impliedRiskPct === 0) impliedRiskPct = eqRiskPct; 
             }
 
@@ -1729,6 +1729,7 @@ const app = {
             
             const badge = acc.isMaster ? '<span class="text-[8px] bg-amber-500 text-black px-1 rounded font-bold">MASTER</span>' : '';
 
+            // --- UI UPDATE: Correct Symbols Used Below ---
             html += `
             <div class="bg-slate-800 p-3 rounded-lg border-l-4 ${borderClass}">
                 <div class="flex justify-between items-center mb-1">
@@ -1736,7 +1737,7 @@ const app = {
                          <span class="font-bold text-slate-300">${acc.name}</span>
                          ${badge}
                     </div>
-                    <span class="text-xs font-mono text-slate-500">Size: ${acc.size.toLocaleString()}</span>
+                    <span class="text-xs font-mono text-slate-500">Size: ${baseSym}${acc.size.toLocaleString()}</span>
                 </div>
                 <div class="grid grid-cols-4 gap-2 text-center mb-2">
                     <div class="bg-slate-900/50 rounded p-1">
@@ -1745,15 +1746,14 @@ const app = {
                     </div>
                     <div class="bg-slate-900/50 rounded p-1">
                         <div class="text-[10px] text-slate-500 uppercase">Pos Size</div>
-                        <div class="font-mono text-xs text-white">${posSize.toFixed(0)} <span class="text-[8px]">${tradeCcy}</span></div>
+                        <div class="font-mono text-xs text-white">${tradeSym}${posSize.toFixed(0)}</div>
                     </div>
                     <div class="bg-slate-900/50 rounded p-1">
                         <div class="text-[10px] text-slate-500 uppercase">Eq Risk</div>
                         <div class="font-mono text-xs text-amber-400 font-bold">${eqRiskPct.toFixed(2)}%</div>
                     </div>
                     <div class="bg-slate-900/50 rounded p-1">
-                        <div class="text-[10px] text-slate-500 uppercase">Risk $</div>
-                        <div class="font-mono text-xs text-red-400">-${riskAmt.toFixed(2)}</div>
+                        <div class="text-[10px] text-slate-500 uppercase">Risk ${baseSym}</div> <div class="font-mono text-xs text-red-400">-${riskAmt.toFixed(2)}</div>
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-slate-400 border-t border-slate-700 pt-2">
@@ -1767,13 +1767,12 @@ const app = {
         html += `</div>`;
 
         this.data.tempCalculation = { derisk13Price, derisk14Price, rate, impliedRiskPct };
-        this.updateHeatWidget(); // Force update with new implied risk
+        this.updateHeatWidget(); 
 
         if(validAccountFound) {
             const btnText = this.data.isEditingParams ? "Update Trade Record" : `Add to Log (Master: ${masterShares} shares)`;
             const btnColor = this.data.isEditingParams ? "bg-amber-600 hover:bg-amber-500 shadow-amber-900/50" : "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-900/50";
             
-            // --- PATCH 5: PASTE ZONE HTML ---
             html += `
             <div id="pasteArea" class="paste-zone mt-4 mb-2" contenteditable="true" onpaste="app.handlePaste(event, 'entry')">
                 <i data-lucide="image-plus" class="w-6 h-6 mb-1"></i>
@@ -3352,9 +3351,18 @@ const app = {
         this.renderLogs();
         this.updateHeatWidget();
         alert("Quantity Updated");
-    }
+    },
+
+	// --- PATCH 5: DYNAMIC CURRENCY SYMBOLS & UI FIXES ---
+
+    getSymbol(ccy) {
+        const symbols = { 'USD': '$', 'GBP': '£', 'EUR': '€', 'JPY': '¥', 'CAD': 'C$', 'SEK': 'kr' };
+        return symbols[ccy] || ccy;
+    },
 
     // ======================================================
+
+
 
 }; // <--- This is the end of the app object
 	
