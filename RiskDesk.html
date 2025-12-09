@@ -1203,22 +1203,22 @@ const app = {
         }
     },
 
-    // --- HEAT CALCULATION ---
+    // --- PATCH 2: HEAT CALCULATION (Corrected for Active Stop) ---
+
     calculateCurrentHeat() {
         const masterAcc = this.data.accounts.find(a => a.isMaster);
-        if(!masterAcc || masterAcc.size <= 0) return { total: 0, ner: 0 }; // Return object now
+        if(!masterAcc || masterAcc.size <= 0) return { total: 0, ner: 0 };
 
-        let totalHeatVal = 0; // Gross Exposure
-        let totalNERVal = 0;  // Net Unfinanced Exposure
+        let totalHeatVal = 0;
+        let totalNERVal = 0;
 
         this.data.logs.forEach(l => {
             if(l.outcome === 'open') {
                 const initQty = typeof l.initialQty === 'number' ? l.initialQty : 0;
                 
-                // 1. Calculate Realized P&L (Banked Finance)
+                // 1. Realized P&L Calculation
                 let realizedPnL = 0;
                 let totalSold = 0;
-                
                 if (l.exits && l.exits.length > 0) {
                     l.exits.forEach(ex => {
                         totalSold += ex.qty;
@@ -1232,19 +1232,22 @@ const app = {
                 const remaining = initQty - totalSold;
                 if(remaining <= 0) return;
 
-                // 2. Calculate Potential Loss on Remaining (Gross Risk)
+                // --- 2. Calculate Potential Loss (UPDATED LOGIC) ---
+                // We define 'activeStop' as the currentStop if it exists, otherwise fall back to initial stop.
+                const activeStop = (typeof l.currentStop === 'number') ? l.currentStop : l.stop;
+
                 let riskDist = 0;
                 if(l.direction === 'LONG') {
-                    // If stop is above entry (locked in profit), risk is 0 for heat purposes
-                    riskDist = Math.max(0, l.entry - l.stop); 
+                    // Uses 'activeStop' instead of 'l.stop'
+                    // If activeStop is moved above entry, riskDist becomes 0 (Heat = 0)
+                    riskDist = Math.max(0, l.entry - activeStop); 
                 } else {
-                    riskDist = Math.max(0, l.stop - l.entry);
+                    riskDist = Math.max(0, activeStop - l.entry);
                 }
                 
                 const grossRiskVal = remaining * riskDist;
                 
-                // 3. NER Calculation: Gross Risk minus Banked Profit
-                // If we have banked more than we can lose, NER is 0.
+                // 3. NER Calculation
                 let netExposureVal = grossRiskVal - realizedPnL;
                 if (netExposureVal < 0) netExposureVal = 0;
 
@@ -2075,44 +2078,77 @@ const app = {
     },
 
 
+    // --- PATCH 3: MANAGE VIEW (Adjustable Stops & Qty) ---
+
     async openManageView(id) {
         this.data.editingId = id;
         const log = this.data.logs.find(l => l.id === id);
         if(!log) return;
 
+        // Ensure currentStop exists (Legacy compatibility)
+        if(typeof log.currentStop === 'undefined') log.currentStop = log.stop;
+
         const totalSold = log.exits.reduce((a,b) => a+b.qty, 0);
         const remaining = log.initialQty - totalSold;
-        
-        document.getElementById('exitInputQty').value = remaining > 0 ? remaining : '';
-        document.getElementById('exitInputPrice').value = '';
-
-        // --- PATCH 7: FETCH & DISPLAY CHARTS ---
         const entryImgUrl = log.entryImg ? await imgDB.get(log.entryImg) : null;
         const exitImgUrl = log.exitImg ? await imgDB.get(log.exitImg) : null;
-
-		// --- PATCH: DE-RISK CALCULATION LOGIC ---
-        const riskPerShare = Math.abs(log.entry - log.stop);
+        
+        // --- CALCULATION LOGIC ---
+        // 1. Initial Risk (For R-Stats) - Always uses original stop
+        const riskPerShareInitial = Math.abs(log.entry - log.stop);
+        
+        // 2. Current Risk (For De-Risk Targets & Heat) - Uses adjusted stop
+        const riskPerShareCurrent = Math.abs(log.entry - log.currentStop);
         const dirMult = log.direction === 'LONG' ? 1 : -1;
-        const totalShares = log.initialQty;
 
-        // 1. Sell 1/3 to Breakeven on remaining 2/3
-        // We sell 1 part, hold 2 parts. Profit on 1 must equal Loss on 2.
-        // Target = Entry + (2 * Risk)
-        const q3 = Math.floor(totalShares / 3); // Sell 1/3
-        const p3 = (log.entry + (riskPerShare * 2.0 * dirMult)).toFixed(2); 
+        // --- DE-RISK TARGETS (Using Current Risk) ---
+        // If current risk is 0 (Stop at BE), these targets become "Profit Protection" levels
+        const displayRisk = riskPerShareCurrent === 0 ? riskPerShareInitial : riskPerShareCurrent; 
+        
+        const q3 = Math.floor(log.initialQty / 3);
+        const p3 = (log.entry + (displayRisk * 2.0 * dirMult)).toFixed(2); 
+        const q4 = Math.floor(log.initialQty / 4);
+        const p4 = (log.entry + (displayRisk * 3.0 * dirMult)).toFixed(2);
+        const q5 = Math.floor(log.initialQty / 5);
+        const p5 = (log.entry + (displayRisk * 4.0 * dirMult)).toFixed(2);
 
-        // 2. Sell 1/4 to Breakeven on remaining 3/4
-        // We sell 1 part, hold 3 parts. Profit on 1 must equal Loss on 3.
-        // Target = Entry + (3 * Risk)
-        const q4 = Math.floor(totalShares / 4); // Sell 1/4
-        const p4 = (log.entry + (riskPerShare * 3.0 * dirMult)).toFixed(2);
+        // --- UI SECTIONS ---
+        
+        // A. Stop Loss Interface
+        let stopDisplayHtml = '';
+        const isStaggered = log.stopMeta && log.stopMeta.mode === 'staggered';
+        
+        stopDisplayHtml = `
+        <div class="bg-slate-900/50 p-3 rounded-lg mb-4 border border-slate-700/50">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-[10px] text-slate-500 uppercase font-bold">Initial Stop (Stats)</span>
+                <span class="text-xs text-slate-400 font-mono">${isStaggered ? 'Staggered' : log.stop}</span>
+            </div>
+            <div class="flex justify-between items-center gap-3">
+                <div class="flex-1">
+                    <label class="text-[10px] text-blue-400 uppercase font-bold block mb-1">Current Stop (Heat)</label>
+                    <input type="number" step="any" value="${log.currentStop}" id="manageCurrentStopInput"
+                        class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-sm text-white font-mono focus:border-blue-500 outline-none">
+                </div>
+                <button onclick="app.updateCurrentStop()" class="self-end mb-1 px-3 py-2 bg-slate-700 hover:bg-blue-600 text-white text-xs rounded transition-colors">
+                    Update
+                </button>
+            </div>
+            <p class="text-[9px] text-slate-500 mt-2 italic">
+                Adjusting "Current Stop" updates your Open Heat and De-Risk targets, but retains "Initial Stop" for accurate R-multiple stats.
+            </p>
+        </div>`;
 
-        // 3. Sell 1/5 to Breakeven on remaining 4/5
-        // We sell 1 part, hold 4 parts. Profit on 1 must equal Loss on 4.
-        // Target = Entry + (4 * Risk)
-        const q5 = Math.floor(totalShares / 5); // Sell 1/5
-        const p5 = (log.entry + (riskPerShare * 4.0 * dirMult)).toFixed(2);
+        // B. Quantity Interface (Editable only if no sales)
+        const canEditQty = totalSold === 0;
+        const qtyHtml = canEditQty 
+            ? `<div class="flex items-center gap-1">
+                 <input type="number" id="manageEditQty" value="${log.initialQty}" class="bg-slate-800 border border-slate-600 rounded w-16 text-center text-sm font-bold text-white p-1">
+                 <button onclick="app.updateTradeQty()" class="bg-blue-900/50 text-blue-400 p-1 rounded hover:bg-blue-600 hover:text-white"><i data-lucide="save" class="w-3 h-3"></i></button>
+               </div>`
+            : `<div class="font-bold text-white text-lg">${log.initialQty}</div>`;
 
+        // Chart HTML (Reused)
         const chartHtml = `
         <div class="grid grid-cols-2 gap-3 mb-4">
             <div class="bg-slate-900 p-2 rounded-xl border border-slate-700 text-center relative">
@@ -2123,64 +2159,9 @@ const app = {
                 <div class="text-[10px] text-slate-500 mb-2 font-bold uppercase">Closure Chart</div>
                 ${exitImgUrl ? `<img src="${exitImgUrl}" class="rounded h-24 w-full object-cover cursor-pointer border border-slate-600" onclick="app.showImg('${exitImgUrl}')">` : `<div class="paste-zone h-24 min-h-0 border-slate-600" contenteditable="true" onpaste="app.handlePaste(event, 'exit', ${log.id})"><span class="text-[10px]">Paste Exit<br>Chart</span></div>`}
             </div>
-        </div>
-        
-                
-        <div class="card bg-slate-800/50 mb-4">
-            <div class="flex justify-between items-center cursor-pointer" onclick="document.getElementById('targetList').classList.toggle('hidden')">
-                <h3 class="text-xs font-bold text-slate-400 uppercase">De-Risk Targets (Breakeven)</h3>
-                <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500"></i>
-            </div>
-            <div id="targetList" class="mt-2 space-y-2 hidden text-xs pt-2 border-t border-slate-700">
-                <div class="flex justify-between items-center">
-                    <span class="text-slate-400">Sell 1/3 (${q3} shares) @</span>
-                    <span class="font-mono text-emerald-400 font-bold">${p3} (2.0R)</span>
-                </div>
-                <div class="flex justify-between items-center">
-                    <span class="text-slate-400">Sell 1/4 (${q4} shares) @</span>
-                    <span class="font-mono text-emerald-400 font-bold">${p4} (3.0R)</span>
-                </div>
-                <div class="flex justify-between items-center">
-                    <span class="text-slate-400">Sell 1/5 (${q5} shares) @</span>
-                    <span class="font-mono text-emerald-400 font-bold">${p5} (4.0R)</span>
-                </div>
-                <div class="mt-2 text-[9px] text-slate-500 italic text-center">
-                    *Selling these amounts at these levels makes the remaining position Risk Free.
-                </div>
-            </div>
         </div>`;
 
-		
-
-
-        // Stop Display
-        let stopHtml = '';
-        if (log.stopMeta && log.stopMeta.mode === 'staggered') {
-             const rows = log.stopMeta.levels.map((lvl, i) => `
-                <div class="flex justify-between text-xs border-b border-slate-700/50 py-1 last:border-0">
-                    <span class="text-slate-400">Stop #${i+1} (${lvl.pct}%)</span>
-                    <span class="text-white font-mono">${lvl.price}</span>
-                </div>`).join('');
-             stopHtml = `
-                <div class="mt-3 bg-slate-900/50 p-2 rounded-lg">
-                    <div class="text-[10px] text-slate-500 uppercase mb-1 font-bold">Staggered Stops</div>
-                    ${rows}
-                    <div class="flex justify-between text-xs pt-2 mt-1 border-t border-slate-700">
-                        <span class="text-slate-400">Avg Stop</span>
-                        <span class="text-white font-mono">${log.stop.toFixed(2)}</span>
-                    </div>
-                </div>`;
-        } else {
-             stopHtml = `
-                <div class="mt-3 bg-slate-900/50 p-2 rounded-lg flex justify-between items-center">
-                    <div class="text-[10px] text-slate-500 uppercase font-bold">Stop Loss</div>
-                    <div class="text-white font-mono text-lg">${log.stop}</div>
-                </div>`;
-        }
-        
-        // Date Value for input (YYYY-MM-DDTHH:MM)
-        const dateVal = log.date.substring(0, 16);
-
+        // Assemble View
         document.getElementById('manageSummary').innerHTML = `
             <div class="flex justify-between items-start mb-2">
                 <div>
@@ -2193,17 +2174,10 @@ const app = {
                 </div>
             </div>
             
-            <div class="bg-slate-900/50 p-2 rounded-lg mb-3 flex justify-between items-center border border-slate-700/50">
-                 <label class="text-[10px] text-slate-500 font-bold uppercase">Entry Date</label>
-                 <input type="datetime-local" value="${dateVal}" 
-                    onchange="app.updateLogDate(${id}, this.value)"
-                    class="bg-transparent text-white text-sm font-mono focus:outline-none text-right">
-            </div>
-
-            <div class="grid grid-cols-3 gap-2 text-center bg-slate-900/50 p-2 rounded-lg mb-3">
-                <div>
-                    <div class="text-[10px] text-slate-500">MASTER QTY</div>
-                    <div class="font-bold text-white">${log.initialQty || '-'}</div>
+            <div class="grid grid-cols-3 gap-2 text-center bg-slate-900/50 p-2 rounded-lg mb-3 items-center">
+                <div class="flex flex-col items-center">
+                    <div class="text-[10px] text-slate-500 mb-1">MASTER QTY</div>
+                    ${qtyHtml}
                 </div>
                 <div>
                     <div class="text-[10px] text-slate-500">SOLD</div>
@@ -2214,9 +2188,35 @@ const app = {
                     <div class="font-bold text-blue-400">${remaining}</div>
                 </div>
             </div>
+            
+            ${stopDisplayHtml}
             ${chartHtml}
-            ${stopHtml}
+
+             <div class="card bg-slate-800/50 mb-4">
+                <div class="flex justify-between items-center cursor-pointer" onclick="document.getElementById('targetList').classList.toggle('hidden')">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase">De-Risk Targets (Based on Current Stop)</h3>
+                    <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500"></i>
+                </div>
+                <div id="targetList" class="mt-2 space-y-2 hidden text-xs pt-2 border-t border-slate-700">
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400">Sell 1/3 (${q3}) @</span>
+                        <span class="font-mono text-emerald-400 font-bold">${p3}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400">Sell 1/4 (${q4}) @</span>
+                        <span class="font-mono text-emerald-400 font-bold">${p4}</span>
+                    </div>
+                     <div class="flex justify-between items-center">
+                        <span class="text-slate-400">Sell 1/5 (${q5}) @</span>
+                        <span class="font-mono text-emerald-400 font-bold">${p5}</span>
+                    </div>
+                </div>
+            </div>
         `;
+
+        // Render inputs for adding exits
+        document.getElementById('exitInputQty').value = remaining > 0 ? remaining : '';
+        document.getElementById('exitInputPrice').value = '';
 
         this.renderExitHistory(log);
         document.getElementById('view-manage').classList.remove('hidden');
@@ -2258,6 +2258,8 @@ const app = {
         }).join('');
     },
 
+    // --- PATCH 1: ACTIVE LEDGER (AUTO-BALANCE) ---
+
     addExit() {
         const log = this.data.logs.find(l => l.id === this.data.editingId);
         if(!log) return;
@@ -2272,36 +2274,90 @@ const app = {
             return alert(`Cannot sell ${qty}. Only ${log.initialQty - totalSold} remaining.`);
         }
 
-        log.exits.push({
-            price, qty, date: new Date().toISOString()
-        });
+        // 1. Calculate P&L for this chunk
+        const pnlTradeCcy = log.direction === 'SHORT' 
+            ? (log.entry - price) * qty 
+            : (price - log.entry) * qty;
+            
+        // 2. Convert to Base Currency (using original Entry Rate)
+        const rate = log.exchangeRate || 1;
+        const pnlBaseCcy = pnlTradeCcy / rate;
+
+        // 3. Update Master Account
+        const masterIdx = this.data.accounts.findIndex(a => a.isMaster);
+        if(masterIdx !== -1) {
+            this.data.accounts[masterIdx].size += pnlBaseCcy;
+            this.saveSettings(); // Save new balance
+        }
+
+        // 4. Update Log
+        log.exits.push({ price, qty, date: new Date().toISOString() });
 
         const newTotalSold = totalSold + qty;
-        if(newTotalSold >= log.initialQty) {
-            log.outcome = 'profit'; 
-        }
+        if(newTotalSold >= log.initialQty) log.outcome = 'profit'; // Auto-close status
 
         localStorage.setItem('tradeLogs', JSON.stringify(this.data.logs));
         this.openManageView(this.data.editingId); 
         this.renderLogs(); 
         this.updateHeatWidget();
+        
+        // Notify User
+        const currency = this.data.settings.baseCurrency;
+        const sign = pnlBaseCcy >= 0 ? '+' : '';
+        alert(`Exit Logged. Master Account Updated: ${sign}${pnlBaseCcy.toFixed(2)} ${currency}`);
     },
 
     removeExit(idx) {
         const log = this.data.logs.find(l => l.id === this.data.editingId);
-        if(log) {
-            log.exits.splice(idx, 1);
-            if(log.exits.reduce((a,b)=>a+b.qty,0) < log.initialQty) {
-                log.outcome = 'open';
-            }
-            localStorage.setItem('tradeLogs', JSON.stringify(this.data.logs));
-            this.openManageView(this.data.editingId);
-            this.updateHeatWidget();
+        if(!log) return;
+        
+        const ex = log.exits[idx];
+        
+        // 1. Reverse the P&L (Refund the account or take back the loss)
+        const pnlTradeCcy = log.direction === 'SHORT' 
+            ? (log.entry - ex.price) * ex.qty 
+            : (ex.price - log.entry) * ex.qty;
+            
+        const rate = log.exchangeRate || 1;
+        const pnlBaseCcy = pnlTradeCcy / rate;
+
+        const masterIdx = this.data.accounts.findIndex(a => a.isMaster);
+        if(masterIdx !== -1) {
+            this.data.accounts[masterIdx].size -= pnlBaseCcy; // Reverse operation
+            this.saveSettings();
         }
+
+        // 2. Remove Exit
+        log.exits.splice(idx, 1);
+        if(log.exits.reduce((a,b)=>a+b.qty,0) < log.initialQty) log.outcome = 'open';
+
+        localStorage.setItem('tradeLogs', JSON.stringify(this.data.logs));
+        this.openManageView(this.data.editingId);
+        this.updateHeatWidget();
+        this.renderLogs();
     },
 
     deleteLog(id) {
-        if(!confirm("Delete this entire trade record?")) return;
+        if(!confirm("Delete this entire trade record? Any P&L banked will be reversed from the Master Account.")) return;
+        
+        const log = this.data.logs.find(l => l.id === id);
+        if(log && log.exits && log.exits.length > 0) {
+            // Calculate Total Realized P&L to Reverse
+            let totalPnlBase = 0;
+            const rate = log.exchangeRate || 1;
+            
+            log.exits.forEach(ex => {
+                const pnl = log.direction === 'SHORT' ? (log.entry - ex.price)*ex.qty : (ex.price - log.entry)*ex.qty;
+                totalPnlBase += (pnl / rate);
+            });
+
+            const masterIdx = this.data.accounts.findIndex(a => a.isMaster);
+            if(masterIdx !== -1) {
+                this.data.accounts[masterIdx].size -= totalPnlBase;
+                this.saveSettings();
+            }
+        }
+
         this.data.logs = this.data.logs.filter(l => l.id !== id);
         localStorage.setItem('tradeLogs', JSON.stringify(this.data.logs));
         this.renderLogs();
@@ -3246,8 +3302,62 @@ const app = {
         link.setAttribute("download", "trade_logs_v5.csv");
         document.body.appendChild(link);
         link.click();
+    },
+	
+	// --- PATCH 4: HELPER FUNCTIONS (Update Actions) ---
+
+    updateCurrentStop() {
+        const id = this.data.editingId;
+        const log = this.data.logs.find(l => l.id === id);
+        if(!log) return;
+        
+        const val = parseFloat(document.getElementById('manageCurrentStopInput').value);
+        if(isNaN(val)) return alert("Invalid Stop Price");
+        
+        // Save
+        log.currentStop = val;
+        localStorage.setItem('tradeLogs', JSON.stringify(this.data.logs));
+        
+        // Refresh UI
+        this.updateHeatWidget(); // Update global heat immediately
+        this.openManageView(id); // Reload view to recalc Derisk targets
+        alert("Current Stop Updated");
+    },
+
+    updateTradeQty() {
+        const id = this.data.editingId;
+        const log = this.data.logs.find(l => l.id === id);
+        if(!log) return;
+        
+        const val = parseInt(document.getElementById('manageEditQty').value);
+        if(!val || val <= 0) return alert("Invalid Quantity");
+        
+        if(log.exits && log.exits.reduce((a,b)=>a+b.qty,0) > 0) {
+            return alert("Cannot edit Quantity after exits have been logged.");
+        }
+        
+        // Update Logic
+        log.initialQty = val;
+        
+        // Recalculate implied risk % based on new qty
+        const masterAcc = this.data.accounts.find(a => a.isMaster);
+        if(masterAcc && masterAcc.size > 0) {
+            const riskDist = Math.abs(log.entry - log.stop);
+            const totalRiskBase = (val * riskDist) / (log.exchangeRate || 1);
+            log.riskVal = parseFloat(((totalRiskBase / masterAcc.size) * 100).toFixed(2));
+        }
+
+        localStorage.setItem('tradeLogs', JSON.stringify(this.data.logs));
+        this.openManageView(id);
+        this.renderLogs();
+        this.updateHeatWidget();
+        alert("Quantity Updated");
     }
-};
+
+    // ======================================================
+
+}; // <--- This is the end of the app object
+	
 
 document.addEventListener('DOMContentLoaded', () => {
     app.init();
