@@ -1956,34 +1956,47 @@ const app = {
 
     // --- LOGS & MANAGEMENT ---
     
-		renderLogs(limit = 50) {
+		// --- PATCH 3: LOGS VIEW (With Duration) ---
+
+    renderLogs(limit = 50) {
         const container = document.getElementById('logsContainer');
         const searchVal = document.getElementById('logSearch').value.toUpperCase();
         
-        // 1. Sort & Filter (Search scans EVERYTHING)
-        // We sort by date descending so the "Top 50" are always the newest
         const allMatches = this.data.logs
             .sort((a,b) => new Date(b.date) - new Date(a.date)) 
             .filter(l => l.ticker.includes(searchVal) || (l.strategy && l.strategy.toUpperCase().includes(searchVal)));
 
-        // 2. Apply the Limit (Slice the array)
         const visibleLogs = allMatches.slice(0, limit);
         
-        // 3. Render the Visible Slice
         const htmlRows = visibleLogs.map(log => {
             let totalSold = log.exits ? log.exits.reduce((acc, ex) => acc + ex.qty, 0) : 0;
             let isOpen = log.outcome === 'open';
             let realizedR = 0;
             const riskPerShare = Math.abs(log.entry - log.stop);
             
-            // Time Formatting
+            // Time & Duration Logic
             let dateDisplay = log.date.substring(5, 10); 
             if (log.date.includes('T')) {
                 const d = new Date(log.date);
                 dateDisplay = `${d.getDate()}/${d.getMonth()+1} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
             }
+            
+            // Calculate Duration
+            let durationStr = "";
+            if (log.exits && log.exits.length > 0) {
+                // For duration, use the last exit date
+                const sortedExits = [...log.exits].sort((a,b) => new Date(a.date) - new Date(b.date));
+                const lastExit = sortedExits[sortedExits.length-1];
+                durationStr = this.formatDuration(log.date, lastExit.date);
+            } else if (!isOpen && log.exitDate) {
+                 durationStr = this.formatDuration(log.date, log.exitDate);
+            } else {
+                 // If open, show duration since entry? Or just "..."
+                 // Let's show duration active
+                 durationStr = `<span class="text-slate-600 italic">${this.formatDuration(log.date)}</span>`;
+            }
 
-            // --- NER LOGIC ---
+            // NER & R Calculation (Existing)
             let realizedPnL = 0;
             if (log.exits && log.exits.length > 0) {
                 let totalRVal = 0;
@@ -2011,8 +2024,10 @@ const app = {
                 const remaining = (log.initialQty || 0) - totalSold;
                 if (remaining > 0) {
                     let currentRiskDist = 0;
-                    if(log.direction === 'LONG') currentRiskDist = Math.max(0, log.entry - log.stop);
-                    else currentRiskDist = Math.max(0, log.stop - log.entry);
+                    const activeStop = (typeof log.currentStop === 'number') ? log.currentStop : log.stop;
+                    if(log.direction === 'LONG') currentRiskDist = Math.max(0, log.entry - activeStop);
+                    else currentRiskDist = Math.max(0, activeStop - log.entry);
+                    
                     const grossRisk = remaining * currentRiskDist;
                     const netExposure = grossRisk - realizedPnL;
                     if (netExposure > 0) {
@@ -2042,7 +2057,10 @@ const app = {
 
             return `
             <div class="grid grid-cols-12 gap-2 p-3 bg-slate-800/50 border-b border-slate-700 items-center hover:bg-slate-800 transition-colors">
-                <div class="col-span-2 text-xs text-slate-400 font-mono leading-tight">${dateDisplay}</div>
+                <div class="col-span-2">
+                    <div class="text-xs text-slate-400 font-mono leading-tight">${dateDisplay}</div>
+                    <div class="text-[9px] text-slate-600 font-mono mt-0.5">${durationStr}</div>
+                </div>
                 <div class="col-span-2 font-bold text-white relative">
                     ${log.ticker} 
                     <span class="text-[8px] text-slate-500 block">${log.direction}</span>
@@ -2058,16 +2076,10 @@ const app = {
             `;
         }).join('');
 
-        // 4. Handle "Load More" Button
         let loadMoreHtml = '';
         if (allMatches.length > limit) {
             const remaining = allMatches.length - limit;
-            loadMoreHtml = `
-            <div class="p-2 text-center">
-                <button onclick="app.renderLogs(${limit + 50})" class="text-xs font-bold text-blue-400 hover:text-white border border-slate-700 bg-slate-800 rounded-full px-4 py-2 transition-all">
-                    Show Older Trades (${remaining} more)
-                </button>
-            </div>`;
+            loadMoreHtml = `<div class="p-2 text-center"><button onclick="app.renderLogs(${limit + 50})" class="text-xs font-bold text-blue-400 hover:text-white border border-slate-700 bg-slate-800 rounded-full px-4 py-2 transition-all">Show Older Trades (${remaining} more)</button></div>`;
         } else if (allMatches.length === 0) {
             loadMoreHtml = `<div class="p-8 text-center text-slate-500 text-sm">No trades found.</div>`;
         }
@@ -2079,12 +2091,12 @@ const app = {
 
     // --- PATCH 3: MANAGE VIEW (Adjustable Stops & Qty) ---
 
+    // --- PATCH 4: MANAGE VIEW (With Duration & P1 Updates) ---
+
     async openManageView(id) {
         this.data.editingId = id;
         const log = this.data.logs.find(l => l.id === id);
         if(!log) return;
-
-        // Ensure currentStop exists (Legacy compatibility)
         if(typeof log.currentStop === 'undefined') log.currentStop = log.stop;
 
         const totalSold = log.exits.reduce((a,b) => a+b.qty, 0);
@@ -2092,16 +2104,19 @@ const app = {
         const entryImgUrl = log.entryImg ? await imgDB.get(log.entryImg) : null;
         const exitImgUrl = log.exitImg ? await imgDB.get(log.exitImg) : null;
         
-        // --- CALCULATION LOGIC ---
-        // 1. Initial Risk (For R-Stats) - Always uses original stop
+        // P1: Duration Calculation
+        let durationStr = "Active";
+        if (log.exits && log.exits.length > 0) {
+            const sortedExits = [...log.exits].sort((a,b) => new Date(a.date) - new Date(b.date));
+            const lastExit = sortedExits[sortedExits.length-1];
+            durationStr = this.formatDuration(log.date, lastExit.date);
+        } else {
+             durationStr = this.formatDuration(log.date) + " (Open)";
+        }
+
         const riskPerShareInitial = Math.abs(log.entry - log.stop);
-        
-        // 2. Current Risk (For De-Risk Targets & Heat) - Uses adjusted stop
         const riskPerShareCurrent = Math.abs(log.entry - log.currentStop);
         const dirMult = log.direction === 'LONG' ? 1 : -1;
-
-        // --- DE-RISK TARGETS (Using Current Risk) ---
-        // If current risk is 0 (Stop at BE), these targets become "Profit Protection" levels
         const displayRisk = riskPerShareCurrent === 0 ? riskPerShareInitial : riskPerShareCurrent; 
         
         const q3 = Math.floor(log.initialQty / 3);
@@ -2111,43 +2126,29 @@ const app = {
         const q5 = Math.floor(log.initialQty / 5);
         const p5 = (log.entry + (displayRisk * 4.0 * dirMult)).toFixed(2);
 
-        // --- UI SECTIONS ---
-        
-        // A. Stop Loss Interface
-        let stopDisplayHtml = '';
+        // UI Components (Stop & Qty)
         const isStaggered = log.stopMeta && log.stopMeta.mode === 'staggered';
-        
-        stopDisplayHtml = `
+        const stopDisplayHtml = `
         <div class="bg-slate-900/50 p-3 rounded-lg mb-4 border border-slate-700/50">
             <div class="flex justify-between items-center mb-2">
-                <span class="text-[10px] text-slate-500 uppercase font-bold">Initial Stop (Stats)</span>
+                <span class="text-[10px] text-slate-500 uppercase font-bold">Initial Stop</span>
                 <span class="text-xs text-slate-400 font-mono">${isStaggered ? 'Staggered' : log.stop}</span>
             </div>
             <div class="flex justify-between items-center gap-3">
                 <div class="flex-1">
-                    <label class="text-[10px] text-blue-400 uppercase font-bold block mb-1">Current Stop (Heat)</label>
+                    <label class="text-[10px] text-blue-400 uppercase font-bold block mb-1">Current Stop</label>
                     <input type="number" step="any" value="${log.currentStop}" id="manageCurrentStopInput"
                         class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-sm text-white font-mono focus:border-blue-500 outline-none">
                 </div>
-                <button onclick="app.updateCurrentStop()" class="self-end mb-1 px-3 py-2 bg-slate-700 hover:bg-blue-600 text-white text-xs rounded transition-colors">
-                    Update
-                </button>
+                <button onclick="app.updateCurrentStop()" class="self-end mb-1 px-3 py-2 bg-slate-700 hover:bg-blue-600 text-white text-xs rounded transition-colors">Update</button>
             </div>
-            <p class="text-[9px] text-slate-500 mt-2 italic">
-                Adjusting "Current Stop" updates your Open Heat and De-Risk targets, but retains "Initial Stop" for accurate R-multiple stats.
-            </p>
         </div>`;
 
-        // B. Quantity Interface (Editable only if no sales)
         const canEditQty = totalSold === 0;
         const qtyHtml = canEditQty 
-            ? `<div class="flex items-center gap-1">
-                 <input type="number" id="manageEditQty" value="${log.initialQty}" class="bg-slate-800 border border-slate-600 rounded w-16 text-center text-sm font-bold text-white p-1">
-                 <button onclick="app.updateTradeQty()" class="bg-blue-900/50 text-blue-400 p-1 rounded hover:bg-blue-600 hover:text-white"><i data-lucide="save" class="w-3 h-3"></i></button>
-               </div>`
+            ? `<div class="flex items-center gap-1"><input type="number" id="manageEditQty" value="${log.initialQty}" class="bg-slate-800 border border-slate-600 rounded w-16 text-center text-sm font-bold text-white p-1"><button onclick="app.updateTradeQty()" class="bg-blue-900/50 text-blue-400 p-1 rounded hover:bg-blue-600 hover:text-white"><i data-lucide="save" class="w-3 h-3"></i></button></div>`
             : `<div class="font-bold text-white text-lg">${log.initialQty}</div>`;
 
-        // Chart HTML (Reused)
         const chartHtml = `
         <div class="grid grid-cols-2 gap-3 mb-4">
             <div class="bg-slate-900 p-2 rounded-xl border border-slate-700 text-center relative">
@@ -2160,7 +2161,6 @@ const app = {
             </div>
         </div>`;
 
-        // Assemble View
         document.getElementById('manageSummary').innerHTML = `
             <div class="flex justify-between items-start mb-2">
                 <div>
@@ -2173,18 +2173,22 @@ const app = {
                 </div>
             </div>
             
-            <div class="grid grid-cols-3 gap-2 text-center bg-slate-900/50 p-2 rounded-lg mb-3 items-center">
-                <div class="flex flex-col items-center">
-                    <div class="text-[10px] text-slate-500 mb-1">MASTER QTY</div>
+            <div class="grid grid-cols-4 gap-2 text-center bg-slate-900/50 p-2 rounded-lg mb-3 items-center">
+                <div class="flex flex-col items-center col-span-1">
+                    <div class="text-[10px] text-slate-500 mb-1">QTY</div>
                     ${qtyHtml}
                 </div>
-                <div>
+                <div class="col-span-1">
                     <div class="text-[10px] text-slate-500">SOLD</div>
                     <div class="font-bold text-amber-400">${totalSold}</div>
                 </div>
-                <div>
-                    <div class="text-[10px] text-slate-500">REMAINING</div>
+                <div class="col-span-1">
+                    <div class="text-[10px] text-slate-500">LEFT</div>
                     <div class="font-bold text-blue-400">${remaining}</div>
+                </div>
+                <div class="col-span-1 border-l border-slate-700 pl-1">
+                    <div class="text-[10px] text-slate-500">HELD</div>
+                    <div class="font-bold text-slate-300 text-xs">${durationStr}</div>
                 </div>
             </div>
             
@@ -2193,27 +2197,17 @@ const app = {
 
              <div class="card bg-slate-800/50 mb-4">
                 <div class="flex justify-between items-center cursor-pointer" onclick="document.getElementById('targetList').classList.toggle('hidden')">
-                    <h3 class="text-xs font-bold text-slate-400 uppercase">De-Risk Targets (Based on Current Stop)</h3>
+                    <h3 class="text-xs font-bold text-slate-400 uppercase">De-Risk Targets</h3>
                     <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500"></i>
                 </div>
                 <div id="targetList" class="mt-2 space-y-2 hidden text-xs pt-2 border-t border-slate-700">
-                    <div class="flex justify-between items-center">
-                        <span class="text-slate-400">Sell 1/3 (${q3}) @</span>
-                        <span class="font-mono text-emerald-400 font-bold">${p3}</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-slate-400">Sell 1/4 (${q4}) @</span>
-                        <span class="font-mono text-emerald-400 font-bold">${p4}</span>
-                    </div>
-                     <div class="flex justify-between items-center">
-                        <span class="text-slate-400">Sell 1/5 (${q5}) @</span>
-                        <span class="font-mono text-emerald-400 font-bold">${p5}</span>
-                    </div>
+                    <div class="flex justify-between items-center"><span class="text-slate-400">Sell 1/3 (${q3}) @</span><span class="font-mono text-emerald-400 font-bold">${p3}</span></div>
+                    <div class="flex justify-between items-center"><span class="text-slate-400">Sell 1/4 (${q4}) @</span><span class="font-mono text-emerald-400 font-bold">${p4}</span></div>
+                    <div class="flex justify-between items-center"><span class="text-slate-400">Sell 1/5 (${q5}) @</span><span class="font-mono text-emerald-400 font-bold">${p5}</span></div>
                 </div>
             </div>
         `;
 
-        // Render inputs for adding exits
         document.getElementById('exitInputQty').value = remaining > 0 ? remaining : '';
         document.getElementById('exitInputPrice').value = '';
 
@@ -2371,66 +2365,118 @@ const app = {
             Array.from(strategies).map(s => `<option value="${s}">${s}</option>`).join('');
     },
 
-	calculateBatchStats(logs) {
-        let winCount = 0, lossCount = 0, totalWinR = 0, totalLossR = 0, totalR = 0;
+	// --- PATCH 1: MATH ENGINE & HELPERS ---
+
+    // New Helper: Format milliseconds into "2d 5h"
+    formatDuration(startStr, endStr) {
+        if(!startStr) return "-";
+        const start = new Date(startStr);
+        const end = endStr ? new Date(endStr) : new Date(); // If no end, use now
+        const diff = end - start;
         
-        // Only consider CLOSED trades for stats
+        if (diff < 0) return "-";
+        const totalMinutes = Math.floor(diff / (1000 * 60));
+        const days = Math.floor(totalMinutes / (60 * 24));
+        const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+        
+        if (days > 0) return `${days}d ${hours}h`;
+        if (hours > 0) return `${hours}h ${totalMinutes % 60}m`;
+        return `${totalMinutes}m`;
+    },
+
+    // Updated: Calculates P2, P3, P4 metrics
+    calculateBatchStats(logs) {
+        let winCount = 0, lossCount = 0;
+        let totalWinR = 0, totalLossR = 0, totalNetR = 0; // P2
+        let totalWinAmt = 0, totalLossAmt = 0; // P3 (Financials)
+        let largestWin = 0, largestLoss = 0;    // P3
+        
+        // Filter for "Statistically Closed" or "Active" trades to include in stats
         const closed = logs.filter(l => {
             const totalSold = l.exits ? l.exits.reduce((a,b)=>a+b.qty,0) : 0;
-            // A trade is "Statistically Closed" if it is outcome!=open OR fully sold
             return l.outcome !== 'open' || (l.initialQty > 0 && totalSold >= l.initialQty);
         });
 
         closed.forEach(l => {
-            let rTrade = 0;
             const riskPerShare = Math.abs(l.entry - l.stop);
+            const rate = l.exchangeRate || 1;
             
-            // Calculate R
+            let rTrade = 0;
+            let pnlBase = 0;
+
             if(l.exits && l.exits.length > 0) {
                  const totalRisk = l.initialQty * riskPerShare;
-                 let realizedPnL = 0;
-                 l.exits.forEach(ex => realizedPnL += (l.direction === 'SHORT' ? (l.entry - ex.price) : (ex.price - l.entry)) * ex.qty);
-                 if(totalRisk > 0) rTrade = realizedPnL / totalRisk;
+                 let pnlTrade = 0;
+                 l.exits.forEach(ex => {
+                     pnlTrade += (l.direction === 'SHORT' ? (l.entry - ex.price) : (ex.price - l.entry)) * ex.qty;
+                 });
+                 // R calculation
+                 if(totalRisk > 0) rTrade = pnlTrade / totalRisk;
+                 // Base Currency P&L calculation
+                 pnlBase = pnlTrade / rate;
             } else if (l.exitPrice) {
-                 rTrade = (l.direction==='SHORT' ? (l.entry - l.exitPrice) : (l.exitPrice - l.entry)) / riskPerShare;
+                 const diff = (l.direction==='SHORT' ? (l.entry - l.exitPrice) : (l.exitPrice - l.entry));
+                 rTrade = diff / riskPerShare;
+                 pnlBase = (diff * l.initialQty) / rate;
             }
-            
-            totalR += rTrade;
-            if(rTrade > 0) { winCount++; totalWinR += rTrade; } 
-            else { lossCount++; totalLossR += Math.abs(rTrade); }
+
+            totalNetR += rTrade;
+
+            if(rTrade > 0) {
+                winCount++;
+                totalWinR += rTrade;
+                totalWinAmt += pnlBase;
+                if(pnlBase > largestWin) largestWin = pnlBase;
+            } else {
+                lossCount++;
+                totalLossR += Math.abs(rTrade); // Keep absolute for RRR calc
+                totalLossAmt += pnlBase;
+                if(pnlBase < largestLoss) largestLoss = pnlBase;
+            }
         });
 
         const count = closed.length;
         const winRate = count > 0 ? (winCount / count) * 100 : 0;
-        const avgWin = winCount > 0 ? totalWinR / winCount : 0;
-        const avgLoss = lossCount > 0 ? totalLossR / lossCount : 0;
-        const profitFactor = totalLossR === 0 ? (totalWinR > 0 ? 999 : 0) : (totalWinR / totalLossR);
-        const expectancy = (winRate/100 * avgWin) - ((1-(winRate/100)) * avgLoss);
+        
+        // Edge Metrics (P4)
+        const avgWinR = winCount > 0 ? totalWinR / winCount : 0;
+        const avgLossR = lossCount > 0 ? totalLossR / lossCount : 0;
+        const rrr = avgLossR === 0 ? 0 : (avgWinR / avgLossR); // Reward to Risk Ratio
+        
+        // Financial Averages (P3)
+        const avgWinAmt = winCount > 0 ? totalWinAmt / winCount : 0;
+        const avgLossAmt = lossCount > 0 ? totalLossAmt / lossCount : 0;
 
-        return { winRate, profitFactor, expectancy, count, logs: closed };
+        const profitFactor = totalLossR === 0 ? (totalWinR > 0 ? 999 : 0) : (totalWinR / totalLossR);
+        const expectancy = (winRate/100 * avgWinR) - ((1-(winRate/100)) * avgLossR);
+
+        return { 
+            winRate, profitFactor, expectancy, count, logs: closed,
+            totalNetR, 
+            avgWinAmt, avgLossAmt, largestWin, largestLoss,
+            avgWinR, avgLossR, rrr
+        };
     },
+
+	// --- PATCH 2: STATS DASHBOARD RENDER ---
 
     renderStats() {
         const strategyFilter = document.getElementById('statsFilter').value;
         const recencyFilter = document.getElementById('statsRecency').value;
         
-        // 1. Get Base Logs (Strategy Filtered)
         let baseLogs = [...this.data.logs];
         if(strategyFilter !== 'ALL') {
             baseLogs = baseLogs.filter(l => l.strategy === strategyFilter);
         }
 
-        // 2. Calculate BASELINE Stats (All Time for this strategy)
+        // Calculate Baseline
         const baseline = this.calculateBatchStats(baseLogs);
 
-        // 3. Apply Recency Filter (Targeting CLOSED trades)
-        // FIX: We must filter for closed trades BEFORE slicing to ensure we get a full sample.
+        // Apply Recency for Current Stats
         let closedLogs = baseLogs.filter(l => {
              const totalSold = l.exits ? l.exits.reduce((a,b)=>a+b.qty,0) : 0;
              return l.outcome !== 'open' || (l.initialQty > 0 && totalSold >= l.initialQty);
         });
-
-        // Sort Newest First
         closedLogs.sort((a,b) => new Date(b.date) - new Date(a.date));
         
         let recentStatsLogs = closedLogs;
@@ -2439,29 +2485,19 @@ const app = {
             recentStatsLogs = closedLogs.slice(0, limit);
         }
         
-        // 4. Calculate CURRENT Stats
         const current = this.calculateBatchStats(recentStatsLogs);
 
-        // 5. Render Cards (Diff Logic)
+        // 1. Render Top Cards (Existing)
         const setDiff = (elId, curr, base, type) => {
             const el = document.getElementById(elId);
-            // Safety check: if no baseline count, or no current count, hide diff
             if(recencyFilter === 'ALL' || base.count === 0 || curr.count === 0) { el.innerHTML = ''; return; }
-            
             const diff = curr - base;
-            let color = '', icon = '', text = '';
-            
             if(Math.abs(diff) < 0.01) { el.innerHTML = '<span class="text-slate-500">= No Change</span>'; return; }
-            
             const isBetter = diff > 0;
-            color = isBetter ? 'text-emerald-400' : 'text-red-400';
-            icon = isBetter ? '▲' : '▼';
-            
-            if (type === '%') text = `${icon} ${Math.abs(diff).toFixed(1)}%`;
-            else if (type === 'R') text = `${icon} ${Math.abs(diff).toFixed(2)}R`;
-            else text = `${icon} ${Math.abs(diff).toFixed(2)}`;
-
-            el.innerHTML = `<span class="${color} bg-slate-900/50 px-1 rounded">${text} vs Avg</span>`;
+            const color = isBetter ? 'text-emerald-400' : 'text-red-400';
+            const icon = isBetter ? '▲' : '▼';
+            let text = type === '%' ? `${Math.abs(diff).toFixed(1)}%` : type === 'R' ? `${Math.abs(diff).toFixed(2)}R` : `${Math.abs(diff).toFixed(2)}`;
+            el.innerHTML = `<span class="${color} bg-slate-900/50 px-1 rounded">${icon} ${text} vs Avg</span>`;
         };
 
         document.getElementById('statWinRate').textContent = `${Math.round(current.winRate)}%`;
@@ -2475,55 +2511,77 @@ const app = {
 
         document.getElementById('statTotal').textContent = current.count;
 
-        // 6. Draw Charts
-        // We pass the filtered "recentStatsLogs" to charts so they match the stat cards
-		// --- PATCH START: DIRECTIONAL SPLIT ---
-        // Filter the ALREADY filtered 'recentStatsLogs' (which respects recency & closed status)
-        const longLogs = recentStatsLogs.filter(l => l.direction === 'LONG');
-        const shortLogs = recentStatsLogs.filter(l => l.direction === 'SHORT');
-
-        const longStats = this.calculateBatchStats(longLogs);
-        const shortStats = this.calculateBatchStats(shortLogs);
-
+        // 2. Render Direction Cards (Existing)
+        const longStats = this.calculateBatchStats(recentStatsLogs.filter(l => l.direction === 'LONG'));
+        const shortStats = this.calculateBatchStats(recentStatsLogs.filter(l => l.direction === 'SHORT'));
+        
         const renderDirCard = (title, stats, colorClass) => {
-            // Handle empty data
-            if (stats.count === 0) {
-                return `
-                <div class="bg-slate-800 p-3 rounded-lg border border-slate-700 opacity-50">
-                    <div class="text-[10px] text-slate-500 font-bold uppercase mb-1">${title}</div>
-                    <div class="text-xs text-slate-500 italic">No closed trades</div>
-                </div>`;
-            }
-
-            return `
-            <div class="bg-slate-800 p-3 rounded-lg border border-slate-700 flex flex-col justify-between">
-                <div class="flex justify-between items-start mb-2">
-                    <span class="text-[10px] ${colorClass} font-bold uppercase px-1.5 py-0.5 bg-${colorClass.split('-')[1]}-900/30 rounded">${title}</span>
-                    <span class="text-[10px] text-slate-500">${stats.count} Trades</span>
-                </div>
-                <div class="grid grid-cols-3 gap-1 text-center">
-                    <div>
-                        <div class="text-[9px] text-slate-500 uppercase">Win Rate</div>
-                        <div class="text-sm font-bold text-slate-200">${Math.round(stats.winRate)}%</div>
-                    </div>
-                    <div>
-                        <div class="text-[9px] text-slate-500 uppercase">PF</div>
-                        <div class="text-sm font-bold ${stats.profitFactor >= 1.5 ? 'text-blue-400' : 'text-slate-400'}">${stats.profitFactor >= 999 ? '∞' : stats.profitFactor.toFixed(2)}</div>
-                    </div>
-                    <div>
-                        <div class="text-[9px] text-slate-500 uppercase">Exp</div>
-                        <div class="text-sm font-bold ${stats.expectancy > 0 ? 'text-emerald-400' : 'text-red-400'}">${stats.expectancy.toFixed(2)}R</div>
-                    </div>
-                </div>
-            </div>`;
+             if (stats.count === 0) return `<div class="bg-slate-800 p-3 rounded-lg border border-slate-700 opacity-50"><div class="text-[10px] text-slate-500 font-bold uppercase mb-1">${title}</div><div class="text-xs text-slate-500 italic">No data</div></div>`;
+             return `<div class="bg-slate-800 p-3 rounded-lg border border-slate-700 flex flex-col justify-between"><div class="flex justify-between items-start mb-2"><span class="text-[10px] ${colorClass} font-bold uppercase px-1.5 py-0.5 bg-slate-900 rounded">${title}</span><span class="text-[10px] text-slate-500">${stats.count} Trades</span></div><div class="grid grid-cols-3 gap-1 text-center"><div><div class="text-[9px] text-slate-500 uppercase">Win%</div><div class="text-sm font-bold text-slate-200">${Math.round(stats.winRate)}%</div></div><div><div class="text-[9px] text-slate-500 uppercase">PF</div><div class="text-sm font-bold text-slate-400">${stats.profitFactor>=999?'∞':stats.profitFactor.toFixed(2)}</div></div><div><div class="text-[9px] text-slate-500 uppercase">Exp</div><div class="text-sm font-bold ${stats.expectancy>0?'text-emerald-400':'text-red-400'}">${stats.expectancy.toFixed(2)}R</div></div></div></div>`;
         };
-
         const dirContainer = document.getElementById('directionStats');
-        if (dirContainer) {
-            dirContainer.innerHTML = 
-                renderDirCard('Longs', longStats, 'text-emerald-400') + 
-                renderDirCard('Shorts', shortStats, 'text-red-400');
-        }
+        if (dirContainer) dirContainer.innerHTML = renderDirCard('Longs', longStats, 'text-emerald-400') + renderDirCard('Shorts', shortStats, 'text-red-400');
+
+        // --- NEW SECTION: P3 & P4 METRICS (Financials & Edge) ---
+        // We inject this BEFORE the charts.
+        const baseSym = this.getSymbol ? this.getSymbol(this.data.settings.baseCurrency) : this.data.settings.baseCurrency;
+        
+        // Check if we already appended this container, if so remove it to re-render
+        const existingExtras = document.getElementById('extraStatsContainer');
+        if(existingExtras) existingExtras.remove();
+
+        const extraStatsHtml = `
+        <div id="extraStatsContainer" class="grid grid-cols-2 gap-3 mb-6 animate-in slide-in-from-bottom-4 fade-in">
+            <div class="bg-slate-800 p-3 rounded-xl border border-slate-700 col-span-2">
+                <h4 class="text-xs font-bold text-slate-400 uppercase mb-3 flex items-center gap-2">
+                    <i data-lucide="coins" class="w-4 h-4 text-amber-400"></i> Financial Performance (${baseSym})
+                </h4>
+                <div class="grid grid-cols-4 gap-2 text-center">
+                    <div class="bg-slate-900/30 rounded p-2">
+                        <div class="text-[9px] text-slate-500 uppercase">Avg Win</div>
+                        <div class="text-sm font-mono text-emerald-400 font-bold">${baseSym}${Math.abs(current.avgWinAmt).toFixed(0)}</div>
+                    </div>
+                    <div class="bg-slate-900/30 rounded p-2">
+                        <div class="text-[9px] text-slate-500 uppercase">Avg Loss</div>
+                        <div class="text-sm font-mono text-red-400 font-bold">${baseSym}${Math.abs(current.avgLossAmt).toFixed(0)}</div>
+                    </div>
+                    <div class="bg-slate-900/30 rounded p-2">
+                        <div class="text-[9px] text-slate-500 uppercase">Max Win</div>
+                        <div class="text-sm font-mono text-emerald-400 font-bold">${baseSym}${Math.abs(current.largestWin).toFixed(0)}</div>
+                    </div>
+                    <div class="bg-slate-900/30 rounded p-2">
+                        <div class="text-[9px] text-slate-500 uppercase">Max Loss</div>
+                        <div class="text-sm font-mono text-red-400 font-bold">${baseSym}${Math.abs(current.largestLoss).toFixed(0)}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-slate-800 p-3 rounded-xl border border-slate-700 col-span-2">
+                <h4 class="text-xs font-bold text-slate-400 uppercase mb-3 flex items-center gap-2">
+                    <i data-lucide="swords" class="w-4 h-4 text-purple-400"></i> Edge & Efficiency
+                </h4>
+                <div class="grid grid-cols-3 gap-2 text-center">
+                    <div class="bg-slate-900/50 rounded p-2">
+                        <div class="text-[9px] text-slate-500 uppercase">Total Net R</div>
+                        <div class="text-lg font-bold ${current.totalNetR >= 0 ? 'text-blue-400':'text-red-400'}">${current.totalNetR > 0 ? '+':''}${current.totalNetR.toFixed(1)}R</div>
+                    </div>
+                     <div class="bg-slate-900/50 rounded p-2">
+                        <div class="text-[9px] text-slate-500 uppercase">RRR (Reward:Risk)</div>
+                        <div class="text-lg font-bold text-white">1 : ${current.rrr.toFixed(2)}</div>
+                    </div>
+                    <div class="bg-slate-900/50 rounded p-2">
+                        <div class="text-[9px] text-slate-500 uppercase">Avg Win R</div>
+                        <div class="text-lg font-bold text-emerald-400">+${current.avgWinR.toFixed(2)}R</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        `;
+        
+        // Insert after direction stats
+        dirContainer.insertAdjacentHTML('afterend', extraStatsHtml);
+
+        // 3. Draw Charts (Existing)
         this.drawGrowthChart(recentStatsLogs);
         this.drawWinLossChart(recentStatsLogs);
         this.drawDrawdownChart(recentStatsLogs);
@@ -2534,9 +2592,7 @@ const app = {
         this.drawDurationChart(recentStatsLogs);
         this.drawDistributionChart(recentStatsLogs);
         
-        // Generate Insights
         this.generateInsights(recentStatsLogs);
-
         lucide.createIcons();
     },
 
@@ -2852,55 +2908,165 @@ const app = {
         }
     },
 
+    // --- PATCH 6: GROWTH CHART LAYOUT FIX ---
+
+    // --- PATCH 7: DYNAMIC CURRENCY LABEL FIX ---
+
     drawGrowthChart(logs) {
         const ctx = document.getElementById('chartGrowth');
-        if(this.charts.growth) this.charts.growth.destroy();
+        if (this.charts.growth) this.charts.growth.destroy();
 
-        const sorted = [...logs].sort((a,b) => new Date(a.date) - new Date(b.date));
-        
-        let accountGrowthPct = 0;
-        const dataPoints = [];
-        const labels = [];
+        // 1. WRAPPER ENGINE
+        let wrapper = document.getElementById('chartGrowthWrapper');
+        if (!wrapper) {
+            wrapper = document.createElement('div');
+            wrapper.id = 'chartGrowthWrapper';
+            wrapper.style.position = 'relative';
+            wrapper.style.width = '100%';
+            wrapper.style.height = '250px'; 
+            
+            ctx.parentNode.insertBefore(wrapper, ctx);
+            wrapper.appendChild(ctx);
+        }
 
-        sorted.forEach(l => {
-            let tradeR = 0;
-            const riskPerShare = Math.abs(l.entry - l.stop);
-            if(l.exits && l.exits.length > 0) {
-                 const totalRisk = l.initialQty * riskPerShare;
-                 let realizedPnL = 0;
-                 l.exits.forEach(ex => realizedPnL += (l.direction === 'SHORT' ? (l.entry - ex.price) : (ex.price - l.entry)) * ex.qty);
-                 if(totalRisk > 0) tradeR = realizedPnL / totalRisk;
-            } else if (l.exitPrice) {
-                 tradeR = (l.direction==='SHORT' ? (l.entry - l.exitPrice) : (l.exitPrice - l.entry)) / riskPerShare;
-            }
+        // 2. TOGGLE BUTTONS
+        const card = wrapper.parentElement;
+        if (!document.getElementById('growthToggleContainer')) {
+            const controls = document.createElement('div');
+            controls.id = 'growthToggleContainer';
+            controls.className = 'flex justify-end mb-2';
+            controls.innerHTML = `
+                <div class="flex bg-slate-900 rounded-lg p-1 border border-slate-700">
+                    <button onclick="app.toggleGrowthMode('R')" id="btn-mode-R" class="px-3 py-1 text-[10px] font-bold rounded transition-colors text-slate-400 hover:text-white">R</button>
+                    <button onclick="app.toggleGrowthMode('PCT')" id="btn-mode-PCT" class="px-3 py-1 text-[10px] font-bold rounded transition-colors text-slate-400 hover:text-white">%</button>
+                    <button onclick="app.toggleGrowthMode('CCY')" id="btn-mode-CCY" class="px-3 py-1 text-[10px] font-bold rounded transition-colors text-slate-400 hover:text-white">${this.data.settings.baseCurrency}</button>
+                </div>`;
+            card.insertBefore(controls, wrapper);
+        }
 
-            if(tradeR !== 0) {
-                 const riskFactor = l.riskMode === 'equity' ? l.riskVal : 1.0; 
-                 const pctGain = tradeR * riskFactor;
-                 accountGrowthPct += pctGain;
-                 labels.push(l.date.substring(5));
-                 dataPoints.push(accountGrowthPct);
+        // --- THE FIX: Force Update Button Text ---
+        const ccyBtn = document.getElementById('btn-mode-CCY');
+        if(ccyBtn) ccyBtn.textContent = this.data.settings.baseCurrency; 
+        // ----------------------------------------
+
+        // 3. UPDATE BUTTON STYLES
+        ['R', 'PCT', 'CCY'].forEach(m => {
+            const btn = document.getElementById(`btn-mode-${m}`);
+            if (btn) {
+                if (this.growthMode === m) {
+                    btn.className = 'px-3 py-1 text-[10px] font-bold rounded bg-blue-600 text-white shadow';
+                } else {
+                    btn.className = 'px-3 py-1 text-[10px] font-bold rounded text-slate-500 hover:bg-slate-800 hover:text-white';
+                }
             }
         });
+
+        // 4. DATA PREPARATION
+        const sorted = [...logs].sort((a, b) => new Date(a.date) - new Date(b.date));
+        
+        let accumulator = 0;
+        const dataPoints = [];
+        const labels = [];
+        const baseSym = this.getSymbol ? this.getSymbol(this.data.settings.baseCurrency) : "";
+
+        if(sorted.length > 0) {
+            labels.push('');
+            dataPoints.push(0);
+        }
+
+        sorted.forEach(l => {
+            if (l.outcome === 'open' && (!l.exits || l.exits.length === 0)) return;
+
+            let valToAdd = 0;
+            const riskPerShare = Math.abs(l.entry - l.stop);
+            const rate = l.exchangeRate || 1;
+
+            let netR = 0;
+            let pnlBase = 0;
+
+            if (l.exits && l.exits.length > 0) {
+                const totalRisk = l.initialQty * riskPerShare;
+                let pnlTrade = 0;
+                l.exits.forEach(ex => {
+                    pnlTrade += (l.direction === 'SHORT' ? (l.entry - ex.price) : (ex.price - l.entry)) * ex.qty;
+                });
+                if (totalRisk > 0) netR = pnlTrade / totalRisk;
+                pnlBase = pnlTrade / rate;
+            } else if (l.exitPrice) {
+                const diff = (l.direction === 'SHORT' ? (l.entry - l.exitPrice) : (l.exitPrice - l.entry));
+                netR = diff / riskPerShare;
+                pnlBase = (diff * l.initialQty) / rate;
+            }
+
+            if (this.growthMode === 'R') {
+                valToAdd = netR;
+            } else if (this.growthMode === 'PCT') {
+                const riskFactor = l.riskMode === 'equity' ? l.riskVal : 1.0; 
+                valToAdd = netR * riskFactor;
+            } else {
+                valToAdd = pnlBase;
+            }
+
+            if (valToAdd !== 0) {
+                accumulator += valToAdd;
+                labels.push(l.date.substring(5, 10));
+                dataPoints.push(accumulator);
+            }
+        });
+
+        // 5. CHART CONFIG
+        let color = '#10b981';
+        let label = 'Growth (R)';
+        if (this.growthMode === 'PCT') { color = '#3b82f6'; label = 'Growth (%)'; } 
+        if (this.growthMode === 'CCY') { color = '#f59e0b'; label = `P&L (${baseSym})`; }
 
         this.charts.growth = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: labels,
                 datasets: [{
-                    label: 'Growth %',
+                    label: label,
                     data: dataPoints,
-                    borderColor: '#10b981',
-                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    borderColor: color,
+                    backgroundColor: color + '20', 
                     tension: 0.3,
                     fill: true,
-                    pointRadius: 2
+                    pointRadius: 2,
+                    pointHoverRadius: 5
                 }]
             },
             options: {
                 responsive: true,
-                plugins: { legend: { display: false } },
-                scales: { x: { display: false }, y: { grid: { color: '#334155' } } }
+                maintainAspectRatio: false, 
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => {
+                                const val = context.raw;
+                                if (this.growthMode === 'R') return `${val.toFixed(2)}R`;
+                                if (this.growthMode === 'PCT') return `${val.toFixed(2)}%`;
+                                return `${baseSym}${val.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: { display: false },
+                    y: {
+                        grid: { color: '#334155' },
+                        grace: '10%',
+                        ticks: {
+                            color: '#94a3b8',
+                            maxTicksLimit: 6,
+                            callback: (val) => {
+                                if (this.growthMode === 'R') return val + 'R';
+                                if (this.growthMode === 'PCT') return val + '%';
+                                return baseSym + (Math.abs(val) >= 1000 ? (val/1000).toFixed(1)+'k' : val);
+                            }
+                        }
+                    }
+                }
             }
         });
     },
@@ -3362,7 +3528,16 @@ const app = {
 
     // ======================================================
 
+	// --- PATCH: GROWTH CHART TOGGLE ---
+    
+    // Store the preferred mode (Default to 'R')
+    growthMode: 'R', 
 
+    toggleGrowthMode(mode) {
+        this.growthMode = mode;
+        // Re-render only the stats to update the chart
+        this.renderStats();
+    },
 
 }; // <--- This is the end of the app object
 	
