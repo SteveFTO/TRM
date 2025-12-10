@@ -1958,7 +1958,7 @@ const app = {
     
 		// --- PATCH 3: LOGS VIEW (With Duration) ---
 
-    renderLogs(limit = 50) {
+	renderLogs(limit = 50) {
         const container = document.getElementById('logsContainer');
         const searchVal = document.getElementById('logSearch').value.toUpperCase();
         
@@ -1974,29 +1974,30 @@ const app = {
             let realizedR = 0;
             const riskPerShare = Math.abs(log.entry - log.stop);
             
-            // Time & Duration Logic
             let dateDisplay = log.date.substring(5, 10); 
             if (log.date.includes('T')) {
                 const d = new Date(log.date);
                 dateDisplay = `${d.getDate()}/${d.getMonth()+1} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
             }
             
-            // Calculate Duration
+            // --- DURATION FIX START ---
             let durationStr = "";
-            if (log.exits && log.exits.length > 0) {
-                // For duration, use the last exit date
-                const sortedExits = [...log.exits].sort((a,b) => new Date(a.date) - new Date(b.date));
-                const lastExit = sortedExits[sortedExits.length-1];
-                durationStr = this.formatDuration(log.date, lastExit.date);
-            } else if (!isOpen && log.exitDate) {
-                 durationStr = this.formatDuration(log.date, log.exitDate);
+            if (isOpen) {
+                // If OPEN, use NOW (Keep clock running)
+                durationStr = `<span class="text-slate-500 italic">${this.formatDuration(log.date)}</span>`;
             } else {
-                 // If open, show duration since entry? Or just "..."
-                 // Let's show duration active
-                 durationStr = `<span class="text-slate-600 italic">${this.formatDuration(log.date)}</span>`;
+                // If CLOSED, use Last Exit Date (Stop clock)
+                if (log.exits && log.exits.length > 0) {
+                    const sortedExits = [...log.exits].sort((a,b) => new Date(a.date) - new Date(b.date));
+                    durationStr = this.formatDuration(log.date, sortedExits[sortedExits.length-1].date);
+                } else if (log.exitDate) {
+                    durationStr = this.formatDuration(log.date, log.exitDate);
+                } else {
+                    durationStr = "-";
+                }
             }
+            // --- DURATION FIX END ---
 
-            // NER & R Calculation (Existing)
             let realizedPnL = 0;
             if (log.exits && log.exits.length > 0) {
                 let totalRVal = 0;
@@ -2059,7 +2060,7 @@ const app = {
             <div class="grid grid-cols-12 gap-2 p-3 bg-slate-800/50 border-b border-slate-700 items-center hover:bg-slate-800 transition-colors">
                 <div class="col-span-2">
                     <div class="text-xs text-slate-400 font-mono leading-tight">${dateDisplay}</div>
-                    <div class="text-[9px] text-slate-600 font-mono mt-0.5">${durationStr}</div>
+                    <div class="text-[9px] font-mono mt-0.5">${durationStr}</div>
                 </div>
                 <div class="col-span-2 font-bold text-white relative">
                     ${log.ticker} 
@@ -2104,15 +2105,21 @@ const app = {
         const entryImgUrl = log.entryImg ? await imgDB.get(log.entryImg) : null;
         const exitImgUrl = log.exitImg ? await imgDB.get(log.exitImg) : null;
         
-        // P1: Duration Calculation
+        // --- DURATION FIX START ---
         let durationStr = "Active";
-        if (log.exits && log.exits.length > 0) {
-            const sortedExits = [...log.exits].sort((a,b) => new Date(a.date) - new Date(b.date));
-            const lastExit = sortedExits[sortedExits.length-1];
-            durationStr = this.formatDuration(log.date, lastExit.date);
-        } else {
+        if (log.outcome === 'open') {
+             // If Open, calculate time from Entry to NOW
              durationStr = this.formatDuration(log.date) + " (Open)";
+        } else {
+             // If Closed, calculate time from Entry to LAST EXIT
+             if (log.exits && log.exits.length > 0) {
+                const sortedExits = [...log.exits].sort((a,b) => new Date(a.date) - new Date(b.date));
+                durationStr = this.formatDuration(log.date, sortedExits[sortedExits.length-1].date);
+             } else {
+                durationStr = "-";
+             }
         }
+        // --- DURATION FIX END ---
 
         const riskPerShareInitial = Math.abs(log.entry - log.stop);
         const riskPerShareCurrent = Math.abs(log.entry - log.currentStop);
@@ -2126,7 +2133,6 @@ const app = {
         const q5 = Math.floor(log.initialQty / 5);
         const p5 = (log.entry + (displayRisk * 4.0 * dirMult)).toFixed(2);
 
-        // UI Components (Stop & Qty)
         const isStaggered = log.stopMeta && log.stopMeta.mode === 'staggered';
         const stopDisplayHtml = `
         <div class="bg-slate-900/50 p-3 rounded-lg mb-4 border border-slate-700/50">
@@ -2144,6 +2150,7 @@ const app = {
             </div>
         </div>`;
 
+        // Safety Lock is ON (only edit if no sales) - Change to 'true' if you want to unlock
         const canEditQty = totalSold === 0;
         const qtyHtml = canEditQty 
             ? `<div class="flex items-center gap-1"><input type="number" id="manageEditQty" value="${log.initialQty}" class="bg-slate-800 border border-slate-600 rounded w-16 text-center text-sm font-bold text-white p-1"><button onclick="app.updateTradeQty()" class="bg-blue-900/50 text-blue-400 p-1 rounded hover:bg-blue-600 hover:text-white"><i data-lucide="save" class="w-3 h-3"></i></button></div>`
