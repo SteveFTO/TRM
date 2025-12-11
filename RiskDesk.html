@@ -2342,28 +2342,41 @@ const app = {
         return `${totalMinutes}m`;
     },
 
-    // --- PATCH 13: SCRATCH-AWARE MATH ENGINE ---
+	// --- PATCH 22: FIXED MATH ENGINE (SCOPE CORRECTION) ---
 
     calculateBatchStats(logs) {
+        // 1. Global Accumulators (Always All Realized P&L for Net R / Total $)
+        let totalNetR = 0;
+        let largestWin = 0;
+        let largestLoss = 0;
+
+        // 2. Scoped Accumulators (Respects Toggle for Averages)
         let winCount = 0, lossCount = 0, scratchCount = 0;
-        let totalWinR = 0, totalLossR = 0; // For Averages (Strict)
-        let totalNetR = 0; // For Net Result (All inclusive)
-        let totalWinAmt = 0, totalLossAmt = 0; // Financials
-        let largestWin = 0, largestLoss = 0;    
+        let totalWinR = 0, totalLossR = 0; 
         
+        // Financials for Profit Factor (All > 0 inside scope)
+        let scopeGrossProfit = 0;
+        let scopeGrossLoss = 0;
+        
+        // Financials for Averages (Only > Threshold inside scope)
+        let scopeWinAmt = 0;
+        let scopeLossAmt = 0;
+
+        // 3. Filter Logic
         const includePartialsInAvg = this.data.settings.statsIncludePartials === true;
 
-        // 1. Filter for TOTALS (Financials): Always includes ANY trade with realized P&L
+        // A. Realized Set (Any trade with money banked) -> Used for Totals
         const realizedLogs = logs.filter(l => {
             return (l.exits && l.exits.length > 0) || (typeof l.exitPrice !== 'undefined');
         });
 
-        // 2. Filter for AVERAGES (Edge Metrics): Depends on Toggle
+        // B. Average Set (Subset based on toggle) -> Used for Win Rate / Averages
         const averageLogs = includePartialsInAvg ? realizedLogs : realizedLogs.filter(l => {
              const totalSold = l.exits ? l.exits.reduce((a,b)=>a+b.qty,0) : 0;
              return l.outcome !== 'open' || (l.initialQty > 0 && totalSold >= l.initialQty);
         });
 
+        // 4. Calculation Loop (Iterate ALL realized to capture Total Net R)
         realizedLogs.forEach(l => {
             const riskPerShare = Math.abs(l.entry - l.stop);
             const rate = l.exchangeRate || 1;
@@ -2371,7 +2384,6 @@ const app = {
             let rTrade = 0;
             let pnlBase = 0;
 
-            // Calculate R & P&L
             if(l.exits && l.exits.length > 0) {
                  const totalRisk = l.initialQty * riskPerShare;
                  let pnlTrade = 0;
@@ -2386,50 +2398,51 @@ const app = {
                  pnlBase = (diff * l.initialQty) / rate;
             }
 
-            // Financial Totals (Includes EVERYTHING)
+            // --- GLOBAL STATS (Wealth) ---
+            // These always track the account reality, ignoring the toggle
             totalNetR += rTrade;
             if(pnlBase > largestWin) largestWin = pnlBase;
             if(pnlBase < largestLoss) largestLoss = pnlBase;
-            
-            // Financial Sums for Profit Factor (Use strict math > 0)
-            if(rTrade > 0) totalWinAmt += pnlBase;
-            else totalLossAmt += pnlBase;
 
-            // --- STRICT CLASSIFICATION FOR STATS ---
-            // Only classify if this trade is part of the "Average Logs" set
+            // --- SCOPED STATS (Performance) ---
+            // Only count if this trade belongs in the User's selected view (Strict/Dynamic)
             if (averageLogs.includes(l)) {
+                
+                // A. For Profit Factor (Gross sums of all P&L in scope)
+                if (rTrade > 0) scopeGrossProfit += pnlBase;
+                else scopeGrossLoss += pnlBase;
+
+                // B. For Win/Loss Counts & Averages (Threshold Logic)
+                // THE FIX: We strictly align Avg Win $ with the trades counted as Wins
                 if (rTrade > 0.1) {
                     winCount++;
                     totalWinR += rTrade;
+                    scopeWinAmt += pnlBase; // Only sum if classified as Win in this scope
                 } else if (rTrade < -0.1) {
                     lossCount++;
                     totalLossR += Math.abs(rTrade);
+                    scopeLossAmt += pnlBase; // Only sum if classified as Loss in this scope
                 } else {
                     scratchCount++;
-                    // Scratches do not contribute to Avg Win/Loss R magnitude
+                    // Scratches contribute to PF (Gross Profit/Loss) but NOT to Avg Win/Loss Averages
                 }
             }
         });
 
-        // 3. Compute Metrics
+        // 5. Final Metrics
         const count = averageLogs.length; 
-        // Win Rate: Wins / Total (Scratches act as 'misses' but not 'losses')
         const winRate = count > 0 ? (winCount / count) * 100 : 0;
         
         const avgWinR = winCount > 0 ? totalWinR / winCount : 0;
         const avgLossR = lossCount > 0 ? totalLossR / lossCount : 0;
         const rrr = avgLossR === 0 ? 0 : (avgWinR / avgLossR); 
         
-        // Financial Averages (using strictly positive/negative P&L sums)
-        // We use winCount/lossCount for consistency, or we could use counts of all positive trades.
-        // Let's use the strict counts to align with the "Avg R" logic.
-        const avgWinAmt = winCount > 0 ? totalWinAmt / winCount : 0;
-        const avgLossAmt = lossCount > 0 ? totalLossAmt / lossCount : 0;
+        // Corrected Financial Averages (Using Scoped Amounts)
+        const avgWinAmt = winCount > 0 ? scopeWinAmt / winCount : 0;
+        const avgLossAmt = lossCount > 0 ? scopeLossAmt / lossCount : 0;
 
-        const profitFactor = Math.abs(totalLossAmt) === 0 ? (totalWinAmt > 0 ? 999 : 0) : (totalWinAmt / Math.abs(totalLossAmt));
+        const profitFactor = Math.abs(scopeGrossLoss) === 0 ? (scopeGrossProfit > 0 ? 999 : 0) : (scopeGrossProfit / Math.abs(scopeGrossLoss));
         
-        // Expectancy = (Win% * AvgWin) - (Loss% * AvgLoss) - (Scratch% * ~0)
-        // Simply: Net R of (Wins + Losses) / Total Count
         const expectancy = count > 0 ? (totalWinR - totalLossR) / count : 0;
 
         return { 
