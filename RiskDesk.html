@@ -364,25 +364,59 @@
 
         <div class="space-y-3">
             
-            <details class="group bg-slate-800 rounded-xl border border-slate-700 overflow-hidden open:ring-1 open:ring-blue-500/50">
+            <details class="group bg-slate-800 rounded-xl border border-slate-700 overflow-hidden open:ring-1 open:ring-blue-500/50" open>
                 <summary class="flex justify-between items-center p-4 cursor-pointer select-none bg-slate-800 hover:bg-slate-750">
                     <h3 class="font-bold text-white flex items-center gap-2">
-                        <i data-lucide="settings" class="w-4 h-4 text-blue-400"></i> Setup & Accounts
+                        <i data-lucide="settings" class="w-4 h-4 text-blue-400"></i> Setup & Stats Mode
                     </h3>
                     <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 transition-transform group-open:rotate-180"></i>
                 </summary>
                 <div class="p-4 pt-0 text-sm text-slate-300 space-y-3 border-t border-slate-700/50 mt-2">
-                    <p>Before trading, configure your environment in the <strong>Settings</strong> tab.</p>
+                    <p>Configure your environment in <strong>Settings</strong>. The most critical new feature is the <strong>Stats Mode Toggle</strong>.</p>
                     
                     <div>
-                        <strong class="text-white block text-xs uppercase mb-1">1. Accounts & The "Master"</strong>
-                        <p class="text-xs text-slate-400">You can add multiple accounts (e.g., "Personal", "Prop Firm A"). However, you must nominate one <strong>Master Account</strong>. The app uses the Master Account to track your official performance, win rate, and equity curve. Other accounts are for position sizing reference only.</p>
-                        <p class="text-[10px] text-slate-500 mt-1 italic">Tip: Manually update your Account Size in settings when you make deposits or withdrawals to keep sizing accurate.</p>
-                    </div>
-
-                    <div>
-                        <strong class="text-white block text-xs uppercase mb-1">2. Currencies</strong>
-                        <p class="text-xs text-slate-400">Set your <strong>Global Base Currency</strong> (e.g., GBP, USD, SEK). This is the currency your accounts are denominated in. When you calculate a trade in a different currency (e.g., trading US stocks in USD while your account is in GBP), the app automatically fetches live exchange rates to normalize risk.</p>
+                        <strong class="text-white block text-xs uppercase mb-2">Impact of "Include Partials" Toggle</strong>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-[10px] text-left border-collapse">
+                                <thead>
+                                    <tr class="border-b border-slate-600 text-slate-400">
+                                        <th class="py-1">Metric</th>
+                                        <th class="py-1 text-emerald-400">OFF (Strict)</th>
+                                        <th class="py-1 text-blue-400">ON (Dynamic)</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-slate-300">
+                                    <tr class="border-b border-slate-700/50">
+                                        <td class="py-2 font-bold">Total Net R</td>
+                                        <td class="py-2">Calculated on ALL trades (Matches Bank)</td>
+                                        <td class="py-2">Calculated on ALL trades (Matches Bank)</td>
+                                    </tr>
+                                    <tr class="border-b border-slate-700/50">
+                                        <td class="py-2 font-bold">Win Rate %</td>
+                                        <td class="py-2">Final results only. Accurate.</td>
+                                        <td class="py-2">Includes active partials. Volatile.</td>
+                                    </tr>
+                                    <tr class="border-b border-slate-700/50">
+                                        <td class="py-2 font-bold">Avg Win ($/R)</td>
+                                        <td class="py-2">Final results only. Clean avg.</td>
+                                        <td class="py-2">Realized so far. <strong>Lower</strong> (due to partials).</td>
+                                    </tr>
+                                    <tr class="border-b border-slate-700/50">
+                                        <td class="py-2 font-bold">RRR</td>
+                                        <td class="py-2">True Strategy Edge.</td>
+                                        <td class="py-2">Current "Banked" Ratio. <strong>Lower.</strong></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-2 font-bold">Expectancy</td>
+                                        <td class="py-2">True Edge per Trade.</td>
+                                        <td class="py-2">Current Cashflow Expectancy.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p class="text-[10px] text-slate-500 mt-2 italic">
+                            <strong>Recommendation:</strong> Use <strong>OFF (Strict)</strong> to analyze your strategy's long-term edge. Use <strong>ON (Dynamic)</strong> to see your current cashflow activity.
+                        </p>
                     </div>
                 </div>
             </details>
@@ -1295,11 +1329,14 @@ const app = {
     },
 
     // --- VIEW MANAGEMENT ---
+    // --- PATCH 11: UPDATE VIEW ROUTING ---
     switchView(viewName) {
+        // ... (Keep your existing hiding logic) ...
         ['calculator', 'logs', 'stats', 'manage', 'settings', 'help'].forEach(v => {
             const el = document.getElementById(`view-${v}`);
             if(el) el.classList.add('hidden');
-            const nav = document.getElementById(`nav-${v}`);
+            // ... remove active nav classes ...
+             const nav = document.getElementById(`nav-${v}`);
             if(nav) {
                 nav.classList.remove('text-blue-500');
                 nav.classList.add('text-slate-500');
@@ -1307,7 +1344,8 @@ const app = {
         });
 
         document.getElementById(`view-${viewName}`).classList.remove('hidden');
-        const activeNav = document.getElementById(`nav-${viewName}`);
+        // ... add active nav classes ...
+         const activeNav = document.getElementById(`nav-${viewName}`);
         if(activeNav) {
             activeNav.classList.add('text-blue-500');
             activeNav.classList.remove('text-slate-500');
@@ -1315,12 +1353,19 @@ const app = {
 
         if (viewName === 'logs') this.renderLogs();
         if (viewName === 'stats') this.renderStats();
-        if (viewName === 'settings') this.renderSettingsAccounts(); this.renderSettingsStrategies();
+        
+        // --- ADD THIS BLOCK ---
+        if (viewName === 'settings') {
+            this.renderSettingsAccounts(); 
+            this.renderSettingsStrategies();
+            this.renderSettingsPreferences(); // <--- Renders the Toggle
+        }
+        // ----------------------
+
         if (viewName === 'calculator') {
             this.renderAccountsReadOnly();
             this.updateHeatWidget();
         }
-        
         lucide.createIcons();
     },
 
@@ -1958,135 +2003,24 @@ const app = {
     
 		// --- PATCH 3: LOGS VIEW (With Duration) ---
 
-	renderLogs(limit = 50) {
-        const container = document.getElementById('logsContainer');
-        const searchVal = document.getElementById('logSearch').value.toUpperCase();
+	// --- PATCH 16: P&L HELPER ---
+    
+    getPnl(log, exitPrice, qty) {
+        // 1. Calculate Raw P&L in Trade Currency
+        const rawPnl = log.direction === 'SHORT' 
+            ? (log.entry - exitPrice) * qty 
+            : (exitPrice - log.entry) * qty;
+            
+        // 2. Convert to Base Currency
+        const rate = log.exchangeRate || 1;
+        const basePnl = rawPnl / rate;
         
-        const allMatches = this.data.logs
-            .sort((a,b) => new Date(b.date) - new Date(a.date)) 
-            .filter(l => l.ticker.includes(searchVal) || (l.strategy && l.strategy.toUpperCase().includes(searchVal)));
-
-        const visibleLogs = allMatches.slice(0, limit);
-        
-        const htmlRows = visibleLogs.map(log => {
-            let totalSold = log.exits ? log.exits.reduce((acc, ex) => acc + ex.qty, 0) : 0;
-            let isOpen = log.outcome === 'open';
-            let realizedR = 0;
-            const riskPerShare = Math.abs(log.entry - log.stop);
-            
-            let dateDisplay = log.date.substring(5, 10); 
-            if (log.date.includes('T')) {
-                const d = new Date(log.date);
-                dateDisplay = `${d.getDate()}/${d.getMonth()+1} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
-            }
-            
-            // --- DURATION FIX START ---
-            let durationStr = "";
-            if (isOpen) {
-                // If OPEN, use NOW (Keep clock running)
-                durationStr = `<span class="text-slate-500 italic">${this.formatDuration(log.date)}</span>`;
-            } else {
-                // If CLOSED, use Last Exit Date (Stop clock)
-                if (log.exits && log.exits.length > 0) {
-                    const sortedExits = [...log.exits].sort((a,b) => new Date(a.date) - new Date(b.date));
-                    durationStr = this.formatDuration(log.date, sortedExits[sortedExits.length-1].date);
-                } else if (log.exitDate) {
-                    durationStr = this.formatDuration(log.date, log.exitDate);
-                } else {
-                    durationStr = "-";
-                }
-            }
-            // --- DURATION FIX END ---
-
-            let realizedPnL = 0;
-            if (log.exits && log.exits.length > 0) {
-                let totalRVal = 0;
-                log.exits.forEach(ex => {
-                    let rChunk;
-                    if(log.direction === 'SHORT') {
-                        rChunk = (log.entry - ex.price) / riskPerShare;
-                        realizedPnL += (log.entry - ex.price) * ex.qty;
-                    } else {
-                        rChunk = (ex.price - log.entry) / riskPerShare;
-                        realizedPnL += (ex.price - log.entry) * ex.qty;
-                    }
-                    totalRVal += (rChunk * ex.qty);
-                });
-                const totalRiskAmount = log.initialQty * riskPerShare;
-                if (totalRiskAmount > 0) realizedR = realizedPnL / totalRiskAmount;
-            } else if (!log.initialQty && log.exitPrice) {
-                 const diff = log.direction === 'SHORT' ? (log.entry - log.exitPrice) : (log.exitPrice - log.entry);
-                 realizedR = diff / riskPerShare;
-                 isOpen = false;
-            }
-
-            let nerBadge = '';
-            if (isOpen) {
-                const remaining = (log.initialQty || 0) - totalSold;
-                if (remaining > 0) {
-                    let currentRiskDist = 0;
-                    const activeStop = (typeof log.currentStop === 'number') ? log.currentStop : log.stop;
-                    if(log.direction === 'LONG') currentRiskDist = Math.max(0, log.entry - activeStop);
-                    else currentRiskDist = Math.max(0, activeStop - log.entry);
-                    
-                    const grossRisk = remaining * currentRiskDist;
-                    const netExposure = grossRisk - realizedPnL;
-                    if (netExposure > 0) {
-                        nerBadge = `<span class="bg-amber-900/40 text-amber-400 border border-amber-500/30 text-[9px] px-1.5 py-0.5 rounded font-bold ml-1 tracking-wider" title="Unfinanced Risk">NER</span>`;
-                    }
-                }
-            }
-
-            let rDisplay = '-';
-            let rClass = 'text-slate-500';
-            let statusBadge = `<span class="bg-blue-900/50 text-blue-400 text-[10px] px-2 py-1 rounded">OPEN</span>`;
-            
-            if (!isOpen || (log.exits && log.exits.length > 0)) {
-                const rVal = realizedR.toFixed(2);
-                if(rVal > 0) { rDisplay = `+${rVal}R`; rClass = 'text-emerald-400 font-bold'; } 
-                else { rDisplay = `${rVal}R`; rClass = 'text-red-400 font-bold'; }
-            }
-            
-            if(!isOpen) {
-                statusBadge = realizedR > 0 
-                   ? `<span class="bg-emerald-900/50 text-emerald-400 text-[10px] px-2 py-1 rounded">WIN</span>`
-                   : `<span class="bg-red-900/50 text-red-400 text-[10px] px-2 py-1 rounded">LOSS</span>`;
-            } else if (totalSold > 0) {
-                 const pctClosed = Math.round((totalSold/log.initialQty)*100);
-                 statusBadge = `<span class="bg-amber-900/50 text-amber-400 text-[10px] px-2 py-1 rounded">${pctClosed}% SOLD</span>`;
-            }
-
-            return `
-            <div class="grid grid-cols-12 gap-2 p-3 bg-slate-800/50 border-b border-slate-700 items-center hover:bg-slate-800 transition-colors">
-                <div class="col-span-2">
-                    <div class="text-xs text-slate-400 font-mono leading-tight">${dateDisplay}</div>
-                    <div class="text-[9px] font-mono mt-0.5">${durationStr}</div>
-                </div>
-                <div class="col-span-2 font-bold text-white relative">
-                    ${log.ticker} 
-                    <span class="text-[8px] text-slate-500 block">${log.direction}</span>
-                </div>
-                <div class="col-span-2 text-right text-xs font-mono">${log.riskVal}${log.riskMode === 'equity' ? '%' : 'sz'}</div>
-                <div class="col-span-2 text-right text-sm font-mono ${rClass}">${rDisplay}</div>
-                <div class="col-span-4 flex justify-end gap-2 items-center">
-                    ${nerBadge}
-                    ${statusBadge}
-                    <button onclick="app.openManageView(${log.id})" class="text-slate-400 hover:text-blue-400 bg-slate-700/50 p-1.5 rounded-full"><i data-lucide="pencil" class="w-3 h-3"></i></button>
-                </div>
-            </div>
-            `;
-        }).join('');
-
-        let loadMoreHtml = '';
-        if (allMatches.length > limit) {
-            const remaining = allMatches.length - limit;
-            loadMoreHtml = `<div class="p-2 text-center"><button onclick="app.renderLogs(${limit + 50})" class="text-xs font-bold text-blue-400 hover:text-white border border-slate-700 bg-slate-800 rounded-full px-4 py-2 transition-all">Show Older Trades (${remaining} more)</button></div>`;
-        } else if (allMatches.length === 0) {
-            loadMoreHtml = `<div class="p-8 text-center text-slate-500 text-sm">No trades found.</div>`;
-        }
-
-        container.innerHTML = htmlRows + loadMoreHtml;
-        lucide.createIcons();
+        // 3. Format
+        const sym = this.getSymbol ? this.getSymbol(this.data.settings.baseCurrency) : "";
+        return {
+            val: basePnl,
+            formatted: `${basePnl >= 0 ? '+' : '-'}${sym}${Math.abs(basePnl).toFixed(2)}`
+        };
     },
 
 
@@ -2094,33 +2028,44 @@ const app = {
 
     // --- PATCH 4: MANAGE VIEW (With Duration & P1 Updates) ---
 
+	// --- PATCH 18: MANAGE VIEW WITH P&L DETAILS ---
+
     async openManageView(id) {
         this.data.editingId = id;
         const log = this.data.logs.find(l => l.id === id);
         if(!log) return;
         if(typeof log.currentStop === 'undefined') log.currentStop = log.stop;
 
+        // Calculate Totals
         const totalSold = log.exits.reduce((a,b) => a+b.qty, 0);
         const remaining = log.initialQty - totalSold;
-        const entryImgUrl = log.entryImg ? await imgDB.get(log.entryImg) : null;
-        const exitImgUrl = log.exitImg ? await imgDB.get(log.exitImg) : null;
         
-        // --- DURATION FIX START ---
+        let totalPnlVal = 0;
+        if (log.exits) {
+            log.exits.forEach(ex => {
+                totalPnlVal += this.getPnl(log, ex.price, ex.qty).val;
+            });
+        }
+        const sym = this.getSymbol ? this.getSymbol(this.data.settings.baseCurrency) : "";
+        const totalPnlStr = `${totalPnlVal>=0?'+':''}${sym}${Math.abs(totalPnlVal).toFixed(2)}`;
+        const totalPnlClass = totalPnlVal >= 0 ? 'text-emerald-400' : 'text-red-400';
+
+        // Duration
         let durationStr = "Active";
         if (log.outcome === 'open') {
-             // If Open, calculate time from Entry to NOW
              durationStr = this.formatDuration(log.date) + " (Open)";
         } else {
-             // If Closed, calculate time from Entry to LAST EXIT
              if (log.exits && log.exits.length > 0) {
                 const sortedExits = [...log.exits].sort((a,b) => new Date(a.date) - new Date(b.date));
                 durationStr = this.formatDuration(log.date, sortedExits[sortedExits.length-1].date);
-             } else {
-                durationStr = "-";
-             }
+             } else { durationStr = "-"; }
         }
-        // --- DURATION FIX END ---
 
+        // Charts
+        const entryImgUrl = log.entryImg ? await imgDB.get(log.entryImg) : null;
+        const exitImgUrl = log.exitImg ? await imgDB.get(log.exitImg) : null;
+
+        // Risk & Derisk
         const riskPerShareInitial = Math.abs(log.entry - log.stop);
         const riskPerShareCurrent = Math.abs(log.entry - log.currentStop);
         const dirMult = log.direction === 'LONG' ? 1 : -1;
@@ -2150,7 +2095,6 @@ const app = {
             </div>
         </div>`;
 
-        // Safety Lock is ON (only edit if no sales) - Change to 'true' if you want to unlock
         const canEditQty = totalSold === 0;
         const qtyHtml = canEditQty 
             ? `<div class="flex items-center gap-1"><input type="number" id="manageEditQty" value="${log.initialQty}" class="bg-slate-800 border border-slate-600 rounded w-16 text-center text-sm font-bold text-white p-1"><button onclick="app.updateTradeQty()" class="bg-blue-900/50 text-blue-400 p-1 rounded hover:bg-blue-600 hover:text-white"><i data-lucide="save" class="w-3 h-3"></i></button></div>`
@@ -2168,6 +2112,7 @@ const app = {
             </div>
         </div>`;
 
+        // Render Summary with Total P&L
         document.getElementById('manageSummary').innerHTML = `
             <div class="flex justify-between items-start mb-2">
                 <div>
@@ -2189,15 +2134,16 @@ const app = {
                     <div class="text-[10px] text-slate-500">SOLD</div>
                     <div class="font-bold text-amber-400">${totalSold}</div>
                 </div>
-                <div class="col-span-1">
+                <div class="col-span-1 border-r border-slate-700 pr-1">
                     <div class="text-[10px] text-slate-500">LEFT</div>
                     <div class="font-bold text-blue-400">${remaining}</div>
                 </div>
-                <div class="col-span-1 border-l border-slate-700 pl-1">
-                    <div class="text-[10px] text-slate-500">HELD</div>
-                    <div class="font-bold text-slate-300 text-xs">${durationStr}</div>
+                <div class="col-span-1">
+                    <div class="text-[10px] text-slate-500">P&L</div>
+                    <div class="font-bold ${totalPnlClass} text-xs">${totalPnlStr}</div>
                 </div>
             </div>
+            <div class="text-center text-[10px] text-slate-500 mb-2 font-mono italic">Held: ${durationStr}</div>
             
             ${stopDisplayHtml}
             ${chartHtml}
@@ -2244,6 +2190,10 @@ const app = {
             const pnlPerShare = log.direction === 'SHORT' ? (log.entry - ex.price) : (ex.price - log.entry);
             const rVal = (pnlPerShare / riskPerShare).toFixed(2);
             
+            // Calc P&L for this specific exit
+            const pnlObj = this.getPnl(log, ex.price, ex.qty);
+            const pnlClass = pnlObj.val >= 0 ? 'text-emerald-400' : 'text-red-400';
+
             return `
             <div class="flex justify-between items-center bg-slate-900 p-2 rounded border border-slate-700 text-sm">
                 <div>
@@ -2251,8 +2201,9 @@ const app = {
                     <span class="font-bold text-white">${ex.qty} shares @ ${ex.price}</span>
                 </div>
                 <div class="text-right">
-                    <span class="${rVal > 0 ? 'text-emerald-400' : 'text-red-400'} font-bold">${rVal > 0 ? '+' : ''}${rVal}R</span>
-                    <button onclick="app.removeExit(${idx})" class="text-xs text-red-500 underline ml-2">Undo</button>
+                    <div class="${rVal > 0 ? 'text-emerald-400' : 'text-red-400'} font-bold">${rVal > 0 ? '+' : ''}${rVal}R</div>
+                    <div class="${pnlClass} text-xs font-mono">${pnlObj.formatted}</div>
+                    <button onclick="app.removeExit(${idx})" class="text-[9px] text-slate-600 underline mt-1 hover:text-red-500">Undo</button>
                 </div>
             </div>`;
         }).join('');
@@ -2391,35 +2342,43 @@ const app = {
         return `${totalMinutes}m`;
     },
 
-    // Updated: Calculates P2, P3, P4 metrics
+    // --- PATCH 13: SCRATCH-AWARE MATH ENGINE ---
+
     calculateBatchStats(logs) {
-        let winCount = 0, lossCount = 0;
-        let totalWinR = 0, totalLossR = 0, totalNetR = 0; // P2
-        let totalWinAmt = 0, totalLossAmt = 0; // P3 (Financials)
-        let largestWin = 0, largestLoss = 0;    // P3
+        let winCount = 0, lossCount = 0, scratchCount = 0;
+        let totalWinR = 0, totalLossR = 0; // For Averages (Strict)
+        let totalNetR = 0; // For Net Result (All inclusive)
+        let totalWinAmt = 0, totalLossAmt = 0; // Financials
+        let largestWin = 0, largestLoss = 0;    
         
-        // Filter for "Statistically Closed" or "Active" trades to include in stats
-        const closed = logs.filter(l => {
-            const totalSold = l.exits ? l.exits.reduce((a,b)=>a+b.qty,0) : 0;
-            return l.outcome !== 'open' || (l.initialQty > 0 && totalSold >= l.initialQty);
+        const includePartialsInAvg = this.data.settings.statsIncludePartials === true;
+
+        // 1. Filter for TOTALS (Financials): Always includes ANY trade with realized P&L
+        const realizedLogs = logs.filter(l => {
+            return (l.exits && l.exits.length > 0) || (typeof l.exitPrice !== 'undefined');
         });
 
-        closed.forEach(l => {
+        // 2. Filter for AVERAGES (Edge Metrics): Depends on Toggle
+        const averageLogs = includePartialsInAvg ? realizedLogs : realizedLogs.filter(l => {
+             const totalSold = l.exits ? l.exits.reduce((a,b)=>a+b.qty,0) : 0;
+             return l.outcome !== 'open' || (l.initialQty > 0 && totalSold >= l.initialQty);
+        });
+
+        realizedLogs.forEach(l => {
             const riskPerShare = Math.abs(l.entry - l.stop);
             const rate = l.exchangeRate || 1;
             
             let rTrade = 0;
             let pnlBase = 0;
 
+            // Calculate R & P&L
             if(l.exits && l.exits.length > 0) {
                  const totalRisk = l.initialQty * riskPerShare;
                  let pnlTrade = 0;
                  l.exits.forEach(ex => {
                      pnlTrade += (l.direction === 'SHORT' ? (l.entry - ex.price) : (ex.price - l.entry)) * ex.qty;
                  });
-                 // R calculation
                  if(totalRisk > 0) rTrade = pnlTrade / totalRisk;
-                 // Base Currency P&L calculation
                  pnlBase = pnlTrade / rate;
             } else if (l.exitPrice) {
                  const diff = (l.direction==='SHORT' ? (l.entry - l.exitPrice) : (l.exitPrice - l.entry));
@@ -2427,45 +2386,61 @@ const app = {
                  pnlBase = (diff * l.initialQty) / rate;
             }
 
+            // Financial Totals (Includes EVERYTHING)
             totalNetR += rTrade;
+            if(pnlBase > largestWin) largestWin = pnlBase;
+            if(pnlBase < largestLoss) largestLoss = pnlBase;
+            
+            // Financial Sums for Profit Factor (Use strict math > 0)
+            if(rTrade > 0) totalWinAmt += pnlBase;
+            else totalLossAmt += pnlBase;
 
-            if(rTrade > 0) {
-                winCount++;
-                totalWinR += rTrade;
-                totalWinAmt += pnlBase;
-                if(pnlBase > largestWin) largestWin = pnlBase;
-            } else {
-                lossCount++;
-                totalLossR += Math.abs(rTrade); // Keep absolute for RRR calc
-                totalLossAmt += pnlBase;
-                if(pnlBase < largestLoss) largestLoss = pnlBase;
+            // --- STRICT CLASSIFICATION FOR STATS ---
+            // Only classify if this trade is part of the "Average Logs" set
+            if (averageLogs.includes(l)) {
+                if (rTrade > 0.1) {
+                    winCount++;
+                    totalWinR += rTrade;
+                } else if (rTrade < -0.1) {
+                    lossCount++;
+                    totalLossR += Math.abs(rTrade);
+                } else {
+                    scratchCount++;
+                    // Scratches do not contribute to Avg Win/Loss R magnitude
+                }
             }
         });
 
-        const count = closed.length;
+        // 3. Compute Metrics
+        const count = averageLogs.length; 
+        // Win Rate: Wins / Total (Scratches act as 'misses' but not 'losses')
         const winRate = count > 0 ? (winCount / count) * 100 : 0;
         
-        // Edge Metrics (P4)
         const avgWinR = winCount > 0 ? totalWinR / winCount : 0;
         const avgLossR = lossCount > 0 ? totalLossR / lossCount : 0;
-        const rrr = avgLossR === 0 ? 0 : (avgWinR / avgLossR); // Reward to Risk Ratio
+        const rrr = avgLossR === 0 ? 0 : (avgWinR / avgLossR); 
         
-        // Financial Averages (P3)
+        // Financial Averages (using strictly positive/negative P&L sums)
+        // We use winCount/lossCount for consistency, or we could use counts of all positive trades.
+        // Let's use the strict counts to align with the "Avg R" logic.
         const avgWinAmt = winCount > 0 ? totalWinAmt / winCount : 0;
         const avgLossAmt = lossCount > 0 ? totalLossAmt / lossCount : 0;
 
-        const profitFactor = totalLossR === 0 ? (totalWinR > 0 ? 999 : 0) : (totalWinR / totalLossR);
-        const expectancy = (winRate/100 * avgWinR) - ((1-(winRate/100)) * avgLossR);
+        const profitFactor = Math.abs(totalLossAmt) === 0 ? (totalWinAmt > 0 ? 999 : 0) : (totalWinAmt / Math.abs(totalLossAmt));
+        
+        // Expectancy = (Win% * AvgWin) - (Loss% * AvgLoss) - (Scratch% * ~0)
+        // Simply: Net R of (Wins + Losses) / Total Count
+        const expectancy = count > 0 ? (totalWinR - totalLossR) / count : 0;
 
         return { 
-            winRate, profitFactor, expectancy, count, logs: closed,
+            winRate, profitFactor, expectancy, count, scratchCount, logs: realizedLogs,
             totalNetR, 
             avgWinAmt, avgLossAmt, largestWin, largestLoss,
             avgWinR, avgLossR, rrr
         };
     },
 
-	// --- PATCH 2: STATS DASHBOARD RENDER ---
+	// --- PATCH 14: STATS RENDER (With Scratch & Detailed Directions) ---
 
     renderStats() {
         const strategyFilter = document.getElementById('statsFilter').value;
@@ -2476,13 +2451,10 @@ const app = {
             baseLogs = baseLogs.filter(l => l.strategy === strategyFilter);
         }
 
-        // Calculate Baseline
         const baseline = this.calculateBatchStats(baseLogs);
 
-        // Apply Recency for Current Stats
         let closedLogs = baseLogs.filter(l => {
-             const totalSold = l.exits ? l.exits.reduce((a,b)=>a+b.qty,0) : 0;
-             return l.outcome !== 'open' || (l.initialQty > 0 && totalSold >= l.initialQty);
+             return (l.exits && l.exits.length > 0) || (typeof l.exitPrice !== 'undefined');
         });
         closedLogs.sort((a,b) => new Date(b.date) - new Date(a.date));
         
@@ -2494,7 +2466,7 @@ const app = {
         
         const current = this.calculateBatchStats(recentStatsLogs);
 
-        // 1. Render Top Cards (Existing)
+        // 1. Top Cards (Diffs)
         const setDiff = (elId, curr, base, type) => {
             const el = document.getElementById(elId);
             if(recencyFilter === 'ALL' || base.count === 0 || curr.count === 0) { el.innerHTML = ''; return; }
@@ -2516,24 +2488,55 @@ const app = {
         document.getElementById('statExpectancy').textContent = `${current.expectancy > 0 ? '+' : ''}${current.expectancy.toFixed(2)}R`;
         setDiff('statExpectancyDiff', current.expectancy, baseline.expectancy, 'R');
 
-        document.getElementById('statTotal').textContent = current.count;
+        // Show Scratch Count in Total box if significant
+        const scratchText = current.scratchCount > 0 ? `<span class="text-slate-500 text-[9px]">(${current.scratchCount} Scratch)</span>` : '';
+        document.getElementById('statTotal').innerHTML = `${current.count} <div class="text-[9px] text-slate-500 mt-1">Trades ${scratchText}</div>`;
 
-        // 2. Render Direction Cards (Existing)
+        // 2. Directional Cards (Updated with Avg R)
         const longStats = this.calculateBatchStats(recentStatsLogs.filter(l => l.direction === 'LONG'));
         const shortStats = this.calculateBatchStats(recentStatsLogs.filter(l => l.direction === 'SHORT'));
         
         const renderDirCard = (title, stats, colorClass) => {
              if (stats.count === 0) return `<div class="bg-slate-800 p-3 rounded-lg border border-slate-700 opacity-50"><div class="text-[10px] text-slate-500 font-bold uppercase mb-1">${title}</div><div class="text-xs text-slate-500 italic">No data</div></div>`;
-             return `<div class="bg-slate-800 p-3 rounded-lg border border-slate-700 flex flex-col justify-between"><div class="flex justify-between items-start mb-2"><span class="text-[10px] ${colorClass} font-bold uppercase px-1.5 py-0.5 bg-slate-900 rounded">${title}</span><span class="text-[10px] text-slate-500">${stats.count} Trades</span></div><div class="grid grid-cols-3 gap-1 text-center"><div><div class="text-[9px] text-slate-500 uppercase">Win%</div><div class="text-sm font-bold text-slate-200">${Math.round(stats.winRate)}%</div></div><div><div class="text-[9px] text-slate-500 uppercase">PF</div><div class="text-sm font-bold text-slate-400">${stats.profitFactor>=999?'∞':stats.profitFactor.toFixed(2)}</div></div><div><div class="text-[9px] text-slate-500 uppercase">Exp</div><div class="text-sm font-bold ${stats.expectancy>0?'text-emerald-400':'text-red-400'}">${stats.expectancy.toFixed(2)}R</div></div></div></div>`;
+             
+             return `
+             <div class="bg-slate-800 p-3 rounded-lg border border-slate-700 flex flex-col justify-between">
+                <div class="flex justify-between items-start mb-2">
+                    <span class="text-[10px] ${colorClass} font-bold uppercase px-1.5 py-0.5 bg-slate-900 rounded">${title}</span>
+                    <span class="text-[10px] text-slate-500">${stats.count} Trades</span>
+                </div>
+                <div class="grid grid-cols-3 gap-y-2 gap-x-1 text-center">
+                    <div>
+                        <div class="text-[9px] text-slate-500 uppercase">Win%</div>
+                        <div class="text-sm font-bold text-slate-200">${Math.round(stats.winRate)}%</div>
+                    </div>
+                    <div>
+                        <div class="text-[9px] text-slate-500 uppercase">PF</div>
+                        <div class="text-sm font-bold text-slate-400">${stats.profitFactor>=999?'∞':stats.profitFactor.toFixed(2)}</div>
+                    </div>
+                    <div>
+                        <div class="text-[9px] text-slate-500 uppercase">Exp</div>
+                        <div class="text-sm font-bold ${stats.expectancy>0?'text-emerald-400':'text-red-400'}">${stats.expectancy.toFixed(2)}R</div>
+                    </div>
+                    <div class="col-span-3 grid grid-cols-2 gap-2 border-t border-slate-700/50 pt-2 mt-1">
+                        <div>
+                            <div class="text-[9px] text-slate-500 uppercase">Avg +R</div>
+                            <div class="text-xs font-mono text-emerald-400">+${stats.avgWinR.toFixed(2)}R</div>
+                        </div>
+                        <div>
+                            <div class="text-[9px] text-slate-500 uppercase">Avg -R</div>
+                            <div class="text-xs font-mono text-red-400">-${stats.avgLossR.toFixed(2)}R</div>
+                        </div>
+                    </div>
+                </div>
+             </div>`;
         };
+        
         const dirContainer = document.getElementById('directionStats');
         if (dirContainer) dirContainer.innerHTML = renderDirCard('Longs', longStats, 'text-emerald-400') + renderDirCard('Shorts', shortStats, 'text-red-400');
 
-        // --- NEW SECTION: P3 & P4 METRICS (Financials & Edge) ---
-        // We inject this BEFORE the charts.
+        // 3. Extra Stats (Financials)
         const baseSym = this.getSymbol ? this.getSymbol(this.data.settings.baseCurrency) : this.data.settings.baseCurrency;
-        
-        // Check if we already appended this container, if so remove it to re-render
         const existingExtras = document.getElementById('extraStatsContainer');
         if(existingExtras) existingExtras.remove();
 
@@ -2584,11 +2587,9 @@ const app = {
             </div>
         </div>
         `;
-        
-        // Insert after direction stats
         dirContainer.insertAdjacentHTML('afterend', extraStatsHtml);
 
-        // 3. Draw Charts (Existing)
+        // Draw Charts
         this.drawGrowthChart(recentStatsLogs);
         this.drawWinLossChart(recentStatsLogs);
         this.drawDrawdownChart(recentStatsLogs);
@@ -2597,7 +2598,7 @@ const app = {
         this.drawContributionChart(recentStatsLogs);
         this.drawMonthlyChart(recentStatsLogs); 
         this.drawDurationChart(recentStatsLogs);
-        this.drawDistributionChart(recentStatsLogs);
+        this.drawDistributionChart(recentStatsLogs); // Will use new bins
         
         this.generateInsights(recentStatsLogs);
         lucide.createIcons();
@@ -2782,21 +2783,16 @@ const app = {
     },
 	
 	
-    // --- SMART INSIGHTS ENGINE V2 (PATCH) ---
+    // --- PATCH 21 (REVISED): COMPLETE INSIGHTS ENGINE ---
     generateInsights(logs) {
         const insights = [];
         const filter = document.getElementById('statsFilter').value;
-        
-        // 1. Filter for Closed Trades Only
-        const closed = logs.filter(l => {
-             const totalSold = l.exits ? l.exits.reduce((a,b)=>a+b.qty,0) : 0;
-             return l.outcome !== 'open' || (l.initialQty > 0 && totalSold >= l.initialQty);
-        });
-        
-        // 2. Create Context Subset (Are we looking at ALL or just ONE strategy?)
-        const subset = filter === 'ALL' ? closed : closed.filter(l => l.strategy === filter);
+        const recency = document.getElementById('statsRecency').value; 
 
-        if(closed.length < 3) {
+        // 1. Calculate Stats on the provided logs (Current Context)
+        const stats = this.calculateBatchStats(logs); 
+        
+        if(stats.count < 3) {
             document.getElementById('smartInsightsList').innerHTML = `<div class="text-center italic opacity-50">Log at least 3 closed trades to unlock AI insights.</div>`;
             return;
         }
@@ -2815,101 +2811,96 @@ const app = {
             </div>`;
         };
 
-        // INSIGHT A: Efficiency (Avg Win vs Avg Loss)
-        let wins = [], losses = [];
-        subset.forEach(l => {
-            const risk = Math.abs(l.entry - l.stop);
-            let r = 0;
-            if(l.exits && l.exits.length > 0) {
-                let pnl = 0;
-                l.exits.forEach(e => pnl += (l.direction==='SHORT'?l.entry-e.price : e.price-l.entry)*e.qty);
-                r = pnl / (l.initialQty * risk);
-            } else if (l.exitPrice) {
-                r = (l.direction==='SHORT'?l.entry-l.exitPrice : l.exitPrice-l.entry)/risk;
-            }
-            if(r > 0) wins.push(r); else losses.push(Math.abs(r));
-        });
+        // --- NEW INSIGHTS ---
 
-        const avgWin = wins.length ? wins.reduce((a,b)=>a+b,0)/wins.length : 0;
-        const avgLoss = losses.length ? losses.reduce((a,b)=>a+b,0)/losses.length : 0;
-
-        if(wins.length > 0 && losses.length > 0) {
-            if(avgWin > avgLoss * 2) {
-                insights.push(createCard('emerald', 'High Efficiency', `Your average winner (${avgWin.toFixed(2)}R) is <strong>2x larger</strong> than your average loser.`));
-            } else if(avgLoss > avgWin) {
-                insights.push(createCard('amber', 'Negative Skew', `Warning: Your average loss (${avgLoss.toFixed(2)}R) is bigger than your average win (${avgWin.toFixed(2)}R).`));
-            }
+        // 1. Profit Factor Health
+        if (stats.profitFactor >= 2.0) {
+            insights.push(createCard('emerald', 'Robust System', `Your Profit Factor is a strong <strong>${stats.profitFactor.toFixed(2)}</strong>. You are extracting $2+ for every $1 lost.`));
+        } else if (stats.profitFactor < 1.0) {
+            insights.push(createCard('amber', 'System Leak', `Profit Factor is below 1.0 (${stats.profitFactor.toFixed(2)}). Your losses are currently outpacing your winners.`));
         }
 
-        // INSIGHT B: Strategy Context
+        // 2. Scratch Defense
+        const scratchRate = (stats.scratchCount / (stats.count + stats.scratchCount)) * 100;
+        if (scratchRate > 25) {
+            insights.push(createCard('blue', 'High Defense', `You are scratching often (<strong>${Math.round(scratchRate)}%</strong> of trades). This shows discipline, but ensure you aren't choking winners too early.`));
+        }
+
+        // --- ORIGINAL INSIGHTS ---
+
+        // 3. Efficiency (Avg Win vs Avg Loss R)
+        const winSize = stats.avgWinR;
+        const lossSize = stats.avgLossR; 
+        
+        if (winSize > lossSize * 2) {
+            insights.push(createCard('emerald', 'High Efficiency', `Your average winner (${winSize.toFixed(2)}R) is <strong>>2x larger</strong> than your average loser.`));
+        } else if (lossSize > winSize) {
+            insights.push(createCard('amber', 'Negative Skew', `Warning: Average loss (${lossSize.toFixed(2)}R) is bigger than average win (${winSize.toFixed(2)}R). You need a very high win rate to sustain this.`));
+        }
+
+        // 4. Strategy Analysis (Context-Aware)
         if(filter === 'ALL') {
-            // Rank Strategies
+            // A. MVP Strategy (Rank all strategies)
             const sMap = {};
-            closed.forEach(l => {
+            // We must scan ALL logs (not just filtered ones) to rank strategies, 
+            // but respecting the "Recency" limit if applied is tricky. 
+            // Let's stick to the 'logs' passed in, which are already filtered by recency.
+            logs.forEach(l => {
                 if(!l.strategy) return;
-                // Quick R Calc
-                const risk = Math.abs(l.entry - l.stop);
-                let r = 0;
-                if(l.exits && l.exits.length) { let p=0; l.exits.forEach(e=>p+=(l.direction==='SHORT'?l.entry-e.price:e.price-l.entry)*e.qty); r=p/(l.initialQty*risk); }
-                else if(l.exitPrice) r=(l.direction==='SHORT'?l.entry-l.exitPrice:l.exitPrice-l.entry)/risk;
-                
+                const rObj = this.calculateBatchStats([l]); 
                 if(!sMap[l.strategy]) sMap[l.strategy] = 0;
-                sMap[l.strategy] += r;
+                sMap[l.strategy] += rObj.totalNetR;
             });
             
-            // Find Best
             let bestS = null, maxR = -Infinity;
             Object.keys(sMap).forEach(k => { if(sMap[k] > maxR) { maxR = sMap[k]; bestS = k; } });
             
-            if(bestS) {
-                insights.push(createCard('blue', 'MVP Strategy', `<strong>${bestS}</strong> is your top performer with <strong>${maxR.toFixed(1)}R</strong> total return.`));
+            if(bestS && maxR > 0) {
+                insights.push(createCard('blue', 'MVP Strategy', `<strong>${bestS}</strong> is driving your performance with <strong>+${maxR.toFixed(1)}R</strong> total return.`));
             }
         } else {
-            // Deep Dive: Compare Strategy vs Global Average
-            const globalWinRate = (closed.filter(l => {
-                 // Quick check win
-                 const risk = Math.abs(l.entry - l.stop);
-                 let r = 0;
-                 if(l.exits && l.exits.length) { let p=0; l.exits.forEach(e=>p+=(l.direction==='SHORT'?l.entry-e.price:e.price-l.entry)*e.qty); r=p/(l.initialQty*risk); }
-                 else if(l.exitPrice) r=(l.direction==='SHORT'?l.entry-l.exitPrice:l.exitPrice-l.entry)/risk;
-                 return r > 0;
-            }).length / closed.length) * 100;
+            // B. Strategy Deep Dive (RESTORED!)
+            // Compare this strategy's Win Rate vs Global Win Rate
             
-            const stratWinRate = (wins.length / subset.length) * 100;
-            const diff = stratWinRate - globalWinRate;
+            // 1. Calculate Global Win Rate (All Strategies)
+            // We need a baseline. We can grab all logs from data for a "Global" baseline.
+            // Note: This uses 'this.data.logs' to get the TRUE global average, not just recent.
+            const globalStats = this.calculateBatchStats(this.data.logs);
+            const globalWinRate = globalStats.winRate;
             
+            // 2. Compare
+            const currentWinRate = stats.winRate;
+            const diff = currentWinRate - globalWinRate;
+
             if(diff > 5) {
-                insights.push(createCard('blue', 'Outperformer', `<strong>${filter}</strong> wins ${Math.round(diff)}% more often than your average trade.`));
+                insights.push(createCard('blue', 'Outperformer', `<strong>${filter}</strong> wins ${Math.round(diff)}% more often than your global average.`));
             } else if (diff < -5) {
-                insights.push(createCard('blue', 'Underperformer', `<strong>${filter}</strong> has a lower win rate (${Math.round(stratWinRate)}%) than your average.`));
+                insights.push(createCard('blue', 'Underperformer', `<strong>${filter}</strong> has a lower win rate (${Math.round(currentWinRate)}%) than your average (${Math.round(globalWinRate)}%).`));
             }
         }
 
-        // INSIGHT C: Seasonality (Best Month)
-        const monthMap = {};
-        subset.forEach(l => {
-             const m = new Date(l.date).toLocaleString('default', {month:'long'});
-             // Quick R Calc
-             const risk = Math.abs(l.entry - l.stop);
-             let r = 0;
-             if(l.exits && l.exits.length) { let p=0; l.exits.forEach(e=>p+=(l.direction==='SHORT'?l.entry-e.price:e.price-l.entry)*e.qty); r=p/(l.initialQty*risk); }
-             else if(l.exitPrice) r=(l.direction==='SHORT'?l.entry-l.exitPrice:l.exitPrice-l.entry)/risk;
-             
-             if(!monthMap[m]) monthMap[m] = 0;
-             monthMap[m] += r;
-        });
-        
-        let bestM = null, maxM = -Infinity;
-        Object.keys(monthMap).forEach(k => { if(monthMap[k] > maxM) { maxM = monthMap[k]; bestM = k; } });
-        
-        if(bestM && maxM > 2) {
-            insights.push(createCard('purple', 'Seasonality', `<strong>${bestM}</strong> is your strongest month (+${maxM.toFixed(1)}R).`));
+        // 5. Seasonality (With Recency Gate)
+        if (recency === 'ALL') {
+            const monthMap = {};
+            logs.forEach(l => {
+                 const m = new Date(l.date).toLocaleString('default', {month:'long'});
+                 const rObj = this.calculateBatchStats([l]); 
+                 if(!monthMap[m]) monthMap[m] = 0;
+                 monthMap[m] += rObj.totalNetR;
+            });
+            
+            let bestM = null, maxM = -Infinity;
+            Object.keys(monthMap).forEach(k => { if(monthMap[k] > maxM) { maxM = monthMap[k]; bestM = k; } });
+            
+            if(bestM && maxM > 2) {
+                insights.push(createCard('purple', 'Seasonality', `<strong>${bestM}</strong> is historically your strongest month (+${maxM.toFixed(1)}R).`));
+            }
         }
 
-        // Render to DOM
+        // Render
         const container = document.getElementById('smartInsightsList');
         if(insights.length === 0) {
-             container.innerHTML = `<div class="text-center text-slate-500 text-[10px]">No significant patterns found yet. Keep trading!</div>`;
+             container.innerHTML = `<div class="text-center text-slate-500 text-[10px]">No significant patterns found in this dataset.</div>`;
         } else {
              container.innerHTML = insights.join('');
         }
@@ -3544,6 +3535,232 @@ const app = {
         this.growthMode = mode;
         // Re-render only the stats to update the chart
         this.renderStats();
+    },
+
+	// --- PATCH 10: STATS PREFERENCES UI ---
+    renderSettingsPreferences() {
+        let container = document.getElementById('settingsPreferencesContainer');
+        if(!container) {
+            const accountsSection = document.getElementById('settingsAccountsList')?.parentElement;
+            if(accountsSection) {
+                container = document.createElement('div');
+                container.id = 'settingsPreferencesContainer';
+                container.className = 'bg-slate-800 rounded-xl p-4 border border-slate-700 mt-6 slide-in';
+                accountsSection.parentNode.insertBefore(container, accountsSection.nextSibling);
+            } else { return; }
+        }
+
+        const isChecked = this.data.settings.statsIncludePartials === true;
+        
+        container.innerHTML = `
+            <h2 class="text-sm font-bold text-slate-300 mb-4 uppercase flex items-center gap-2">
+                <i data-lucide="bar-chart-horizontal" class="w-4 h-4 text-indigo-400"></i> Stats Configuration
+            </h2>
+            <div class="flex justify-between items-center bg-slate-900 p-3 rounded border border-slate-700">
+                <div>
+                    <div class="text-sm font-bold text-slate-300">Include Partials in Averages</div>
+                    <div class="text-[10px] text-slate-500 max-w-xs mt-1">
+                        <span class="${isChecked ? 'text-blue-400 font-bold' : 'text-slate-500'}">ON (Dynamic):</span> Averages include active partials.<br>
+                        <span class="${!isChecked ? 'text-emerald-400 font-bold' : 'text-slate-500'}">OFF (Strict):</span> Averages use fully closed trades only.
+                    </div>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" onchange="app.toggleStatPreference(this.checked)" class="sr-only peer" ${isChecked ? 'checked' : ''}>
+                    <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+            </div>
+        `;
+        lucide.createIcons();
+    },
+
+    toggleStatPreference(val) {
+        this.data.settings.statsIncludePartials = val;
+        this.saveSettings();
+        this.renderSettingsPreferences(); // Visual update
+    },
+	
+	// --- PATCH 16: P&L HELPER ---
+    
+    getPnl(log, exitPrice, qty) {
+        // 1. Calculate Raw P&L in Trade Currency
+        const rawPnl = log.direction === 'SHORT' 
+            ? (log.entry - exitPrice) * qty 
+            : (exitPrice - log.entry) * qty;
+            
+        // 2. Convert to Base Currency
+        const rate = log.exchangeRate || 1;
+        const basePnl = rawPnl / rate;
+        
+        // 3. Format
+        const sym = this.getSymbol ? this.getSymbol(this.data.settings.baseCurrency) : "";
+        return {
+            val: basePnl,
+            formatted: `${basePnl >= 0 ? '+' : '-'}${sym}${Math.abs(basePnl).toFixed(2)}`
+        };
+    },
+
+	// --- PATCH 20: LOGS VIEW REPAIR KIT ---
+
+    // 1. Ensure Helper Exists (Calculates P&L for display)
+    getPnl(log, exitPrice, qty) {
+        if (!log || !exitPrice || !qty) return { val: 0, formatted: '' };
+        
+        // Calculate Raw P&L in Trade Currency
+        const rawPnl = log.direction === 'SHORT' 
+            ? (log.entry - exitPrice) * qty 
+            : (exitPrice - log.entry) * qty;
+            
+        // Convert to Base Currency
+        const rate = log.exchangeRate || 1;
+        const basePnl = rawPnl / rate;
+        
+        // Format
+        const sym = this.getSymbol ? this.getSymbol(this.data.settings.baseCurrency) : "";
+        return {
+            val: basePnl,
+            formatted: `${basePnl >= 0 ? '+' : '-'}${sym}${Math.abs(basePnl).toFixed(2)}`
+        };
+    },
+
+    // 2. The Fixed Render Function (Corrects 'l is not defined' and 'getPnl' errors)
+    renderLogs(limit = 50) {
+        const container = document.getElementById('logsContainer');
+        if (!container) return; // Safety check
+
+        const searchVal = document.getElementById('logSearch').value.toUpperCase();
+        
+        // Filter & Sort
+        const allMatches = this.data.logs
+            .sort((a,b) => new Date(b.date) - new Date(a.date)) 
+            .filter(l => l.ticker.includes(searchVal) || (l.strategy && l.strategy.toUpperCase().includes(searchVal)));
+
+        const visibleLogs = allMatches.slice(0, limit);
+        
+        const htmlRows = visibleLogs.map(log => {
+            let totalSold = log.exits ? log.exits.reduce((acc, ex) => acc + ex.qty, 0) : 0;
+            let isOpen = log.outcome === 'open';
+            let realizedR = 0;
+            let totalRealizedPnl = 0;
+            const riskPerShare = Math.abs(log.entry - log.stop);
+            
+            // Duration Logic
+            let durationStr = "";
+            if (isOpen) {
+                // Check if formatDuration exists, otherwise fallback
+                durationStr = this.formatDuration ? `<span class="text-slate-500 italic">${this.formatDuration(log.date)}</span>` : "Active";
+            } else {
+                if (log.exits && log.exits.length > 0) {
+                    const sortedExits = [...log.exits].sort((a,b) => new Date(a.date) - new Date(b.date));
+                    durationStr = this.formatDuration ? this.formatDuration(log.date, sortedExits[sortedExits.length-1].date) : "-";
+                } else if (log.exitDate) {
+                    durationStr = this.formatDuration ? this.formatDuration(log.date, log.exitDate) : "-";
+                } else {
+                    durationStr = "-";
+                }
+            }
+
+            // Calculate R & P&L
+            let realizedPnLValue = 0; 
+            if (log.exits && log.exits.length > 0) {
+                log.exits.forEach(ex => {
+                    // P&L for this chunk (Using safe getPnl)
+                    const pnlObj = this.getPnl(log, ex.price, ex.qty);
+                    totalRealizedPnl += pnlObj.val;
+                    
+                    // R Calc
+                    const rawPnl = (log.direction === 'SHORT' ? (log.entry - ex.price) : (ex.price - log.entry)) * ex.qty;
+                    realizedPnLValue += rawPnl;
+                });
+                const totalRiskAmount = log.initialQty * riskPerShare;
+                if (totalRiskAmount > 0) realizedR = realizedPnLValue / totalRiskAmount;
+            } else if (!log.initialQty && log.exitPrice) {
+                 const diff = log.direction === 'SHORT' ? (log.entry - log.exitPrice) : (log.exitPrice - log.entry);
+                 realizedR = diff / riskPerShare;
+                 isOpen = false;
+            }
+
+            // NER Badge Logic
+            let nerBadge = '';
+            if (isOpen) {
+                const remaining = (log.initialQty || 0) - totalSold;
+                if (remaining > 0) {
+                    let currentRiskDist = 0;
+                    const activeStop = (typeof log.currentStop === 'number') ? log.currentStop : log.stop;
+                    if(log.direction === 'LONG') currentRiskDist = Math.max(0, log.entry - activeStop);
+                    else currentRiskDist = Math.max(0, activeStop - log.entry);
+                    const grossRisk = remaining * currentRiskDist;
+                    
+                    if (grossRisk - realizedPnLValue > 0) {
+                        nerBadge = `<span class="bg-amber-900/40 text-amber-400 border border-amber-500/30 text-[9px] px-1.5 py-0.5 rounded font-bold ml-1 tracking-wider">NER</span>`;
+                    }
+                }
+            }
+
+            // Status Badge (0.1 Scratch Logic)
+            let statusBadge = `<span class="bg-blue-900/50 text-blue-400 text-[10px] px-2 py-1 rounded">OPEN</span>`;
+            if(!isOpen) {
+                if (realizedR > 0.1) statusBadge = `<span class="bg-emerald-900/50 text-emerald-400 text-[10px] px-2 py-1 rounded">WIN</span>`;
+                else if (realizedR < -0.1) statusBadge = `<span class="bg-red-900/50 text-red-400 text-[10px] px-2 py-1 rounded">LOSS</span>`;
+                else statusBadge = `<span class="bg-slate-700 text-slate-300 text-[10px] px-2 py-1 rounded">SCRATCH</span>`;
+            } else if (totalSold > 0) {
+                 const pctClosed = Math.round((totalSold/log.initialQty)*100);
+                 statusBadge = `<span class="bg-amber-900/50 text-amber-400 text-[10px] px-2 py-1 rounded">${pctClosed}% SOLD</span>`;
+            }
+
+            // Formatting P&L String
+            const sym = this.getSymbol ? this.getSymbol(this.data.settings.baseCurrency) : "";
+            const pnlString = totalRealizedPnl === 0 ? '' : 
+                `<div class="text-[10px] ${totalRealizedPnl>=0?'text-emerald-500':'text-red-500'} font-bold">
+                    ${totalRealizedPnl>=0?'+':''}${sym}${Math.abs(totalRealizedPnl).toFixed(2)}
+                 </div>`;
+
+            // R Display
+            let rDisplay = '-';
+            let rClass = 'text-slate-500';
+            if (!isOpen || (log.exits && log.exits.length > 0)) {
+                const rVal = realizedR.toFixed(2);
+                rDisplay = `${rVal > 0 ? '+' : ''}${rVal}R`;
+                rClass = realizedR > 0 ? 'text-emerald-400 font-bold' : 'text-red-400 font-bold';
+            }
+
+            let dateDisplay = log.date.substring(5, 10); 
+            if (log.date.includes('T')) {
+                const d = new Date(log.date);
+                dateDisplay = `${d.getDate()}/${d.getMonth()+1} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
+            }
+
+            return `
+            <div class="grid grid-cols-12 gap-2 p-3 bg-slate-800/50 border-b border-slate-700 items-center hover:bg-slate-800 transition-colors">
+                <div class="col-span-2">
+                    <div class="text-xs text-slate-400 font-mono leading-tight">${dateDisplay}</div>
+                    <div class="text-[9px] font-mono mt-0.5">${durationStr}</div>
+                </div>
+                <div class="col-span-2 font-bold text-white relative">
+                    ${log.ticker} <span class="text-[8px] text-slate-500 block">${log.direction}</span>
+                </div>
+                <div class="col-span-2 text-right text-xs font-mono">${log.riskVal}${log.riskMode === 'equity' ? '%' : 'sz'}</div>
+                <div class="col-span-2 text-right">
+                    <div class="text-sm font-mono ${rClass}">${rDisplay}</div>
+                    ${pnlString}
+                </div>
+                <div class="col-span-4 flex justify-end gap-2 items-center">
+                    ${nerBadge}
+                    ${statusBadge}
+                    <button onclick="app.openManageView(${log.id})" class="text-slate-400 hover:text-blue-400 bg-slate-700/50 p-1.5 rounded-full"><i data-lucide="pencil" class="w-3 h-3"></i></button>
+                </div>
+            </div>`;
+        }).join('');
+
+        let loadMoreHtml = '';
+        if (allMatches.length > limit) {
+            const remaining = allMatches.length - limit;
+            loadMoreHtml = `<div class="p-2 text-center"><button onclick="app.renderLogs(${limit + 50})" class="text-xs font-bold text-blue-400 hover:text-white border border-slate-700 bg-slate-800 rounded-full px-4 py-2 transition-all">Show Older Trades (${remaining} more)</button></div>`;
+        } else if (allMatches.length === 0) {
+            loadMoreHtml = `<div class="p-8 text-center text-slate-500 text-sm">No trades found.</div>`;
+        }
+
+        container.innerHTML = htmlRows + loadMoreHtml;
+        lucide.createIcons();
     },
 
 }; // <--- This is the end of the app object
