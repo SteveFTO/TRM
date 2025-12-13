@@ -655,25 +655,18 @@
         </div>
     </div>
 
-
-    <div id="view-stats" class="hidden p-4 max-w-lg mx-auto pb-24">
+	<div id="view-stats" class="hidden p-4 max-w-lg mx-auto pb-24 animate-in slide-in-from-right">
         
-        <div class="bg-indigo-900/20 border border-indigo-500/30 p-4 rounded-xl mb-6">
-            <h3 class="font-bold text-indigo-300 mb-3 flex items-center gap-2 text-sm"><i data-lucide="brain-circuit" class="w-5 h-5"></i> AI Analyst Insights</h3>
-            <div id="smartInsightsList" class="space-y-2 text-xs text-slate-300">
-               </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-3 mb-4">
+        <div class="grid grid-cols-2 gap-3 mb-6">
             <div>
-                 <label class="text-xs text-slate-500 uppercase font-bold">Strategy</label>
-                 <select id="statsFilter" onchange="app.renderStats()" class="w-full bg-slate-800 border-none text-sm rounded-lg p-2 mt-1 outline-none focus:ring-1 focus:ring-blue-500">
+                 <label class="text-[10px] text-slate-500 uppercase font-bold">Filter Strategy</label>
+                 <select id="statsFilter" onchange="app.renderStats()" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-lg p-2 mt-1 outline-none focus:border-blue-500">
                      <option value="ALL">All Strategies</option>
                  </select>
             </div>
             <div>
-                 <label class="text-xs text-slate-500 uppercase font-bold">Recency</label>
-                 <select id="statsRecency" onchange="app.renderStats()" class="w-full bg-slate-800 border-none text-sm rounded-lg p-2 mt-1 outline-none focus:ring-1 focus:ring-blue-500">
+                 <label class="text-[10px] text-slate-500 uppercase font-bold">Timeframe</label>
+                 <select id="statsRecency" onchange="app.renderStats()" class="w-full bg-slate-900 border border-slate-700 text-xs text-white rounded-lg p-2 mt-1 outline-none focus:border-blue-500">
                      <option value="ALL">All Time</option>
                      <option value="10">Last 10 Trades</option>
                      <option value="20">Last 20 Trades</option>
@@ -682,117 +675,130 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-3 mb-6">
-            <div class="bg-slate-800 p-3 rounded-lg text-center border border-slate-700">
-                <div class="text-xs text-slate-500">Win Rate</div>
-                <div class="flex flex-col items-center justify-center h-full">
-                     <div class="text-xl font-bold text-emerald-400" id="statWinRate">0%</div>
-                     <div class="text-[9px] font-bold mt-1" id="statWinRateDiff"></div>
-                </div>
+        <div class="grid grid-cols-4 gap-2 mb-6">
+            <div class="bg-slate-800 p-2 rounded-lg text-center border border-slate-700 shadow-sm">
+                <div class="text-[9px] text-slate-500 uppercase">Win Rate</div>
+                <div class="text-lg font-bold text-emerald-400 leading-tight" id="statWinRate">0%</div>
+                <div class="text-[8px] font-bold mt-0.5" id="statWinRateDiff"></div>
             </div>
-            <div class="bg-slate-800 p-3 rounded-lg text-center border border-slate-700">
-                <div class="text-xs text-slate-500">Profit Factor</div>
-                <div class="flex flex-col items-center justify-center h-full">
-                     <div class="text-xl font-bold text-blue-400" id="statPF">0.00</div>
-                     <div class="text-[9px] font-bold mt-1" id="statPFDiff"></div>
-                </div>
+            <div class="bg-slate-800 p-2 rounded-lg text-center border border-slate-700 shadow-sm">
+                <div class="text-[9px] text-slate-500 uppercase">Profit Factor</div>
+                <div class="text-lg font-bold text-blue-400 leading-tight" id="statPF">0.00</div>
+                <div class="text-[8px] font-bold mt-0.5" id="statPFDiff"></div>
             </div>
-            <div class="bg-slate-800 p-3 rounded-lg text-center border border-slate-700">
-                <div class="text-xs text-slate-500">Expectancy</div>
-                <div class="flex flex-col items-center justify-center h-full">
-                     <div class="text-xl font-bold text-amber-400" id="statExpectancy">0R</div>
-                     <div class="text-[9px] font-bold mt-1" id="statExpectancyDiff"></div>
-                </div>
+            <div class="bg-slate-800 p-2 rounded-lg text-center border border-slate-700 shadow-sm">
+                <div class="text-[9px] text-slate-500 uppercase">Expectancy</div>
+                <div class="text-lg font-bold text-amber-400 leading-tight" id="statExpectancy">0R</div>
+                <div class="text-[8px] font-bold mt-0.5" id="statExpectancyDiff"></div>
             </div>
-            <div class="bg-slate-800 p-3 rounded-lg text-center border border-slate-700">
-                <div class="text-xs text-slate-500">Sample Size</div>
-                <div class="flex flex-col items-center justify-center h-full">
-                     <div class="text-xl font-bold text-white" id="statTotal">0</div>
-                     <div class="text-[9px] text-slate-500 mt-1">Trades</div>
-                </div>
+            <div class="bg-slate-800 p-2 rounded-lg text-center border border-slate-700 shadow-sm">
+                <div class="text-[9px] text-slate-500 uppercase">Trades</div>
+                <div class="text-lg font-bold text-white leading-tight" id="statTotal">0</div>
+                <div class="text-[8px] text-slate-500 mt-0.5">Sample</div>
             </div>
         </div>
-		<div id="directionStats" class="grid grid-cols-2 gap-3 mb-6 animate-in fade-in slide-in-from-bottom-2">
-            </div>
-		
 
-        <div class="space-y-6">
-            <div class="bg-slate-800 p-3 rounded-xl border border-slate-700">
+        <div class="bg-indigo-900/10 border border-indigo-500/20 p-4 rounded-xl mb-10">
+            <h3 class="font-bold text-indigo-300 mb-3 flex items-center gap-2 text-xs uppercase">
+                <i data-lucide="sparkles" class="w-4 h-4"></i> Trading Insights
+            </h3>
+            <div id="smartInsightsList" class="space-y-2 text-xs text-slate-300">
+                <div class="text-center italic opacity-50">Analysing performance...</div>
+            </div>
+        </div>
+
+        <div class="mb-10">
+            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 border-b border-slate-800 pb-2 flex items-center gap-2">
+                <i data-lucide="wallet" class="w-4 h-4 text-emerald-500"></i> Financial Health
+            </h3>
+
+            <div id="financialStatsTarget" class="mb-6"></div>
+
+            <div class="bg-slate-800 p-3 rounded-xl border border-slate-700 mb-6 shadow-md">
                 <h3 class="text-sm font-semibold mb-2 text-slate-300 flex items-center gap-2">
                     <i data-lucide="trending-up" class="w-4 h-4 text-emerald-400"></i> Account Growth
                 </h3>
                 <canvas id="chartGrowth"></canvas>
             </div>
 
-            <div class="bg-slate-800 p-3 rounded-xl border border-slate-700">
+            <div class="bg-slate-800 p-3 rounded-xl border border-slate-700 mb-6">
+                <h3 class="text-sm font-semibold mb-2 text-slate-300">Monthly Returns</h3>
+                <div class="h-64 relative"><canvas id="chartMonthly"></canvas></div>
+            </div>
+            
+            <div class="bg-slate-800 p-3 rounded-xl border border-slate-700 mb-6">
+                <h3 class="text-sm font-semibold mb-2 text-slate-300">Recent Contributions</h3>
+                <div class="h-64 relative"><canvas id="chartContributions"></canvas></div>
+            </div>
+        </div>
+
+        <div class="mb-10">
+            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 border-b border-slate-800 pb-2 flex items-center gap-2">
+                <i data-lucide="crosshair" class="w-4 h-4 text-blue-500"></i> Strategy Edge
+            </h3>
+
+            <div id="directionStats" class="grid grid-cols-2 gap-3 mb-6"></div>
+
+            <div class="bg-slate-800 p-3 rounded-xl border border-slate-700 mb-6">
                 <h3 class="text-sm font-semibold mb-2 text-slate-300 flex items-center gap-2">
-                    <i data-lucide="bar-chart" class="w-4 h-4 text-amber-400"></i> Recent Contributions (Last 5)
+                    <i data-lucide="bar-chart-2" class="w-4 h-4 text-indigo-400"></i> R-Distribution (Edge Curve)
                 </h3>
-                <canvas id="chartContributions"></canvas>
+                <div class="h-64 relative">
+                    <canvas id="chartDistribution"></canvas>
+                </div>
             </div>
 
-            <div class="bg-slate-800 p-3 rounded-xl border border-slate-700">
+            <div class="bg-slate-800 p-3 rounded-xl border border-slate-700 mb-6">
+                <h3 class="text-sm font-semibold mb-2 text-slate-300">Strategy Performance (R)</h3>
+                <div class="h-56 relative"><canvas id="chartStrategy"></canvas></div>
+            </div>
+
+            <div class="bg-slate-800 p-3 rounded-xl border border-slate-700 mb-6">
+                <h3 class="text-sm font-semibold mb-2 text-slate-300">Outcome Mix</h3>
+                <div class="h-48 relative flex justify-center"><canvas id="chartWinLoss"></canvas></div>
+            </div>
+        </div>
+
+        <div class="mb-8">
+            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 border-b border-slate-800 pb-2 flex items-center gap-2">
+                <i data-lucide="brain-circuit" class="w-4 h-4 text-purple-500"></i> Risk & Behavior
+            </h3>
+
+            <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 mb-6">
+                <h3 class="text-sm font-semibold mb-3 text-slate-300 flex items-center gap-2">
+                    <i data-lucide="calendar-check" class="w-4 h-4 text-emerald-400"></i> Consistency Heatmap
+                </h3>
+                <div id="consistencyGrid" class="flex flex-wrap gap-1 justify-center"></div>
+                <div class="flex justify-between text-[9px] text-slate-500 mt-2 px-4 opacity-50">
+                    <span>90 Days Ago</span>
+                    <div class="flex gap-1 items-center">
+                        <div class="w-2 h-2 rounded-sm bg-red-500/50"></div>
+                        <div class="w-2 h-2 rounded-sm bg-slate-700"></div>
+                        <div class="w-2 h-2 rounded-sm bg-emerald-500/50"></div>
+                    </div>
+                    <span>Today</span>
+                </div>
+            </div>
+
+            <div class="bg-slate-800 p-3 rounded-xl border border-slate-700 mb-6">
                 <h3 class="text-sm font-semibold mb-2 text-slate-300 flex items-center gap-2">
                     <i data-lucide="activity" class="w-4 h-4 text-red-400"></i> Drawdown (Risk Depth)
                 </h3>
-                <canvas id="chartDrawdown"></canvas>
+                <div class="h-48 relative"><canvas id="chartDrawdown"></canvas></div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="bg-slate-800 p-3 rounded-xl border border-slate-700">
-                    <h3 class="text-sm font-semibold mb-2 text-slate-300">Strategy Performance (Total R)</h3>
-                    <canvas id="chartStrategy"></canvas>
-                </div>
-                <div class="bg-slate-800 p-3 rounded-xl border border-slate-700">
-                    <h3 class="text-sm font-semibold mb-2 text-slate-300">Outcomes</h3>
-                    <div class="h-40 flex justify-center">
-                        <canvas id="chartWinLoss"></canvas>
-                    </div>
-                </div>
+            <div class="bg-slate-800 p-3 rounded-xl border border-slate-700 mb-6">
+                <h3 class="text-sm font-semibold mb-2 text-slate-300">Time vs Money (Duration)</h3>
+                <div class="h-64 relative"><canvas id="chartDuration"></canvas></div>
             </div>
-			
-			
-
-</div> 
-	<div class="bg-slate-800 p-3 rounded-xl border border-slate-700 mt-6 mb-6">
-    <h3 class="text-sm font-semibold mb-2 text-slate-300 flex items-center gap-2">
-        <i data-lucide="hourglass" class="w-4 h-4 text-pink-400"></i> Time vs. Money (Duration)
-    </h3>
-    <div class="h-64">
-        <canvas id="chartDuration"></canvas>
-    </div>
-    <p class="text-[10px] text-slate-500 mt-2 text-center italic">
-        "Cut losers fast (Left Red), Let winners run (Right Green)"
-    </p>
-</div>
-
-<div class="bg-slate-800 p-3 rounded-xl border border-slate-700 mt-6 mb-6">
-    <h3 class="text-sm font-semibold mb-2 text-slate-300 flex items-center gap-2">
-        <i data-lucide="bar-chart-2" class="w-4 h-4 text-indigo-400"></i> R-Distribution (The Edge Curve)
-    </h3>
-    <div class="h-64">
-        <canvas id="chartDistribution"></canvas>
-    </div>
-    <p class="text-[10px] text-slate-500 mt-2 text-center italic">
-        "Left = Discipline Errors. Right = Home Runs."
-    </p>
-</div>
-
-            <div class="bg-slate-800 p-3 rounded-xl border border-slate-700 mt-6 mb-6">
-                <h3 class="text-sm font-semibold mb-2 text-slate-300 flex items-center gap-2">
-                    <i data-lucide="calendar-days" class="w-4 h-4 text-emerald-400"></i> Monthly Performance (%)
-                </h3>
-                <canvas id="chartMonthly"></canvas>
-            </div>
-
-            <div class="bg-slate-800 p-3 rounded-xl border border-slate-700">
-                <h3 class="text-sm font-semibold mb-2 text-slate-300 flex items-center gap-2">
-                    <i data-lucide="calendar" class="w-4 h-4 text-blue-400"></i> Day of Week Performance
-                </h3>
-                <canvas id="chartDayOfWeek"></canvas>
+            
+            <div class="bg-slate-800 p-3 rounded-xl border border-slate-700 mb-6">
+                <h3 class="text-sm font-semibold mb-2 text-slate-300">Day of Week Performance</h3>
+                <div class="h-64 relative"><canvas id="chartDayOfWeek"></canvas></div>
             </div>
         </div>
     </div>
+	
 
   </main>
 
@@ -1052,26 +1058,26 @@ const app = {
         document.getElementById('dispBaseCcy').textContent = this.data.settings.baseCurrency;
     },
 
-    // --- SMART INSIGHTS ENGINE V2 (PATCH) ---
+    // --- PATCH C: FIXED INSIGHTS ENGINE ---
     generateInsights(logs) {
-        const insights = [];
-        const filter = document.getElementById('statsFilter').value;
-        
-        // 1. Filter for Closed Trades Only
-        const closed = logs.filter(l => {
-             const totalSold = l.exits ? l.exits.reduce((a,b)=>a+b.qty,0) : 0;
-             return l.outcome !== 'open' || (l.initialQty > 0 && totalSold >= l.initialQty);
-        });
-        
-        // 2. Create Context Subset (Are we looking at ALL or just ONE strategy?)
-        const subset = filter === 'ALL' ? closed : closed.filter(l => l.strategy === filter);
+        const container = document.getElementById('smartInsightsList');
+        if(!container) return; 
 
-        if(closed.length < 3) {
-            document.getElementById('smartInsightsList').innerHTML = `<div class="text-center italic opacity-50">Log at least 3 closed trades to unlock AI insights.</div>`;
+        const filter = document.getElementById('statsFilter').value;
+        const recency = document.getElementById('statsRecency').value; 
+
+        // 1. Calculate Stats on the provided (Filtered) logs
+        const stats = this.calculateBatchStats(logs); 
+        
+        // Lowered Threshold: Need at least 2 trades
+        if(!stats || stats.count < 2) {
+            container.innerHTML = `<div class="text-center italic opacity-50 text-[10px]">Need at least 2 closed trades matching these filters to generate insights.</div>`;
             return;
         }
 
-        // HELPER: HTML Generator
+        const insights = [];
+
+        // HELPER
         const createCard = (color, title, text) => {
             const colors = {
                 emerald: 'border-emerald-500 text-emerald-400',
@@ -1085,104 +1091,74 @@ const app = {
             </div>`;
         };
 
-        // INSIGHT A: Efficiency (Avg Win vs Avg Loss)
-        let wins = [], losses = [];
-        subset.forEach(l => {
-            const risk = Math.abs(l.entry - l.stop);
-            let r = 0;
-            if(l.exits && l.exits.length > 0) {
-                let pnl = 0;
-                l.exits.forEach(e => pnl += (l.direction==='SHORT'?l.entry-e.price : e.price-l.entry)*e.qty);
-                r = pnl / (l.initialQty * risk);
-            } else if (l.exitPrice) {
-                r = (l.direction==='SHORT'?l.entry-l.exitPrice : l.exitPrice-l.entry)/risk;
-            }
-            if(r > 0) wins.push(r); else losses.push(Math.abs(r));
-        });
-
-        const avgWin = wins.length ? wins.reduce((a,b)=>a+b,0)/wins.length : 0;
-        const avgLoss = losses.length ? losses.reduce((a,b)=>a+b,0)/losses.length : 0;
-
-        if(wins.length > 0 && losses.length > 0) {
-            if(avgWin > avgLoss * 2) {
-                insights.push(createCard('emerald', 'High Efficiency', `Your average winner (${avgWin.toFixed(2)}R) is <strong>2x larger</strong> than your average loser.`));
-            } else if(avgLoss > avgWin) {
-                insights.push(createCard('amber', 'Negative Skew', `Warning: Your average loss (${avgLoss.toFixed(2)}R) is bigger than your average win (${avgWin.toFixed(2)}R).`));
+        // 1. Profit Factor
+        if (typeof stats.profitFactor === 'number' && isFinite(stats.profitFactor)) {
+            if (stats.profitFactor >= 2.0) {
+                insights.push(createCard('emerald', 'Robust System', `Profit Factor is a strong <strong>${stats.profitFactor.toFixed(2)}</strong>.`));
+            } else if (stats.profitFactor < 1.0 && stats.profitFactor >= 0) {
+                insights.push(createCard('amber', 'System Leak', `Profit Factor is below 1.0 (${stats.profitFactor.toFixed(2)}).`));
             }
         }
 
-        // INSIGHT B: Strategy Context
+        // 2. Scratch Defense
+        if (typeof stats.scratchCount === 'number') {
+            const totalActivity = stats.count + stats.scratchCount;
+            if (totalActivity > 0) {
+                const scratchRate = (stats.scratchCount / totalActivity) * 100;
+                if (scratchRate > 25) {
+                    insights.push(createCard('blue', 'High Defense', `You are scratching often (<strong>${Math.round(scratchRate)}%</strong>).`));
+                }
+            }
+        }
+
+        // 3. Efficiency
+        const winSize = stats.avgWinR || 0;
+        const lossSize = stats.avgLossR || 0; 
+        if (winSize > 0 && lossSize > 0) {
+            if (winSize > lossSize * 2) {
+                insights.push(createCard('emerald', 'High Efficiency', `Avg winner (${winSize.toFixed(2)}R) is <strong>>2x larger</strong> than avg loser.`));
+            } else if (lossSize > winSize) {
+                insights.push(createCard('amber', 'Negative Skew', `Warning: Avg loss (${lossSize.toFixed(2)}R) > Avg win (${winSize.toFixed(2)}R).`));
+            }
+        }
+
+        // 4. Strategy Analysis
         if(filter === 'ALL') {
-            // Rank Strategies
             const sMap = {};
-            closed.forEach(l => {
+            logs.forEach(l => {
                 if(!l.strategy) return;
-                // Quick R Calc
-                const risk = Math.abs(l.entry - l.stop);
-                let r = 0;
-                if(l.exits && l.exits.length) { let p=0; l.exits.forEach(e=>p+=(l.direction==='SHORT'?l.entry-e.price:e.price-l.entry)*e.qty); r=p/(l.initialQty*risk); }
-                else if(l.exitPrice) r=(l.direction==='SHORT'?l.entry-l.exitPrice:l.exitPrice-l.entry)/risk;
-                
+                const rObj = this.calculateBatchStats([l]); 
                 if(!sMap[l.strategy]) sMap[l.strategy] = 0;
-                sMap[l.strategy] += r;
+                sMap[l.strategy] += rObj.totalNetR;
             });
-            
-            // Find Best
             let bestS = null, maxR = -Infinity;
             Object.keys(sMap).forEach(k => { if(sMap[k] > maxR) { maxR = sMap[k]; bestS = k; } });
-            
-            if(bestS) {
-                insights.push(createCard('blue', 'MVP Strategy', `<strong>${bestS}</strong> is your top performer with <strong>${maxR.toFixed(1)}R</strong> total return.`));
-            }
+            if(bestS && maxR > 0) insights.push(createCard('blue', 'MVP Strategy', `<strong>${bestS}</strong> is driving performance (+${maxR.toFixed(1)}R).`));
         } else {
-            // Deep Dive: Compare Strategy vs Global Average
-            const globalWinRate = (closed.filter(l => {
-                 // Quick check win
-                 const risk = Math.abs(l.entry - l.stop);
-                 let r = 0;
-                 if(l.exits && l.exits.length) { let p=0; l.exits.forEach(e=>p+=(l.direction==='SHORT'?l.entry-e.price:e.price-l.entry)*e.qty); r=p/(l.initialQty*risk); }
-                 else if(l.exitPrice) r=(l.direction==='SHORT'?l.entry-l.exitPrice:l.exitPrice-l.entry)/risk;
-                 return r > 0;
-            }).length / closed.length) * 100;
-            
-            const stratWinRate = (wins.length / subset.length) * 100;
-            const diff = stratWinRate - globalWinRate;
-            
-            if(diff > 5) {
-                insights.push(createCard('blue', 'Outperformer', `<strong>${filter}</strong> wins ${Math.round(diff)}% more often than your average trade.`));
-            } else if (diff < -5) {
-                insights.push(createCard('blue', 'Underperformer', `<strong>${filter}</strong> has a lower win rate (${Math.round(stratWinRate)}%) than your average.`));
-            }
+            const globalStats = this.calculateBatchStats(this.data.logs);
+            const diff = (stats.winRate || 0) - (globalStats.winRate || 0);
+            if(diff > 5) insights.push(createCard('blue', 'Outperformer', `<strong>${filter}</strong> wins ${Math.round(diff)}% more often than global avg.`));
+            else if (diff < -5) insights.push(createCard('blue', 'Underperformer', `<strong>${filter}</strong> win rate is ${Math.abs(Math.round(diff))}% below global avg.`));
         }
 
-        // INSIGHT C: Seasonality (Best Month)
-        const monthMap = {};
-        subset.forEach(l => {
-             const m = new Date(l.date).toLocaleString('default', {month:'long'});
-             // Quick R Calc
-             const risk = Math.abs(l.entry - l.stop);
-             let r = 0;
-             if(l.exits && l.exits.length) { let p=0; l.exits.forEach(e=>p+=(l.direction==='SHORT'?l.entry-e.price:e.price-l.entry)*e.qty); r=p/(l.initialQty*risk); }
-             else if(l.exitPrice) r=(l.direction==='SHORT'?l.entry-l.exitPrice:l.exitPrice-l.entry)/risk;
-             
-             if(!monthMap[m]) monthMap[m] = 0;
-             monthMap[m] += r;
-        });
-        
-        let bestM = null, maxM = -Infinity;
-        Object.keys(monthMap).forEach(k => { if(monthMap[k] > maxM) { maxM = monthMap[k]; bestM = k; } });
-        
-        if(bestM && maxM > 2) {
-            insights.push(createCard('purple', 'Seasonality', `<strong>${bestM}</strong> is your strongest month (+${maxM.toFixed(1)}R).`));
+        // 5. Seasonality (Only if ALL time)
+        if (recency === 'ALL') {
+            const monthMap = {};
+            logs.forEach(l => {
+                 const d = new Date(l.date);
+                 if (isNaN(d)) return;
+                 const m = d.toLocaleString('default', {month:'long'});
+                 const rObj = this.calculateBatchStats([l]); 
+                 if(!monthMap[m]) monthMap[m] = 0;
+                 monthMap[m] += rObj.totalNetR;
+            });
+            let bestM = null, maxM = -Infinity;
+            Object.keys(monthMap).forEach(k => { if(monthMap[k] > maxM) { maxM = monthMap[k]; bestM = k; } });
+            if(bestM && maxM > 1) insights.push(createCard('purple', 'Seasonality', `<strong>${bestM}</strong> is your strongest month (+${maxM.toFixed(1)}R).`));
         }
 
-        // Render to DOM
-        const container = document.getElementById('smartInsightsList');
-        if(insights.length === 0) {
-             container.innerHTML = `<div class="text-center text-slate-500 text-[10px]">No significant patterns found yet. Keep trading!</div>`;
-        } else {
-             container.innerHTML = insights.join('');
-        }
+        if(insights.length === 0) container.innerHTML = `<div class="text-center text-slate-500 text-[10px]">No significant patterns found.</div>`;
+        else container.innerHTML = insights.join('');
     },
 
     // --- DATA BACKUP & RESTORE ---
@@ -2024,11 +2000,7 @@ const app = {
     },
 
 
-    // --- PATCH 3: MANAGE VIEW (Adjustable Stops & Qty) ---
-
-    // --- PATCH 4: MANAGE VIEW (With Duration & P1 Updates) ---
-
-	// --- PATCH 18: MANAGE VIEW WITH P&L DETAILS ---
+    // --- PATCH 26: DYNAMIC DE-RISKING ENGINE ---
 
     async openManageView(id) {
         this.data.editingId = id;
@@ -2036,48 +2008,148 @@ const app = {
         if(!log) return;
         if(typeof log.currentStop === 'undefined') log.currentStop = log.stop;
 
-        // Calculate Totals
-        const totalSold = log.exits.reduce((a,b) => a+b.qty, 0);
+        // 1. Calculate Core Metrics
+        const totalSold = log.exits ? log.exits.reduce((a,b) => a+b.qty, 0) : 0;
         const remaining = log.initialQty - totalSold;
         
-        let totalPnlVal = 0;
+        let realizedPnL = 0;
         if (log.exits) {
             log.exits.forEach(ex => {
-                totalPnlVal += this.getPnl(log, ex.price, ex.qty).val;
+                const pnl = (log.direction === 'SHORT' ? (log.entry - ex.price) : (ex.price - log.entry)) * ex.qty;
+                realizedPnL += pnl;
             });
         }
-        const sym = this.getSymbol ? this.getSymbol(this.data.settings.baseCurrency) : "";
-        const totalPnlStr = `${totalPnlVal>=0?'+':''}${sym}${Math.abs(totalPnlVal).toFixed(2)}`;
-        const totalPnlClass = totalPnlVal >= 0 ? 'text-emerald-400' : 'text-red-400';
 
-        // Duration
+        // 2. Determine Active Risk (NER)
+        const activeStop = (typeof log.currentStop === 'number') ? log.currentStop : log.stop;
+        let riskDist = 0;
+        if(log.direction === 'LONG') {
+            riskDist = Math.max(0, log.entry - activeStop); 
+        } else {
+            riskDist = Math.max(0, activeStop - log.entry);
+        }
+        
+        const grossRisk = remaining * riskDist;
+        const currentNER = Math.max(0, grossRisk - realizedPnL);
+        
+        // Calculate NER % Impact (for display)
+        let nerPctString = "";
+        const masterAcc = this.data.accounts.find(a => a.isMaster);
+        if (currentNER > 0 && masterAcc && masterAcc.size > 0) {
+            const rate = log.exchangeRate || 1;
+            const nerBase = currentNER / rate;
+            const pct = (nerBase / masterAcc.size) * 100;
+            nerPctString = `<span class="bg-amber-900/30 text-amber-500 text-[10px] px-2 py-0.5 rounded border border-amber-500/30 ml-2 font-bold animate-pulse">Contributing ${pct.toFixed(2)}% NER</span>`;
+        }
+
+        // 3. Generate De-Risk Section HTML
+        let deriskHtml = '';
+        
+        if (remaining > 0) {
+            if (currentNER <= 0) {
+                // Scenario: DE-RISKED
+                deriskHtml = `
+                <div class="card bg-emerald-900/10 border border-emerald-500/50 p-3 mb-4 rounded-xl flex items-center justify-center gap-2">
+                    <i data-lucide="shield-check" class="w-5 h-5 text-emerald-400"></i>
+                    <span class="text-sm font-bold text-emerald-400 uppercase tracking-wide">Trade De-Risked</span>
+                </div>`;
+            } else {
+                // Scenario: ACTIVE RISK -> Calculate Dynamic Targets
+                // Formula: Target = Entry + ( (NER / QtyToSell) - CurrentRiskPerShare )
+                // Note: For SHORTs, we SUBTRACT the result from Entry
+                
+                const dirMult = log.direction === 'LONG' ? 1 : -1;
+                
+                const calcTarget = (denom) => {
+                    const q = Math.floor(remaining / denom);
+                    if (q <= 0) return { q: 0, p: 0 };
+                    
+                    // The "Gap" we need to cover per share sold
+                    const profitPerShareNeeded = (currentNER / q) - riskDist;
+                    
+                    // If result is negative, it means even selling at entry covers it (math quirk of partials), 
+                    // but usually implies we just need to bank *something*. 
+                    // We clamp to at least "current price" logic or just show the math result.
+                    
+                    let target = log.entry + (profitPerShareNeeded * dirMult);
+                    return { q, p: target.toFixed(2) };
+                };
+
+                const t3 = calcTarget(3);
+                const t4 = calcTarget(4);
+                const t5 = calcTarget(5);
+                
+                const stopLabel = activeStop !== log.stop ? `Adjusted Stop (${activeStop})` : `Stop (${activeStop})`;
+
+                deriskHtml = `
+                <div class="card bg-slate-800/50 mb-4 rounded-xl border border-slate-700">
+                    <div class="flex justify-between items-center p-3 cursor-pointer" onclick="document.getElementById('targetList').classList.toggle('hidden')">
+                        <div>
+                            <h3 class="text-xs font-bold text-slate-300 uppercase flex items-center">
+                                <i data-lucide="crosshair" class="w-3 h-3 mr-1 text-blue-400"></i> De-Risk Targets
+                            </h3>
+                            <div class="text-[9px] text-slate-500 mt-0.5">Based on ${stopLabel}</div>
+                        </div>
+                        <div class="flex items-center">
+                            ${nerPctString}
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 ml-2"></i>
+                        </div>
+                    </div>
+                    
+                    <div id="targetList" class="p-3 pt-0 text-xs border-t border-slate-700/50">
+                        <div class="flex justify-between items-center py-2 border-b border-slate-700/30">
+                            <span class="text-slate-400">Sell 1/3 (${t3.q}) @</span>
+                            <span class="font-mono text-emerald-400 font-bold">${t3.p}</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-slate-700/30">
+                            <span class="text-slate-400">Sell 1/4 (${t4.q}) @</span>
+                            <span class="font-mono text-emerald-400 font-bold">${t4.p}</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2">
+                            <span class="text-slate-400">Sell 1/5 (${t5.q}) @</span>
+                            <span class="font-mono text-emerald-400 font-bold">${t5.p}</span>
+                        </div>
+                        <p class="text-[9px] text-slate-600 mt-1 italic text-center">
+                            *Selling at these levels eliminates all remaining risk (NER -> 0).
+                        </p>
+                    </div>
+                </div>`;
+            }
+        }
+
+        // 4. Standard UI Components (Summary, Stop Input, Charts)
+        // (Re-using standard display logic from previous patches)
+        
         let durationStr = "Active";
         if (log.outcome === 'open') {
-             durationStr = this.formatDuration(log.date) + " (Open)";
+             durationStr = this.formatDuration ? this.formatDuration(log.date) + " (Open)" : "Active";
         } else {
              if (log.exits && log.exits.length > 0) {
                 const sortedExits = [...log.exits].sort((a,b) => new Date(a.date) - new Date(b.date));
-                durationStr = this.formatDuration(log.date, sortedExits[sortedExits.length-1].date);
+                durationStr = this.formatDuration ? this.formatDuration(log.date, sortedExits[sortedExits.length-1].date) : "-";
              } else { durationStr = "-"; }
         }
 
-        // Charts
         const entryImgUrl = log.entryImg ? await imgDB.get(log.entryImg) : null;
         const exitImgUrl = log.exitImg ? await imgDB.get(log.exitImg) : null;
 
-        // Risk & Derisk
-        const riskPerShareInitial = Math.abs(log.entry - log.stop);
-        const riskPerShareCurrent = Math.abs(log.entry - log.currentStop);
-        const dirMult = log.direction === 'LONG' ? 1 : -1;
-        const displayRisk = riskPerShareCurrent === 0 ? riskPerShareInitial : riskPerShareCurrent; 
-        
-        const q3 = Math.floor(log.initialQty / 3);
-        const p3 = (log.entry + (displayRisk * 2.0 * dirMult)).toFixed(2); 
-        const q4 = Math.floor(log.initialQty / 4);
-        const p4 = (log.entry + (displayRisk * 3.0 * dirMult)).toFixed(2);
-        const q5 = Math.floor(log.initialQty / 5);
-        const p5 = (log.entry + (displayRisk * 4.0 * dirMult)).toFixed(2);
+        // Total P&L String
+        const sym = this.getSymbol ? this.getSymbol(this.data.settings.baseCurrency) : "";
+        let totalPnlVal = 0;
+        // Use helper if available, else manual
+        if(this.getPnl && log.exits) {
+             log.exits.forEach(ex => totalPnlVal += this.getPnl(log, ex.price, ex.qty).val);
+        }
+        const totalPnlStr = `${totalPnlVal>=0?'+':''}${sym}${Math.abs(totalPnlVal).toFixed(2)}`;
+        const totalPnlClass = totalPnlVal >= 0 ? 'text-emerald-400' : 'text-red-400';
 
+        // Qty HTML (Editable if no sales)
+        const canEditQty = totalSold === 0;
+        const qtyHtml = canEditQty 
+            ? `<div class="flex items-center gap-1"><input type="number" id="manageEditQty" value="${log.initialQty}" class="bg-slate-800 border border-slate-600 rounded w-16 text-center text-sm font-bold text-white p-1"><button onclick="app.updateTradeQty()" class="bg-blue-900/50 text-blue-400 p-1 rounded hover:bg-blue-600 hover:text-white"><i data-lucide="save" class="w-3 h-3"></i></button></div>`
+            : `<div class="font-bold text-white text-lg">${log.initialQty}</div>`;
+
+        // Stops UI
         const isStaggered = log.stopMeta && log.stopMeta.mode === 'staggered';
         const stopDisplayHtml = `
         <div class="bg-slate-900/50 p-3 rounded-lg mb-4 border border-slate-700/50">
@@ -2095,11 +2167,7 @@ const app = {
             </div>
         </div>`;
 
-        const canEditQty = totalSold === 0;
-        const qtyHtml = canEditQty 
-            ? `<div class="flex items-center gap-1"><input type="number" id="manageEditQty" value="${log.initialQty}" class="bg-slate-800 border border-slate-600 rounded w-16 text-center text-sm font-bold text-white p-1"><button onclick="app.updateTradeQty()" class="bg-blue-900/50 text-blue-400 p-1 rounded hover:bg-blue-600 hover:text-white"><i data-lucide="save" class="w-3 h-3"></i></button></div>`
-            : `<div class="font-bold text-white text-lg">${log.initialQty}</div>`;
-
+        // Chart UI
         const chartHtml = `
         <div class="grid grid-cols-2 gap-3 mb-4">
             <div class="bg-slate-900 p-2 rounded-xl border border-slate-700 text-center relative">
@@ -2112,7 +2180,10 @@ const app = {
             </div>
         </div>`;
 
-        // Render Summary with Total P&L
+        // Date Value
+        const dateVal = log.date.substring(0, 16);
+
+        // Assemble Final HTML
         document.getElementById('manageSummary').innerHTML = `
             <div class="flex justify-between items-start mb-2">
                 <div>
@@ -2125,6 +2196,13 @@ const app = {
                 </div>
             </div>
             
+            <div class="bg-slate-900/50 p-2 rounded-lg mb-3 flex justify-between items-center border border-slate-700/50">
+                 <label class="text-[10px] text-slate-500 font-bold uppercase">Entry Date</label>
+                 <input type="datetime-local" value="${dateVal}" 
+                    onchange="app.updateLogDate(${id}, this.value)"
+                    class="bg-transparent text-white text-sm font-mono focus:outline-none text-right">
+            </div>
+
             <div class="grid grid-cols-4 gap-2 text-center bg-slate-900/50 p-2 rounded-lg mb-3 items-center">
                 <div class="flex flex-col items-center col-span-1">
                     <div class="text-[10px] text-slate-500 mb-1">QTY</div>
@@ -2147,18 +2225,7 @@ const app = {
             
             ${stopDisplayHtml}
             ${chartHtml}
-
-             <div class="card bg-slate-800/50 mb-4">
-                <div class="flex justify-between items-center cursor-pointer" onclick="document.getElementById('targetList').classList.toggle('hidden')">
-                    <h3 class="text-xs font-bold text-slate-400 uppercase">De-Risk Targets</h3>
-                    <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500"></i>
-                </div>
-                <div id="targetList" class="mt-2 space-y-2 hidden text-xs pt-2 border-t border-slate-700">
-                    <div class="flex justify-between items-center"><span class="text-slate-400">Sell 1/3 (${q3}) @</span><span class="font-mono text-emerald-400 font-bold">${p3}</span></div>
-                    <div class="flex justify-between items-center"><span class="text-slate-400">Sell 1/4 (${q4}) @</span><span class="font-mono text-emerald-400 font-bold">${p4}</span></div>
-                    <div class="flex justify-between items-center"><span class="text-slate-400">Sell 1/5 (${q5}) @</span><span class="font-mono text-emerald-400 font-bold">${p5}</span></div>
-                </div>
-            </div>
+            ${deriskHtml} 
         `;
 
         document.getElementById('exitInputQty').value = remaining > 0 ? remaining : '';
@@ -2211,6 +2278,8 @@ const app = {
 
     // --- PATCH 1: ACTIVE LEDGER (AUTO-BALANCE) ---
 
+    // --- PATCH 27: CLEAN DECIMAL FIX ---
+
     addExit() {
         const log = this.data.logs.find(l => l.id === this.data.editingId);
         if(!log) return;
@@ -2234,18 +2303,20 @@ const app = {
         const rate = log.exchangeRate || 1;
         const pnlBaseCcy = pnlTradeCcy / rate;
 
-        // 3. Update Master Account
+        // 3. Update Master Account (FIXED: Limit to 2 decimals)
         const masterIdx = this.data.accounts.findIndex(a => a.isMaster);
         if(masterIdx !== -1) {
-            this.data.accounts[masterIdx].size += pnlBaseCcy;
-            this.saveSettings(); // Save new balance
+            // Get current size, add PnL, fix to 2 decimals, then parse back to number
+            const newSize = this.data.accounts[masterIdx].size + pnlBaseCcy;
+            this.data.accounts[masterIdx].size = parseFloat(newSize.toFixed(2));
+            this.saveSettings(); 
         }
 
         // 4. Update Log
         log.exits.push({ price, qty, date: new Date().toISOString() });
 
         const newTotalSold = totalSold + qty;
-        if(newTotalSold >= log.initialQty) log.outcome = 'profit'; // Auto-close status
+        if(newTotalSold >= log.initialQty) log.outcome = 'profit'; 
 
         localStorage.setItem('tradeLogs', JSON.stringify(this.data.logs));
         this.openManageView(this.data.editingId); 
@@ -2453,7 +2524,7 @@ const app = {
         };
     },
 
-	// --- PATCH 14: STATS RENDER (With Scratch & Detailed Directions) ---
+	// --- PATCH 30: CORRECTED STATS RENDER ---
 
     renderStats() {
         const strategyFilter = document.getElementById('statsFilter').value;
@@ -2466,6 +2537,7 @@ const app = {
 
         const baseline = this.calculateBatchStats(baseLogs);
 
+        // Filter for Closed/Partial Trades (Realized)
         let closedLogs = baseLogs.filter(l => {
              return (l.exits && l.exits.length > 0) || (typeof l.exitPrice !== 'undefined');
         });
@@ -2501,11 +2573,63 @@ const app = {
         document.getElementById('statExpectancy').textContent = `${current.expectancy > 0 ? '+' : ''}${current.expectancy.toFixed(2)}R`;
         setDiff('statExpectancyDiff', current.expectancy, baseline.expectancy, 'R');
 
-        // Show Scratch Count in Total box if significant
         const scratchText = current.scratchCount > 0 ? `<span class="text-slate-500 text-[9px]">(${current.scratchCount} Scratch)</span>` : '';
         document.getElementById('statTotal').innerHTML = `${current.count} <div class="text-[9px] text-slate-500 mt-1">Trades ${scratchText}</div>`;
 
-        // 2. Directional Cards (Updated with Avg R)
+        // 2. Zone 1: Financial Table Injection
+        const baseSym = this.getSymbol ? this.getSymbol(this.data.settings.baseCurrency) : this.data.settings.baseCurrency;
+        const financialTarget = document.getElementById('financialStatsTarget');
+        
+        if (financialTarget) {
+            financialTarget.innerHTML = `
+            <div class="grid grid-cols-2 gap-3 mb-6 animate-in slide-in-from-bottom-4 fade-in">
+                <div class="bg-slate-800 p-3 rounded-xl border border-slate-700 col-span-2">
+                    <h4 class="text-xs font-bold text-slate-400 uppercase mb-3 flex items-center gap-2">
+                        <i data-lucide="coins" class="w-4 h-4 text-amber-400"></i> Financial Performance (${baseSym})
+                    </h4>
+                    <div class="grid grid-cols-4 gap-2 text-center">
+                        <div class="bg-slate-900/30 rounded p-2">
+                            <div class="text-[9px] text-slate-500 uppercase">Avg Win</div>
+                            <div class="text-sm font-mono text-emerald-400 font-bold">${baseSym}${Math.abs(current.avgWinAmt).toFixed(0)}</div>
+                        </div>
+                        <div class="bg-slate-900/30 rounded p-2">
+                            <div class="text-[9px] text-slate-500 uppercase">Avg Loss</div>
+                            <div class="text-sm font-mono text-red-400 font-bold">${baseSym}${Math.abs(current.avgLossAmt).toFixed(0)}</div>
+                        </div>
+                        <div class="bg-slate-900/30 rounded p-2">
+                            <div class="text-[9px] text-slate-500 uppercase">Max Win</div>
+                            <div class="text-sm font-mono text-emerald-400 font-bold">${baseSym}${Math.abs(current.largestWin).toFixed(0)}</div>
+                        </div>
+                        <div class="bg-slate-900/30 rounded p-2">
+                            <div class="text-[9px] text-slate-500 uppercase">Max Loss</div>
+                            <div class="text-sm font-mono text-red-400 font-bold">${baseSym}${Math.abs(current.largestLoss).toFixed(0)}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-800 p-3 rounded-xl border border-slate-700 col-span-2">
+                    <h4 class="text-xs font-bold text-slate-400 uppercase mb-3 flex items-center gap-2">
+                        <i data-lucide="swords" class="w-4 h-4 text-purple-400"></i> Edge & Efficiency
+                    </h4>
+                    <div class="grid grid-cols-3 gap-2 text-center">
+                        <div class="bg-slate-900/50 rounded p-2">
+                            <div class="text-[9px] text-slate-500 uppercase">Total Net R</div>
+                            <div class="text-lg font-bold ${current.totalNetR >= 0 ? 'text-blue-400':'text-red-400'}">${current.totalNetR > 0 ? '+':''}${current.totalNetR.toFixed(1)}R</div>
+                        </div>
+                         <div class="bg-slate-900/50 rounded p-2">
+                            <div class="text-[9px] text-slate-500 uppercase">RRR (Reward:Risk)</div>
+                            <div class="text-lg font-bold text-white">1 : ${current.rrr.toFixed(2)}</div>
+                        </div>
+                        <div class="bg-slate-900/50 rounded p-2">
+                            <div class="text-[9px] text-slate-500 uppercase">Avg Win R</div>
+                            <div class="text-lg font-bold text-emerald-400">+${current.avgWinR.toFixed(2)}R</div>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        // 3. Zone 2: Directional Stats (Long vs Short)
         const longStats = this.calculateBatchStats(recentStatsLogs.filter(l => l.direction === 'LONG'));
         const shortStats = this.calculateBatchStats(recentStatsLogs.filter(l => l.direction === 'SHORT'));
         
@@ -2519,90 +2643,20 @@ const app = {
                     <span class="text-[10px] text-slate-500">${stats.count} Trades</span>
                 </div>
                 <div class="grid grid-cols-3 gap-y-2 gap-x-1 text-center">
-                    <div>
-                        <div class="text-[9px] text-slate-500 uppercase">Win%</div>
-                        <div class="text-sm font-bold text-slate-200">${Math.round(stats.winRate)}%</div>
-                    </div>
-                    <div>
-                        <div class="text-[9px] text-slate-500 uppercase">PF</div>
-                        <div class="text-sm font-bold text-slate-400">${stats.profitFactor>=999?'∞':stats.profitFactor.toFixed(2)}</div>
-                    </div>
-                    <div>
-                        <div class="text-[9px] text-slate-500 uppercase">Exp</div>
-                        <div class="text-sm font-bold ${stats.expectancy>0?'text-emerald-400':'text-red-400'}">${stats.expectancy.toFixed(2)}R</div>
-                    </div>
+                    <div><div class="text-[9px] text-slate-500 uppercase">Win%</div><div class="text-sm font-bold text-slate-200">${Math.round(stats.winRate)}%</div></div>
+                    <div><div class="text-[9px] text-slate-500 uppercase">PF</div><div class="text-sm font-bold text-slate-400">${stats.profitFactor>=999?'∞':stats.profitFactor.toFixed(2)}</div></div>
+                    <div><div class="text-[9px] text-slate-500 uppercase">Exp</div><div class="text-sm font-bold ${stats.expectancy>0?'text-emerald-400':'text-red-400'}">${stats.expectancy.toFixed(2)}R</div></div>
                     <div class="col-span-3 grid grid-cols-2 gap-2 border-t border-slate-700/50 pt-2 mt-1">
-                        <div>
-                            <div class="text-[9px] text-slate-500 uppercase">Avg +R</div>
-                            <div class="text-xs font-mono text-emerald-400">+${stats.avgWinR.toFixed(2)}R</div>
-                        </div>
-                        <div>
-                            <div class="text-[9px] text-slate-500 uppercase">Avg -R</div>
-                            <div class="text-xs font-mono text-red-400">-${stats.avgLossR.toFixed(2)}R</div>
-                        </div>
+                        <div><div class="text-[9px] text-slate-500 uppercase">Avg +R</div><div class="text-xs font-mono text-emerald-400">+${stats.avgWinR.toFixed(2)}R</div></div>
+                        <div><div class="text-[9px] text-slate-500 uppercase">Avg -R</div><div class="text-xs font-mono text-red-400">-${stats.avgLossR.toFixed(2)}R</div></div>
                     </div>
                 </div>
              </div>`;
         };
-        
         const dirContainer = document.getElementById('directionStats');
         if (dirContainer) dirContainer.innerHTML = renderDirCard('Longs', longStats, 'text-emerald-400') + renderDirCard('Shorts', shortStats, 'text-red-400');
 
-        // 3. Extra Stats (Financials)
-        const baseSym = this.getSymbol ? this.getSymbol(this.data.settings.baseCurrency) : this.data.settings.baseCurrency;
-        const existingExtras = document.getElementById('extraStatsContainer');
-        if(existingExtras) existingExtras.remove();
-
-        const extraStatsHtml = `
-        <div id="extraStatsContainer" class="grid grid-cols-2 gap-3 mb-6 animate-in slide-in-from-bottom-4 fade-in">
-            <div class="bg-slate-800 p-3 rounded-xl border border-slate-700 col-span-2">
-                <h4 class="text-xs font-bold text-slate-400 uppercase mb-3 flex items-center gap-2">
-                    <i data-lucide="coins" class="w-4 h-4 text-amber-400"></i> Financial Performance (${baseSym})
-                </h4>
-                <div class="grid grid-cols-4 gap-2 text-center">
-                    <div class="bg-slate-900/30 rounded p-2">
-                        <div class="text-[9px] text-slate-500 uppercase">Avg Win</div>
-                        <div class="text-sm font-mono text-emerald-400 font-bold">${baseSym}${Math.abs(current.avgWinAmt).toFixed(0)}</div>
-                    </div>
-                    <div class="bg-slate-900/30 rounded p-2">
-                        <div class="text-[9px] text-slate-500 uppercase">Avg Loss</div>
-                        <div class="text-sm font-mono text-red-400 font-bold">${baseSym}${Math.abs(current.avgLossAmt).toFixed(0)}</div>
-                    </div>
-                    <div class="bg-slate-900/30 rounded p-2">
-                        <div class="text-[9px] text-slate-500 uppercase">Max Win</div>
-                        <div class="text-sm font-mono text-emerald-400 font-bold">${baseSym}${Math.abs(current.largestWin).toFixed(0)}</div>
-                    </div>
-                    <div class="bg-slate-900/30 rounded p-2">
-                        <div class="text-[9px] text-slate-500 uppercase">Max Loss</div>
-                        <div class="text-sm font-mono text-red-400 font-bold">${baseSym}${Math.abs(current.largestLoss).toFixed(0)}</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-slate-800 p-3 rounded-xl border border-slate-700 col-span-2">
-                <h4 class="text-xs font-bold text-slate-400 uppercase mb-3 flex items-center gap-2">
-                    <i data-lucide="swords" class="w-4 h-4 text-purple-400"></i> Edge & Efficiency
-                </h4>
-                <div class="grid grid-cols-3 gap-2 text-center">
-                    <div class="bg-slate-900/50 rounded p-2">
-                        <div class="text-[9px] text-slate-500 uppercase">Total Net R</div>
-                        <div class="text-lg font-bold ${current.totalNetR >= 0 ? 'text-blue-400':'text-red-400'}">${current.totalNetR > 0 ? '+':''}${current.totalNetR.toFixed(1)}R</div>
-                    </div>
-                     <div class="bg-slate-900/50 rounded p-2">
-                        <div class="text-[9px] text-slate-500 uppercase">RRR (Reward:Risk)</div>
-                        <div class="text-lg font-bold text-white">1 : ${current.rrr.toFixed(2)}</div>
-                    </div>
-                    <div class="bg-slate-900/50 rounded p-2">
-                        <div class="text-[9px] text-slate-500 uppercase">Avg Win R</div>
-                        <div class="text-lg font-bold text-emerald-400">+${current.avgWinR.toFixed(2)}R</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        `;
-        dirContainer.insertAdjacentHTML('afterend', extraStatsHtml);
-
-        // Draw Charts
+        // 4. Render Charts
         this.drawGrowthChart(recentStatsLogs);
         this.drawWinLossChart(recentStatsLogs);
         this.drawDrawdownChart(recentStatsLogs);
@@ -2611,9 +2665,13 @@ const app = {
         this.drawContributionChart(recentStatsLogs);
         this.drawMonthlyChart(recentStatsLogs); 
         this.drawDurationChart(recentStatsLogs);
-        this.drawDistributionChart(recentStatsLogs); // Will use new bins
+        this.drawDistributionChart(recentStatsLogs);
         
+        // 5. Render Heatmap & Insights
+        // Note: Heatmap uses 'baseLogs' to show full history even if recency filter is on
+        this.drawConsistencyHeatmap(baseLogs); 
         this.generateInsights(recentStatsLogs);
+        
         lucide.createIcons();
     },
 
@@ -2796,19 +2854,24 @@ const app = {
     },
 	
 	
-    // --- PATCH 21 (REVISED): COMPLETE INSIGHTS ENGINE ---
+    // --- PATCH 33: ROBUST INSIGHTS ENGINE ---
     generateInsights(logs) {
-        const insights = [];
+        const container = document.getElementById('smartInsightsList');
+        if(!container) return; // Safety check
+
         const filter = document.getElementById('statsFilter').value;
         const recency = document.getElementById('statsRecency').value; 
 
-        // 1. Calculate Stats on the provided logs (Current Context)
+        // 1. Calculate Stats
         const stats = this.calculateBatchStats(logs); 
         
-        if(stats.count < 3) {
-            document.getElementById('smartInsightsList').innerHTML = `<div class="text-center italic opacity-50">Log at least 3 closed trades to unlock AI insights.</div>`;
+        // Safety: Ensure we have enough data
+        if(!stats || stats.count < 3) {
+            container.innerHTML = `<div class="text-center italic opacity-50">Log at least 3 closed trades to unlock AI insights.</div>`;
             return;
         }
+
+        const insights = [];
 
         // HELPER: HTML Generator
         const createCard = (color, title, text) => {
@@ -2824,40 +2887,38 @@ const app = {
             </div>`;
         };
 
-        // --- NEW INSIGHTS ---
-
-        // 1. Profit Factor Health
-        if (stats.profitFactor >= 2.0) {
-            insights.push(createCard('emerald', 'Robust System', `Your Profit Factor is a strong <strong>${stats.profitFactor.toFixed(2)}</strong>. You are extracting $2+ for every $1 lost.`));
-        } else if (stats.profitFactor < 1.0) {
-            insights.push(createCard('amber', 'System Leak', `Profit Factor is below 1.0 (${stats.profitFactor.toFixed(2)}). Your losses are currently outpacing your winners.`));
+        // 1. Profit Factor Health (Check existence)
+        if (typeof stats.profitFactor === 'number') {
+            if (stats.profitFactor >= 2.0) {
+                insights.push(createCard('emerald', 'Robust System', `Your Profit Factor is a strong <strong>${stats.profitFactor.toFixed(2)}</strong>. You are extracting $2+ for every $1 lost.`));
+            } else if (stats.profitFactor < 1.0) {
+                insights.push(createCard('amber', 'System Leak', `Profit Factor is below 1.0 (${stats.profitFactor.toFixed(2)}). Your losses are currently outpacing your winners.`));
+            }
         }
 
-        // 2. Scratch Defense
-        const scratchRate = (stats.scratchCount / (stats.count + stats.scratchCount)) * 100;
-        if (scratchRate > 25) {
-            insights.push(createCard('blue', 'High Defense', `You are scratching often (<strong>${Math.round(scratchRate)}%</strong> of trades). This shows discipline, but ensure you aren't choking winners too early.`));
+        // 2. Scratch Defense (Check existence)
+        if (typeof stats.scratchCount === 'number') {
+            const scratchRate = (stats.scratchCount / (stats.count + stats.scratchCount)) * 100;
+            if (scratchRate > 25) {
+                insights.push(createCard('blue', 'High Defense', `You are scratching often (<strong>${Math.round(scratchRate)}%</strong> of trades). This shows discipline, but ensure you aren't choking winners too early.`));
+            }
         }
-
-        // --- ORIGINAL INSIGHTS ---
 
         // 3. Efficiency (Avg Win vs Avg Loss R)
-        const winSize = stats.avgWinR;
-        const lossSize = stats.avgLossR; 
+        const winSize = stats.avgWinR || 0;
+        const lossSize = stats.avgLossR || 0; 
         
-        if (winSize > lossSize * 2) {
-            insights.push(createCard('emerald', 'High Efficiency', `Your average winner (${winSize.toFixed(2)}R) is <strong>>2x larger</strong> than your average loser.`));
-        } else if (lossSize > winSize) {
-            insights.push(createCard('amber', 'Negative Skew', `Warning: Average loss (${lossSize.toFixed(2)}R) is bigger than average win (${winSize.toFixed(2)}R). You need a very high win rate to sustain this.`));
+        if (winSize > 0 && lossSize > 0) {
+            if (winSize > lossSize * 2) {
+                insights.push(createCard('emerald', 'High Efficiency', `Your average winner (${winSize.toFixed(2)}R) is <strong>>2x larger</strong> than your average loser.`));
+            } else if (lossSize > winSize) {
+                insights.push(createCard('amber', 'Negative Skew', `Warning: Average loss (${lossSize.toFixed(2)}R) is bigger than average win (${winSize.toFixed(2)}R).`));
+            }
         }
 
-        // 4. Strategy Analysis (Context-Aware)
+        // 4. Strategy Analysis
         if(filter === 'ALL') {
-            // A. MVP Strategy (Rank all strategies)
             const sMap = {};
-            // We must scan ALL logs (not just filtered ones) to rank strategies, 
-            // but respecting the "Recency" limit if applied is tricky. 
-            // Let's stick to the 'logs' passed in, which are already filtered by recency.
             logs.forEach(l => {
                 if(!l.strategy) return;
                 const rObj = this.calculateBatchStats([l]); 
@@ -2872,17 +2933,9 @@ const app = {
                 insights.push(createCard('blue', 'MVP Strategy', `<strong>${bestS}</strong> is driving your performance with <strong>+${maxR.toFixed(1)}R</strong> total return.`));
             }
         } else {
-            // B. Strategy Deep Dive (RESTORED!)
-            // Compare this strategy's Win Rate vs Global Win Rate
-            
-            // 1. Calculate Global Win Rate (All Strategies)
-            // We need a baseline. We can grab all logs from data for a "Global" baseline.
-            // Note: This uses 'this.data.logs' to get the TRUE global average, not just recent.
             const globalStats = this.calculateBatchStats(this.data.logs);
-            const globalWinRate = globalStats.winRate;
-            
-            // 2. Compare
-            const currentWinRate = stats.winRate;
+            const globalWinRate = globalStats.winRate || 0;
+            const currentWinRate = stats.winRate || 0;
             const diff = currentWinRate - globalWinRate;
 
             if(diff > 5) {
@@ -2892,11 +2945,13 @@ const app = {
             }
         }
 
-        // 5. Seasonality (With Recency Gate)
+        // 5. Seasonality
         if (recency === 'ALL') {
             const monthMap = {};
             logs.forEach(l => {
-                 const m = new Date(l.date).toLocaleString('default', {month:'long'});
+                 const d = new Date(l.date);
+                 if (isNaN(d)) return;
+                 const m = d.toLocaleString('default', {month:'long'});
                  const rObj = this.calculateBatchStats([l]); 
                  if(!monthMap[m]) monthMap[m] = 0;
                  monthMap[m] += rObj.totalNetR;
@@ -2911,15 +2966,12 @@ const app = {
         }
 
         // Render
-        const container = document.getElementById('smartInsightsList');
         if(insights.length === 0) {
              container.innerHTML = `<div class="text-center text-slate-500 text-[10px]">No significant patterns found in this dataset.</div>`;
         } else {
              container.innerHTML = insights.join('');
         }
     },
-
-    // --- PATCH 6: GROWTH CHART LAYOUT FIX ---
 
     // --- PATCH 7: DYNAMIC CURRENCY LABEL FIX ---
 
@@ -3776,6 +3828,78 @@ const app = {
         lucide.createIcons();
     },
 
+	// --- PATCH B: ROBUST HEATMAP ---
+    drawConsistencyHeatmap(logs) {
+        const container = document.getElementById('consistencyGrid');
+        if (!container) return;
+
+        // 1. Generate Last 90 Days Map (Strict UTC)
+        const dayMap = {};
+        const daysToShow = 90; 
+        
+        // Helper: Get strict YYYY-MM-DD from a date object
+        const getIsoDate = (d) => d.toISOString().split('T')[0];
+
+        for (let i = daysToShow - 1; i >= 0; i--) {
+            const d = new Date();
+            // Reset to 12:00 UTC to avoid daylight savings drift
+            d.setUTCHours(12, 0, 0, 0); 
+            d.setUTCDate(d.getUTCDate() - i);
+            const key = getIsoDate(d); 
+            dayMap[key] = { pnl: 0, count: 0, date: d };
+        }
+
+        // 2. Aggregate P&L per Day
+        logs.forEach(l => {
+            const tDate = new Date(l.date);
+            if (isNaN(tDate)) return; 
+
+            // Force trade date to YYYY-MM-DD key
+            const dateKey = getIsoDate(tDate);
+            
+            if (dayMap[dateKey]) {
+                // Calculate Net R using existing logic
+                let netR = 0;
+                const riskPerShare = Math.abs(l.entry - l.stop);
+                
+                if (l.exits && l.exits.length > 0) {
+                    let pnl = 0;
+                    l.exits.forEach(ex => pnl += (l.direction === 'SHORT' ? l.entry - ex.price : ex.price - l.entry) * ex.qty);
+                    if (l.initialQty * riskPerShare > 0) netR = pnl / (l.initialQty * riskPerShare);
+                } else if (l.exitPrice) {
+                    netR = (l.direction === 'SHORT' ? l.entry - l.exitPrice : l.exitPrice - l.entry) / riskPerShare;
+                }
+                
+                dayMap[dateKey].pnl += netR;
+                dayMap[dateKey].count++;
+            }
+        });
+
+        // 3. Render Grid
+        const squares = Object.keys(dayMap).sort().map(key => {
+            const data = dayMap[key];
+            let colorClass = 'bg-slate-700/50'; 
+            let title = `${key}\nNo Trades`;
+
+            if (data.count > 0) {
+                if (data.pnl > 0) {
+                    if (data.pnl > 2) colorClass = 'bg-emerald-400 shadow-sm shadow-emerald-900'; 
+                    else if (data.pnl > 1) colorClass = 'bg-emerald-500/80'; 
+                    else colorClass = 'bg-emerald-600/50'; 
+                } else if (data.pnl < 0) {
+                    if (data.pnl < -2) colorClass = 'bg-red-500 shadow-sm shadow-red-900'; 
+                    else if (data.pnl < -1) colorClass = 'bg-red-500/80'; 
+                    else colorClass = 'bg-red-600/50'; 
+                } else {
+                    colorClass = 'bg-slate-500'; // Scratch
+                }
+                title = `${key}\nTrades: ${data.count}\nNet: ${data.pnl > 0 ? '+' : ''}${data.pnl.toFixed(2)}R`;
+            }
+            return `<div title="${title}" class="w-3 h-3 rounded-sm ${colorClass} transition-all hover:scale-125 cursor-help"></div>`;
+        }).join('');
+
+        container.innerHTML = squares;
+    },
 }; // <--- This is the end of the app object
 	
 
