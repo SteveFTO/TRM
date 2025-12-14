@@ -3941,6 +3941,143 @@ document.addEventListener('DOMContentLoaded', () => {
     app.init();
 });
 
+// --- PATCH 38: HEATMAP TOGGLE (FIXED) ---
+
+// 1. New Toggle Helper
+app.toggleHeatmapMode = function(mode) {
+    app.heatmapMode = mode;
+    console.log("Switched Heatmap Mode to:", mode);
+    app.renderStats(); 
+};
+
+// 2. Upgraded Heatmap Function
+app.drawConsistencyHeatmap = function(logs) {
+    const container = document.getElementById('consistencyGrid');
+    if (!container) return;
+
+    // Ensure Default State
+    if (!app.heatmapMode) app.heatmapMode = 'ENTRY';
+
+    // A. Inject Toggle Controls (Idempotent check)
+    let controls = document.getElementById('heatmapControls');
+    if (!controls) {
+        controls = document.createElement('div');
+        controls.id = 'heatmapControls';
+        controls.className = 'flex justify-center gap-2 mb-4 animate-in fade-in';
+        // Insert BEFORE the grid container
+        container.parentNode.insertBefore(controls, container);
+    }
+    
+    // Render Buttons (Visual State Update)
+    const isEntry = app.heatmapMode === 'ENTRY';
+    controls.innerHTML = `
+        <button onclick="app.toggleHeatmapMode('ENTRY')" 
+            class="text-[10px] px-3 py-1 rounded border transition-all font-bold ${isEntry ? 'bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-900/50 scale-105' : 'border-slate-600 text-slate-500 hover:text-white'}">
+            By Entry (Decision)
+        </button>
+        <button onclick="app.toggleHeatmapMode('EXIT')" 
+            class="text-[10px] px-3 py-1 rounded border transition-all font-bold ${!isEntry ? 'bg-emerald-600 text-white border-emerald-600 shadow-lg shadow-emerald-900/50 scale-105' : 'border-slate-600 text-slate-500 hover:text-white'}">
+            By Exit (Banked)
+        </button>
+    `;
+
+    // B. Initialize Calendar Grid (Last 90 Days)
+    const dayMap = {};
+    const daysToShow = 90; 
+    const getIsoDate = (d) => d.toISOString().split('T')[0];
+
+    for (let i = daysToShow - 1; i >= 0; i--) {
+        const d = new Date();
+        d.setUTCHours(12, 0, 0, 0); 
+        d.setUTCDate(d.getUTCDate() - i);
+        const key = getIsoDate(d); 
+        dayMap[key] = { pnl: 0, count: 0 };
+    }
+
+    // C. Populate Data
+    logs.forEach(l => {
+        const riskPerShare = Math.abs(l.entry - l.stop);
+        // Safety: Ensure we don't divide by zero or NaN
+        const totalInitialRisk = (l.initialQty || 0) * riskPerShare;
+        
+        if (!totalInitialRisk || totalInitialRisk <= 0) return;
+
+        if (app.heatmapMode === 'EXIT') {
+            // --- MODE: EXIT (Realized Date) ---
+            if (l.exits && l.exits.length > 0) {
+                l.exits.forEach(ex => {
+                    if (!ex.date) return;
+                    const dKey = getIsoDate(new Date(ex.date));
+                    
+                    if (dayMap[dKey]) {
+                        // Calculate R for just this chunk
+                        const chunkPnL = (l.direction === 'SHORT' ? l.entry - ex.price : ex.price - l.entry) * ex.qty;
+                        const chunkR = chunkPnL / totalInitialRisk;
+                        
+                        dayMap[dKey].pnl += chunkR;
+                        dayMap[dKey].count++; 
+                    }
+                });
+            }
+        } else {
+            // --- MODE: ENTRY (Decision Date) ---
+            const dKey = getIsoDate(new Date(l.date));
+            
+            if (dayMap[dKey]) {
+                let netR = 0;
+                let hasActivity = false;
+
+                if (l.exits && l.exits.length > 0) {
+                    let pnl = 0;
+                    l.exits.forEach(ex => pnl += (l.direction === 'SHORT' ? l.entry - ex.price : ex.price - l.entry) * ex.qty);
+                    netR = pnl / totalInitialRisk;
+                    hasActivity = true;
+                } else if (l.exitPrice) {
+                    netR = (l.direction === 'SHORT' ? l.entry - l.exitPrice : l.exitPrice - l.entry) / riskPerShare;
+                    hasActivity = true;
+                }
+                
+                if (hasActivity) {
+                    dayMap[dKey].pnl += netR;
+                    dayMap[dKey].count++; 
+                }
+            }
+        }
+    });
+
+    // D. Render Grid Visuals
+    const squares = Object.keys(dayMap).sort().map(key => {
+        const data = dayMap[key];
+        let colorClass = 'bg-slate-800 border border-slate-700/50'; 
+        
+        if (data.count > 0) {
+            if (data.pnl > 0) {
+                if (data.pnl > 2) colorClass = 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)] z-10'; 
+                else if (data.pnl > 1) colorClass = 'bg-emerald-500'; 
+                else colorClass = 'bg-emerald-600/80'; 
+            } else if (data.pnl < 0) {
+                if (data.pnl < -2) colorClass = 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)] z-10'; 
+                else if (data.pnl < -1) colorClass = 'bg-red-500/90'; 
+                else colorClass = 'bg-red-600/80'; 
+            } else {
+                colorClass = 'bg-slate-500'; 
+            }
+        }
+
+        return `<div onclick="app.viewDayDetails(this, '${key}', ${data.count}, ${data.pnl.toFixed(2)})" 
+                     class="heatmap-day w-3 h-3 rounded-sm ${colorClass} transition-all cursor-pointer relative hover:scale-125 hover:z-20 hover:brightness-110"></div>`;
+    }).join('');
+
+    container.innerHTML = squares;
+    
+    // E. Update Info Text
+    const infoLabel = document.getElementById('heatmapInfo');
+    if(infoLabel) {
+        const label = app.heatmapMode === 'EXIT' ? 'Showing Realized P&L (Banked)' : 'Showing Decision Result (Entry)';
+        infoLabel.innerHTML = `<span class="opacity-30 italic">${label}</span>`;
+    }
+};
+
 </script>
 </body>
 </html>
