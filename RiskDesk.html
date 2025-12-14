@@ -709,7 +709,6 @@
             <div class="bg-slate-800 p-2 rounded-lg text-center border border-slate-700 shadow-sm">
                 <div class="text-[9px] text-slate-500 uppercase">Trades</div>
                 <div class="text-lg font-bold text-white leading-tight" id="statTotal">0</div>
-                <div class="text-[8px] text-slate-500 mt-0.5">Sample</div>
             </div>
         </div>
 
@@ -3742,18 +3741,76 @@ const app = {
         };
     },
 
-    // 2. The Fixed Render Function (Corrects 'l is not defined' and 'getPnl' errors)
     renderLogs(limit = 50) {
-        const container = document.getElementById('logsContainer');
-        if (!container) return; // Safety check
+        // 1. INJECT FILTER UI (If not present)
+        const header = document.querySelector('#view-logs .flex.gap-2.mb-4');
+        // Check if header exists and if we haven't added the filter yet
+        if (header && !document.getElementById('logStatusFilter')) {
+                const select = document.createElement('select');
+                select.id = 'logStatusFilter';
+                select.className = 'bg-slate-800 border-none rounded-lg py-2 px-3 text-xs font-bold focus:ring-2 focus:ring-blue-500 text-slate-300 outline-none cursor-pointer hover:text-white transition-colors';
+                select.innerHTML = `
+                <option value="ALL">All Status</option>
+                <option value="OPEN">Open (Active)</option>
+                <option value="CLOSED">Closed Only</option>
+                <option value="WIN">Wins Only</option>
+                <option value="LOSS">Losses Only</option>
+                `;
+                // Re-render when changed
+                select.onchange = () => app.renderLogs();
+                
+                // Insert at the start of the header row (before the search bar)
+                header.insertBefore(select, header.firstChild);
+        }
 
+        // 2. GET FILTER VALUES
+        const statusFilter = document.getElementById('logStatusFilter') ? document.getElementById('logStatusFilter').value : 'ALL';
         const searchVal = document.getElementById('logSearch').value.toUpperCase();
+        const container = document.getElementById('logsContainer');
         
-        // Filter & Sort
-        const allMatches = this.data.logs
-            .sort((a,b) => new Date(b.date) - new Date(a.date)) 
-            .filter(l => l.ticker.includes(searchVal) || (l.strategy && l.strategy.toUpperCase().includes(searchVal)));
+        if (!container) return;
 
+        // 3. FILTER LOGIC
+        const allMatches = this.data.logs.filter(l => {
+                // A. Search Filter (Ticker or Strategy)
+                const matchSearch = l.ticker.includes(searchVal) || (l.strategy && l.strategy.toUpperCase().includes(searchVal));
+                if(!matchSearch) return false;
+
+                // B. Status Filter (Optimization: Skip math if ALL)
+                if(statusFilter === 'ALL') return true;
+
+                // Calculate Status
+                let totalSold = l.exits ? l.exits.reduce((a,b)=>a+b.qty,0) : 0;
+                // A trade is CLOSED if outcome is set to something other than open, OR if all shares are sold
+                let isClosed = l.outcome !== 'open' || (l.initialQty > 0 && totalSold >= l.initialQty);
+
+                if (statusFilter === 'OPEN') return !isClosed;   // Returns Active trades (including partials)
+                if (statusFilter === 'CLOSED') return isClosed;
+
+                // For Win/Loss, the trade must be CLOSED first
+                if (!isClosed) return false;
+
+                // Calculate Net R for Win/Loss check
+                let netR = 0;
+                const riskPerShare = Math.abs(l.entry - l.stop);
+                const totalRisk = (l.initialQty || 0) * riskPerShare;
+                
+                if (l.exits && l.exits.length > 0) {
+                    let pnl = 0;
+                    l.exits.forEach(ex => pnl += (l.direction === 'SHORT' ? l.entry - ex.price : ex.price - l.entry) * ex.qty);
+                    if (totalRisk > 0) netR = pnl / totalRisk;
+                } else if (l.exitPrice) {
+                    netR = (l.direction === 'SHORT' ? l.entry - l.exitPrice : l.exitPrice - l.entry) / riskPerShare;
+                }
+
+                if (statusFilter === 'WIN') return netR > 0.1;
+                if (statusFilter === 'LOSS') return netR < -0.1;
+
+                return true;
+        });
+
+        // 4. SORT & RENDER
+        allMatches.sort((a,b) => new Date(b.date) - new Date(a.date));
         const visibleLogs = allMatches.slice(0, limit);
         
         const htmlRows = visibleLogs.map(log => {
@@ -3766,7 +3823,6 @@ const app = {
             // Duration Logic
             let durationStr = "";
             if (isOpen) {
-                // Check if formatDuration exists, otherwise fallback
                 durationStr = this.formatDuration ? `<span class="text-slate-500 italic">${this.formatDuration(log.date)}</span>` : "Active";
             } else {
                 if (log.exits && log.exits.length > 0) {
@@ -3783,23 +3839,21 @@ const app = {
             let realizedPnLValue = 0; 
             if (log.exits && log.exits.length > 0) {
                 log.exits.forEach(ex => {
-                    // P&L for this chunk (Using safe getPnl)
                     const pnlObj = this.getPnl(log, ex.price, ex.qty);
                     totalRealizedPnl += pnlObj.val;
                     
-                    // R Calc
                     const rawPnl = (log.direction === 'SHORT' ? (log.entry - ex.price) : (ex.price - log.entry)) * ex.qty;
                     realizedPnLValue += rawPnl;
                 });
                 const totalRiskAmount = log.initialQty * riskPerShare;
                 if (totalRiskAmount > 0) realizedR = realizedPnLValue / totalRiskAmount;
             } else if (!log.initialQty && log.exitPrice) {
-                 const diff = log.direction === 'SHORT' ? (log.entry - log.exitPrice) : (log.exitPrice - log.entry);
-                 realizedR = diff / riskPerShare;
-                 isOpen = false;
+                    const diff = log.direction === 'SHORT' ? (log.entry - log.exitPrice) : (log.exitPrice - log.entry);
+                    realizedR = diff / riskPerShare;
+                    isOpen = false;
             }
 
-            // NER Badge Logic
+            // NER Badge
             let nerBadge = '';
             if (isOpen) {
                 const remaining = (log.initialQty || 0) - totalSold;
@@ -3816,23 +3870,23 @@ const app = {
                 }
             }
 
-            // Status Badge (0.1 Scratch Logic)
+            // Status Badge
             let statusBadge = `<span class="bg-blue-900/50 text-blue-400 text-[10px] px-2 py-1 rounded">OPEN</span>`;
             if(!isOpen) {
                 if (realizedR > 0.1) statusBadge = `<span class="bg-emerald-900/50 text-emerald-400 text-[10px] px-2 py-1 rounded">WIN</span>`;
                 else if (realizedR < -0.1) statusBadge = `<span class="bg-red-900/50 text-red-400 text-[10px] px-2 py-1 rounded">LOSS</span>`;
                 else statusBadge = `<span class="bg-slate-700 text-slate-300 text-[10px] px-2 py-1 rounded">SCRATCH</span>`;
             } else if (totalSold > 0) {
-                 const pctClosed = Math.round((totalSold/log.initialQty)*100);
-                 statusBadge = `<span class="bg-amber-900/50 text-amber-400 text-[10px] px-2 py-1 rounded">${pctClosed}% SOLD</span>`;
+                    const pctClosed = Math.round((totalSold/log.initialQty)*100);
+                    statusBadge = `<span class="bg-amber-900/50 text-amber-400 text-[10px] px-2 py-1 rounded">${pctClosed}% SOLD</span>`;
             }
 
-            // Formatting P&L String
+            // P&L String
             const sym = this.getSymbol ? this.getSymbol(this.data.settings.baseCurrency) : "";
             const pnlString = totalRealizedPnl === 0 ? '' : 
                 `<div class="text-[10px] ${totalRealizedPnl>=0?'text-emerald-500':'text-red-500'} font-bold">
                     ${totalRealizedPnl>=0?'+':''}${sym}${Math.abs(totalRealizedPnl).toFixed(2)}
-                 </div>`;
+                    </div>`;
 
             // R Display
             let rDisplay = '-';
@@ -3876,7 +3930,7 @@ const app = {
             const remaining = allMatches.length - limit;
             loadMoreHtml = `<div class="p-2 text-center"><button onclick="app.renderLogs(${limit + 50})" class="text-xs font-bold text-blue-400 hover:text-white border border-slate-700 bg-slate-800 rounded-full px-4 py-2 transition-all">Show Older Trades (${remaining} more)</button></div>`;
         } else if (allMatches.length === 0) {
-            loadMoreHtml = `<div class="p-8 text-center text-slate-500 text-sm">No trades found.</div>`;
+            loadMoreHtml = `<div class="p-8 text-center text-slate-500 text-sm">No trades found matching filters.</div>`;
         }
 
         container.innerHTML = htmlRows + loadMoreHtml;
