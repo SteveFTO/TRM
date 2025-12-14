@@ -2546,10 +2546,18 @@ const app = {
 
 	// --- PATCH 30: CORRECTED STATS RENDER ---
 
-    renderStats() {
+	renderStats() {
+        // 1. SETUP & FILTERS
         const strategyFilter = document.getElementById('statsFilter').value;
         const recencyFilter = document.getElementById('statsRecency').value;
         
+        // ICON LOGIC: Check if partials are ON to show the "Split" icon
+        const partialsOn = this.data.settings.statsIncludePartials;
+        const icon = partialsOn 
+            ? `<i data-lucide="split" class="w-3 h-3 inline-block ml-1 text-blue-400" title="Includes Active Partials"></i>` 
+            : '';
+
+        // 2. DATA PREPARATION
         let baseLogs = [...this.data.logs];
         if(strategyFilter !== 'ALL') {
             baseLogs = baseLogs.filter(l => l.strategy === strategyFilter);
@@ -2557,12 +2565,13 @@ const app = {
 
         const baseline = this.calculateBatchStats(baseLogs);
 
-        // Filter for Closed/Partial Trades (Realized)
+        // Filter for Realized/Closed Trades
         let closedLogs = baseLogs.filter(l => {
-             return (l.exits && l.exits.length > 0) || (typeof l.exitPrice !== 'undefined');
+                return (l.exits && l.exits.length > 0) || (typeof l.exitPrice !== 'undefined');
         });
         closedLogs.sort((a,b) => new Date(b.date) - new Date(a.date));
         
+        // Apply Recency Filter
         let recentStatsLogs = closedLogs;
         if (recencyFilter !== 'ALL') {
             const limit = parseInt(recencyFilter);
@@ -2571,32 +2580,56 @@ const app = {
         
         const current = this.calculateBatchStats(recentStatsLogs);
 
-        // 1. Top Cards (Diffs)
-        const setDiff = (elId, curr, base, type) => {
-            const el = document.getElementById(elId);
-            if(recencyFilter === 'ALL' || base.count === 0 || curr.count === 0) { el.innerHTML = ''; return; }
-            const diff = curr - base;
-            if(Math.abs(diff) < 0.01) { el.innerHTML = '<span class="text-slate-500">= No Change</span>'; return; }
-            const isBetter = diff > 0;
-            const color = isBetter ? 'text-emerald-400' : 'text-red-400';
-            const icon = isBetter ? '▲' : '▼';
-            let text = type === '%' ? `${Math.abs(diff).toFixed(1)}%` : type === 'R' ? `${Math.abs(diff).toFixed(2)}R` : `${Math.abs(diff).toFixed(2)}`;
-            el.innerHTML = `<span class="${color} bg-slate-900/50 px-1 rounded">${icon} ${text} vs Avg</span>`;
+
+        // 3. RENDER TOP CARDS (Including Icons and Diffs)
+        
+        // Helper to update the Header Labels with the Icon
+        const updateHeader = (elmId, text) => {
+            const el = document.getElementById(elmId);
+            if(el && el.previousElementSibling) {
+                el.previousElementSibling.innerHTML = `${text}${icon}`;
+            }
         };
 
+        // Helper to render the Green/Red Difference badges
+        const renderDiff = (elId, curr, base, type) => {
+            const el = document.getElementById(elId);
+            if (!el) return;
+            // If filters make comparison impossible or equal
+            if (recencyFilter === 'ALL' || base.count === 0 || curr.count === 0) { el.innerHTML = ''; return; }
+            const diff = curr - base;
+            if(Math.abs(diff) < 0.01) { el.innerHTML = '<span class="text-slate-500">= No Change</span>'; return; }
+            
+            const isBetter = diff > 0;
+            const color = isBetter ? 'text-emerald-400' : 'text-red-400';
+            const iconChar = isBetter ? '▲' : '▼';
+            let text = type === '%' ? `${Math.abs(diff).toFixed(1)}%` : type === 'R' ? `${Math.abs(diff).toFixed(2)}R` : `${Math.abs(diff).toFixed(2)}`;
+            
+            el.innerHTML = `<span class="${color} bg-slate-900/50 px-1 rounded">${iconChar} ${text} vs Avg</span>`;
+        };
+
+        // Win Rate
         document.getElementById('statWinRate').textContent = `${Math.round(current.winRate)}%`;
-        setDiff('statWinRateDiff', current.winRate, baseline.winRate, '%');
+        updateHeader('statWinRate', 'Win Rate'); 
+        renderDiff('statWinRateDiff', current.winRate, baseline.winRate, '%');
 
+        // Profit Factor
         document.getElementById('statPF').textContent = current.profitFactor >= 999 ? "∞" : current.profitFactor.toFixed(2);
-        setDiff('statPFDiff', current.profitFactor, baseline.profitFactor, 'x');
+        updateHeader('statPF', 'Profit Factor'); 
+        renderDiff('statPFDiff', current.profitFactor, baseline.profitFactor, 'x');
 
+        // Expectancy
         document.getElementById('statExpectancy').textContent = `${current.expectancy > 0 ? '+' : ''}${current.expectancy.toFixed(2)}R`;
-        setDiff('statExpectancyDiff', current.expectancy, baseline.expectancy, 'R');
+        updateHeader('statExpectancy', 'Expectancy');
+        renderDiff('statExpectancyDiff', current.expectancy, baseline.expectancy, 'R');
 
+        // Total Trades
         const scratchText = current.scratchCount > 0 ? `<span class="text-slate-500 text-[9px]">(${current.scratchCount} Scratch)</span>` : '';
         document.getElementById('statTotal').innerHTML = `${current.count} <div class="text-[9px] text-slate-500 mt-1">Trades ${scratchText}</div>`;
+        updateHeader('statTotal', 'Trades');
 
-        // 2. Zone 1: Financial Table Injection
+
+        // 4. RENDER FINANCIAL HEALTH TABLE (Zone 1)
         const baseSym = this.getSymbol ? this.getSymbol(this.data.settings.baseCurrency) : this.data.settings.baseCurrency;
         const financialTarget = document.getElementById('financialStatsTarget');
         
@@ -2609,11 +2642,11 @@ const app = {
                     </h4>
                     <div class="grid grid-cols-4 gap-2 text-center">
                         <div class="bg-slate-900/30 rounded p-2">
-                            <div class="text-[9px] text-slate-500 uppercase">Avg Win</div>
+                            <div class="text-[9px] text-slate-500 uppercase">Avg Win ${icon}</div>
                             <div class="text-sm font-mono text-emerald-400 font-bold">${baseSym}${Math.abs(current.avgWinAmt).toFixed(0)}</div>
                         </div>
                         <div class="bg-slate-900/30 rounded p-2">
-                            <div class="text-[9px] text-slate-500 uppercase">Avg Loss</div>
+                            <div class="text-[9px] text-slate-500 uppercase">Avg Loss ${icon}</div>
                             <div class="text-sm font-mono text-red-400 font-bold">${baseSym}${Math.abs(current.avgLossAmt).toFixed(0)}</div>
                         </div>
                         <div class="bg-slate-900/30 rounded p-2">
@@ -2636,12 +2669,12 @@ const app = {
                             <div class="text-[9px] text-slate-500 uppercase">Total Net R</div>
                             <div class="text-lg font-bold ${current.totalNetR >= 0 ? 'text-blue-400':'text-red-400'}">${current.totalNetR > 0 ? '+':''}${current.totalNetR.toFixed(1)}R</div>
                         </div>
-                         <div class="bg-slate-900/50 rounded p-2">
-                            <div class="text-[9px] text-slate-500 uppercase">RRR (Reward:Risk)</div>
+                            <div class="bg-slate-900/50 rounded p-2">
+                            <div class="text-[9px] text-slate-500 uppercase">RRR ${icon}</div>
                             <div class="text-lg font-bold text-white">1 : ${current.rrr.toFixed(2)}</div>
                         </div>
                         <div class="bg-slate-900/50 rounded p-2">
-                            <div class="text-[9px] text-slate-500 uppercase">Avg Win R</div>
+                            <div class="text-[9px] text-slate-500 uppercase">Avg Win R ${icon}</div>
                             <div class="text-lg font-bold text-emerald-400">+${current.avgWinR.toFixed(2)}R</div>
                         </div>
                     </div>
@@ -2649,34 +2682,36 @@ const app = {
             </div>`;
         }
 
-        // 3. Zone 2: Directional Stats (Long vs Short)
+
+        // 5. RENDER DIRECTIONAL STATS (Zone 2)
         const longStats = this.calculateBatchStats(recentStatsLogs.filter(l => l.direction === 'LONG'));
         const shortStats = this.calculateBatchStats(recentStatsLogs.filter(l => l.direction === 'SHORT'));
         
         const renderDirCard = (title, stats, colorClass) => {
-             if (stats.count === 0) return `<div class="bg-slate-800 p-3 rounded-lg border border-slate-700 opacity-50"><div class="text-[10px] text-slate-500 font-bold uppercase mb-1">${title}</div><div class="text-xs text-slate-500 italic">No data</div></div>`;
-             
-             return `
-             <div class="bg-slate-800 p-3 rounded-lg border border-slate-700 flex flex-col justify-between">
+                if (stats.count === 0) return `<div class="bg-slate-800 p-3 rounded-lg border border-slate-700 opacity-50"><div class="text-[10px] text-slate-500 font-bold uppercase mb-1">${title}</div><div class="text-xs text-slate-500 italic">No data</div></div>`;
+                
+                return `
+                <div class="bg-slate-800 p-3 rounded-lg border border-slate-700 flex flex-col justify-between">
                 <div class="flex justify-between items-start mb-2">
                     <span class="text-[10px] ${colorClass} font-bold uppercase px-1.5 py-0.5 bg-slate-900 rounded">${title}</span>
                     <span class="text-[10px] text-slate-500">${stats.count} Trades</span>
                 </div>
                 <div class="grid grid-cols-3 gap-y-2 gap-x-1 text-center">
-                    <div><div class="text-[9px] text-slate-500 uppercase">Win%</div><div class="text-sm font-bold text-slate-200">${Math.round(stats.winRate)}%</div></div>
-                    <div><div class="text-[9px] text-slate-500 uppercase">PF</div><div class="text-sm font-bold text-slate-400">${stats.profitFactor>=999?'∞':stats.profitFactor.toFixed(2)}</div></div>
-                    <div><div class="text-[9px] text-slate-500 uppercase">Exp</div><div class="text-sm font-bold ${stats.expectancy>0?'text-emerald-400':'text-red-400'}">${stats.expectancy.toFixed(2)}R</div></div>
+                    <div><div class="text-[9px] text-slate-500 uppercase">Win% ${icon}</div><div class="text-sm font-bold text-slate-200">${Math.round(stats.winRate)}%</div></div>
+                    <div><div class="text-[9px] text-slate-500 uppercase">PF ${icon}</div><div class="text-sm font-bold text-slate-400">${stats.profitFactor>=999?'∞':stats.profitFactor.toFixed(2)}</div></div>
+                    <div><div class="text-[9px] text-slate-500 uppercase">Exp ${icon}</div><div class="text-sm font-bold ${stats.expectancy>0?'text-emerald-400':'text-red-400'}">${stats.expectancy.toFixed(2)}R</div></div>
                     <div class="col-span-3 grid grid-cols-2 gap-2 border-t border-slate-700/50 pt-2 mt-1">
-                        <div><div class="text-[9px] text-slate-500 uppercase">Avg +R</div><div class="text-xs font-mono text-emerald-400">+${stats.avgWinR.toFixed(2)}R</div></div>
-                        <div><div class="text-[9px] text-slate-500 uppercase">Avg -R</div><div class="text-xs font-mono text-red-400">-${stats.avgLossR.toFixed(2)}R</div></div>
+                        <div><div class="text-[9px] text-slate-500 uppercase">Avg +R ${icon}</div><div class="text-xs font-mono text-emerald-400">+${stats.avgWinR.toFixed(2)}R</div></div>
+                        <div><div class="text-[9px] text-slate-500 uppercase">Avg -R ${icon}</div><div class="text-xs font-mono text-red-400">-${stats.avgLossR.toFixed(2)}R</div></div>
                     </div>
                 </div>
-             </div>`;
+                </div>`;
         };
         const dirContainer = document.getElementById('directionStats');
         if (dirContainer) dirContainer.innerHTML = renderDirCard('Longs', longStats, 'text-emerald-400') + renderDirCard('Shorts', shortStats, 'text-red-400');
 
-        // 4. Render Charts
+
+        // 6. TRIGGER CHARTS & INSIGHTS
         this.drawGrowthChart(recentStatsLogs);
         this.drawWinLossChart(recentStatsLogs);
         this.drawDrawdownChart(recentStatsLogs);
@@ -2687,13 +2722,13 @@ const app = {
         this.drawDurationChart(recentStatsLogs);
         this.drawDistributionChart(recentStatsLogs);
         
-        // 5. Render Heatmap & Insights
-        // Note: Heatmap uses 'baseLogs' to show full history even if recency filter is on
+        // Pass the FULL base logs to heatmap to allow it to calculate its own 90-day window
         this.drawConsistencyHeatmap(baseLogs); 
         this.generateInsights(recentStatsLogs);
         
+        // Renders the new icons
         lucide.createIcons();
-    },
+    },		
 
     drawDurationChart(logs) {
         const ctx = document.getElementById('chartDuration');
