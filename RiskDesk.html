@@ -3833,40 +3833,53 @@ const app = {
         lucide.createIcons();
     },
 
-	// --- PATCH B: ROBUST HEATMAP ---
+	// --- PATCH 37: INTERACTIVE HEATMAP (Mobile Friendly) ---
+
+    viewDayDetails(el, date, count, pnl) {
+        // 1. Visual Feedback (Highlight Selection)
+        // Remove highlight from previous selection
+        document.querySelectorAll('.heatmap-day').forEach(d => d.classList.remove('ring-2', 'ring-white', 'z-10'));
+        
+        // Add highlight to current
+        if(el) el.classList.add('ring-2', 'ring-white', 'z-10');
+
+        // 2. Update Info Bar
+        const info = document.getElementById('heatmapInfo');
+        if(!info) return;
+
+        if (count === 0) {
+            info.innerHTML = `<span class="text-slate-500">${date}: No Trades</span>`;
+        } else {
+            const pnlClass = pnl > 0 ? 'text-emerald-400' : (pnl < 0 ? 'text-red-400' : 'text-slate-300');
+            const sign = pnl > 0 ? '+' : '';
+            info.innerHTML = `<span class="text-white font-bold">${date}</span> • <span class="text-slate-400">${count} Trades</span> • <span class="${pnlClass} font-bold">${sign}${pnl.toFixed(2)}R</span>`;
+        }
+    },
+
     drawConsistencyHeatmap(logs) {
         const container = document.getElementById('consistencyGrid');
         if (!container) return;
 
-        // 1. Generate Last 90 Days Map (Strict UTC)
         const dayMap = {};
         const daysToShow = 90; 
-        
-        // Helper: Get strict YYYY-MM-DD from a date object
         const getIsoDate = (d) => d.toISOString().split('T')[0];
 
         for (let i = daysToShow - 1; i >= 0; i--) {
             const d = new Date();
-            // Reset to 12:00 UTC to avoid daylight savings drift
             d.setUTCHours(12, 0, 0, 0); 
             d.setUTCDate(d.getUTCDate() - i);
             const key = getIsoDate(d); 
             dayMap[key] = { pnl: 0, count: 0, date: d };
         }
 
-        // 2. Aggregate P&L per Day
         logs.forEach(l => {
             const tDate = new Date(l.date);
             if (isNaN(tDate)) return; 
-
-            // Force trade date to YYYY-MM-DD key
             const dateKey = getIsoDate(tDate);
             
             if (dayMap[dateKey]) {
-                // Calculate Net R using existing logic
                 let netR = 0;
                 const riskPerShare = Math.abs(l.entry - l.stop);
-                
                 if (l.exits && l.exits.length > 0) {
                     let pnl = 0;
                     l.exits.forEach(ex => pnl += (l.direction === 'SHORT' ? l.entry - ex.price : ex.price - l.entry) * ex.qty);
@@ -3874,18 +3887,16 @@ const app = {
                 } else if (l.exitPrice) {
                     netR = (l.direction === 'SHORT' ? l.entry - l.exitPrice : l.exitPrice - l.entry) / riskPerShare;
                 }
-                
                 dayMap[dateKey].pnl += netR;
                 dayMap[dateKey].count++;
             }
         });
 
-        // 3. Render Grid
+        // Generate Squares with OnClick handlers
         const squares = Object.keys(dayMap).sort().map(key => {
             const data = dayMap[key];
             let colorClass = 'bg-slate-700/50'; 
-            let title = `${key}\nNo Trades`;
-
+            
             if (data.count > 0) {
                 if (data.pnl > 0) {
                     if (data.pnl > 2) colorClass = 'bg-emerald-400 shadow-sm shadow-emerald-900'; 
@@ -3896,11 +3907,14 @@ const app = {
                     else if (data.pnl < -1) colorClass = 'bg-red-500/80'; 
                     else colorClass = 'bg-red-600/50'; 
                 } else {
-                    colorClass = 'bg-slate-500'; // Scratch
+                    colorClass = 'bg-slate-500'; 
                 }
-                title = `${key}\nTrades: ${data.count}\nNet: ${data.pnl > 0 ? '+' : ''}${data.pnl.toFixed(2)}R`;
             }
-            return `<div title="${title}" class="w-3 h-3 rounded-sm ${colorClass} transition-all hover:scale-125 cursor-help"></div>`;
+
+            // Added 'heatmap-day' class for selection logic
+            // Added onclick event to trigger the detail view
+            return `<div onclick="app.viewDayDetails(this, '${key}', ${data.count}, ${data.pnl.toFixed(2)})" 
+                         class="heatmap-day w-3 h-3 rounded-sm ${colorClass} transition-all cursor-pointer relative hover:scale-125 hover:z-20"></div>`;
         }).join('');
 
         container.innerHTML = squares;
