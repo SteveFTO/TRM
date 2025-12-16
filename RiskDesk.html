@@ -1424,38 +1424,43 @@ const app = {
     },
 
     // --- VIEW MANAGEMENT ---
-    // --- PATCH 11: UPDATE VIEW ROUTING ---
+    // --- VIEW MANAGEMENT ---
     switchView(viewName) {
-        // ... (Keep your existing hiding logic) ...
-        ['calculator', 'logs', 'stats', 'manage', 'settings', 'help'].forEach(v => {
+        // 1. Hide all views
+        // ADDED 'journal' to this list so it gets hidden correctly
+        ['calculator', 'logs', 'stats', 'journal', 'manage', 'settings', 'help'].forEach(v => {
             const el = document.getElementById(`view-${v}`);
             if(el) el.classList.add('hidden');
-            // ... remove active nav classes ...
-             const nav = document.getElementById(`nav-${v}`);
+            
+            // Deactivate Nav Icon
+            const nav = document.getElementById(`nav-${v}`);
             if(nav) {
                 nav.classList.remove('text-blue-500');
                 nav.classList.add('text-slate-500');
             }
         });
 
-        document.getElementById(`view-${viewName}`).classList.remove('hidden');
-        // ... add active nav classes ...
-         const activeNav = document.getElementById(`nav-${viewName}`);
+        // 2. Show requested view
+        const target = document.getElementById(`view-${viewName}`);
+        if (target) target.classList.remove('hidden');
+        
+        // 3. Activate Nav Icon
+        const activeNav = document.getElementById(`nav-${viewName}`);
         if(activeNav) {
             activeNav.classList.add('text-blue-500');
             activeNav.classList.remove('text-slate-500');
         }
 
+        // 4. View-Specific Triggers
         if (viewName === 'logs') this.renderLogs();
         if (viewName === 'stats') this.renderStats();
+        if (viewName === 'journal') this.switchJournalTab('log'); // Default to Log tab
         
-        // --- ADD THIS BLOCK ---
         if (viewName === 'settings') {
             this.renderSettingsAccounts(); 
             this.renderSettingsStrategies();
-            this.renderSettingsPreferences(); // <--- Renders the Toggle
+            this.renderSettingsPreferences();
         }
-        // ----------------------
 
         if (viewName === 'calculator') {
             this.renderAccountsReadOnly();
