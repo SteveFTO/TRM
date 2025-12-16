@@ -818,21 +818,108 @@
         </div>
     </div>
 	
+	<div id="view-journal" class="hidden p-4 max-w-lg mx-auto pb-24 animate-in slide-in-from-right">
+        <div class="flex items-center gap-2 mb-6">
+            <h1 class="text-2xl font-bold text-white flex items-center gap-2">
+                <i data-lucide="book" class="w-6 h-6 text-amber-400"></i> Trader's Journal
+            </h1>
+        </div>
+
+        <div class="flex bg-slate-900 p-1 rounded-xl mb-6 border border-slate-700">
+            <button onclick="app.switchJournalTab('log')" id="btn-jtab-log" class="flex-1 py-2 text-xs font-bold rounded-lg transition-colors bg-blue-600 text-white shadow">Daily Log</button>
+            <button onclick="app.switchJournalTab('rules')" id="btn-jtab-rules" class="flex-1 py-2 text-xs font-bold rounded-lg transition-colors text-slate-500 hover:text-white">Rules & Philosophy</button>
+        </div>
+
+        <div id="jtab-rules" class="hidden space-y-6">
+            <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                <h3 class="text-xs font-bold text-amber-400 uppercase mb-2">My Trading Philosophy</h3>
+                <textarea id="jPhilosophy" rows="4" placeholder="e.g. I am a risk manager first, trader second..." 
+                    class="w-full bg-slate-900 border border-slate-600 rounded p-3 text-sm text-slate-200 outline-none focus:border-amber-400"
+                    onchange="app.saveJournal()"></textarea>
+            </div>
+
+            <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-xs font-bold text-blue-400 uppercase">My Trading Rules</h3>
+                    <button onclick="app.addJournalRule()" class="text-xs bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded text-white">+ Add Rule</button>
+                </div>
+                <div id="jRulesList" class="space-y-2"></div>
+            </div>
+            
+            <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                <h3 class="text-xs font-bold text-purple-400 uppercase mb-3">Manage Emotions List</h3>
+                <div class="flex gap-2 mb-3">
+                    <input type="text" id="newEmotionInput" placeholder="New Emotion..." class="flex-1 bg-slate-900 border border-slate-600 rounded p-2 text-sm text-white">
+                    <button onclick="app.addEmotionTag()" class="bg-purple-600 text-white px-3 rounded font-bold text-xs">Add</button>
+                </div>
+                <div id="jEmotionsSettingsList" class="flex flex-wrap gap-2"></div>
+            </div>
+        </div>
+
+        <div id="jtab-log" class="space-y-6">
+            <div class="flex justify-between items-center bg-slate-800 p-3 rounded-xl border border-slate-700">
+                <button onclick="app.shiftJournalDate(-1)" class="p-2 text-slate-400 hover:text-white"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
+                <input type="date" id="journalDate" class="bg-transparent text-white font-bold text-lg text-center outline-none" onchange="app.renderJournalEntry()">
+                <button onclick="app.shiftJournalDate(1)" class="p-2 text-slate-400 hover:text-white"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
+            </div>
+
+            <div id="jActivityContainer" class="hidden space-y-3">
+                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">Market Activity</h3>
+                <div id="jActivityFeed" class="space-y-2"></div>
+            </div>
+
+            <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                <h3 class="text-xs font-bold text-slate-500 uppercase mb-4 text-center tracking-widest">Did you follow your rules today?</h3>
+                <div class="flex gap-4">
+                    <button onclick="app.setJournalDiscipline(true)" id="btn-disc-yes" class="flex-1 py-4 rounded-xl border border-emerald-900/50 bg-slate-900 text-slate-500 font-bold transition-all flex flex-col items-center gap-1 hover:border-emerald-500">
+                        <i data-lucide="check-circle" class="w-6 h-6"></i>
+                        YES
+                    </button>
+                    <button onclick="app.setJournalDiscipline(false)" id="btn-disc-no" class="flex-1 py-4 rounded-xl border border-red-900/50 bg-slate-900 text-slate-500 font-bold transition-all flex flex-col items-center gap-1 hover:border-red-500">
+                        <i data-lucide="x-circle" class="w-6 h-6"></i>
+                        NO
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                <div class="mb-4">
+                    <label class="text-[10px] text-slate-500 uppercase font-bold mb-2 block">Emotions Felt</label>
+                    <div id="jDailyEmotions" class="flex flex-wrap gap-2"></div>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="text-[10px] text-slate-500 uppercase font-bold mb-2 block">Journal Notes</label>
+                    <textarea id="jDailyNotes" rows="6" class="w-full bg-slate-900 border border-slate-600 rounded p-3 text-sm text-slate-200 outline-none focus:border-blue-500" placeholder="How was the session? What did you learn?" onchange="app.saveJournalEntry()"></textarea>
+                </div>
+
+                <div class="paste-zone min-h-[100px]" contenteditable="true" onpaste="app.handleJournalPaste(event)">
+                    <i data-lucide="image-plus" class="w-6 h-6 mb-1"></i>
+                    <span class="text-xs">Paste Charts Here (Ctrl+V)</span>
+                </div>
+                <div id="jDailyImages" class="grid grid-cols-2 gap-2 mt-4"></div>
+            </div>
+        </div>
+    </div>
 
   </main>
 
   <nav class="fixed bottom-0 w-full bg-slate-900/95 backdrop-blur border-t border-slate-800 flex justify-around items-center pb-safe z-50">
-      <button onclick="app.switchView('calculator')" id="nav-calculator" class="flex flex-col items-center py-3 w-1/3 text-blue-500 transition-colors">
+      <button onclick="app.switchView('calculator')" id="nav-calculator" class="flex flex-col items-center py-3 w-1/4 text-blue-500 transition-colors">
           <i data-lucide="calculator" class="w-6 h-6 mb-1"></i>
           <span class="text-[10px] font-bold">Calculator</span>
       </button>
-      <button onclick="app.switchView('logs')" id="nav-logs" class="flex flex-col items-center py-3 w-1/3 text-slate-500 hover:text-slate-300 transition-colors">
+      <button onclick="app.switchView('logs')" id="nav-logs" class="flex flex-col items-center py-3 w-1/4 text-slate-500 hover:text-slate-300 transition-colors">
           <i data-lucide="list" class="w-6 h-6 mb-1"></i>
           <span class="text-[10px] font-bold">Logs</span>
       </button>
-      <button onclick="app.switchView('stats')" id="nav-stats" class="flex flex-col items-center py-3 w-1/3 text-slate-500 hover:text-slate-300 transition-colors">
+      <button onclick="app.switchView('stats')" id="nav-stats" class="flex flex-col items-center py-3 w-1/4 text-slate-500 hover:text-slate-300 transition-colors">
           <i data-lucide="bar-chart-2" class="w-6 h-6 mb-1"></i>
           <span class="text-[10px] font-bold">Stats</span>
+      </button>
+      <button onclick="app.switchView('journal')" id="nav-journal" class="flex flex-col items-center py-3 w-1/4 text-slate-500 hover:text-slate-300 transition-colors">
+          <i data-lucide="book" class="w-6 h-6 mb-1"></i>
+          <span class="text-[10px] font-bold">Journal</span>
       </button>
   </nav>
 
@@ -944,7 +1031,15 @@ const app = {
         logs: [],
         accounts: [],
         editingId: null, 
-        isEditingParams: false, 
+        isEditingParams: false,
+		// --- PASTE THIS NEW BLOCK HERE ---
+        journal: {
+            philosophy: '',
+            rules: [],
+            emotionsList: ['Focused', 'Anxious', 'Confident', 'Revenge', 'FOMO', 'Patient'],
+            entries: {} 
+        },
+        // ---------------------------------
         settings: {
             baseCurrency: 'GBP', 
             tradeCurrency: 'USD',
@@ -969,6 +1064,12 @@ const app = {
 		await imgDB.open(); // Init Image DB
         // Load Logs
         const savedLogs = localStorage.getItem('tradeLogs');
+		// --- PASTE THIS BLOCK HERE ---
+        const savedJournal = localStorage.getItem('tradeJournal');
+        if (savedJournal) {
+            this.data.journal = { ...this.data.journal, ...JSON.parse(savedJournal) };
+        }
+        // -----------------------------
         if (savedLogs) {
             this.data.logs = JSON.parse(savedLogs);
             this.data.logs.forEach(l => {
@@ -1180,20 +1281,20 @@ const app = {
         else container.innerHTML = insights.join('');
     },
 
-    // --- DATA BACKUP & RESTORE ---
     backupData() {
         const payload = {
-            version: 'v8',
+            version: 'v9',
             timestamp: new Date().toISOString(),
             logs: this.data.logs,
             accounts: this.data.accounts,
-            settings: this.data.settings
+            settings: this.data.settings,
+            journal: this.data.journal
         };
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(payload));
         const downloadAnchorNode = document.createElement('a');
         downloadAnchorNode.setAttribute("href", dataStr);
-        downloadAnchorNode.setAttribute("download", `trade_backup_${new Date().toISOString().split('T')[0]}.json`);
-        document.body.appendChild(downloadAnchorNode); // required for firefox
+        downloadAnchorNode.setAttribute("download", `RiskDesk_Backup_${new Date().toISOString().split('T')[0]}.json`);
+        document.body.appendChild(downloadAnchorNode);
         downloadAnchorNode.click();
         downloadAnchorNode.remove();
     },
@@ -1206,26 +1307,25 @@ const app = {
             try {
                 const json = JSON.parse(e.target.result);
                 if (json.logs && json.accounts) {
-                    if(confirm(`Restore ${json.logs.length} logs and ${json.accounts.length} accounts? Current data will be overwritten.`)) {
+                    const jCount = json.journal ? Object.keys(json.journal.entries).length : 0;
+                    if(confirm(`Restore Data?\n• ${json.logs.length} Trade Logs\n• ${json.accounts.length} Accounts\n• ${jCount} Journal Entries\n\nOverwrite current data?`)) {
                         localStorage.setItem('tradeLogs', JSON.stringify(json.logs));
                         localStorage.setItem('accounts', JSON.stringify(json.accounts));
                         if(json.settings) localStorage.setItem('appSettings', JSON.stringify(json.settings));
+                        if(json.journal) localStorage.setItem('tradeJournal', JSON.stringify(json.journal));
                         alert("Restore Successful. App will reload.");
                         location.reload();
                     }
-                } else {
-                    alert("Invalid Backup File format.");
-                }
-            } catch (err) {
-                alert("Error reading file: " + err);
-            }
+                } else { alert("Invalid Backup File."); }
+            } catch (err) { alert("Error reading file: " + err); }
         };
         reader.readAsText(file);
     },
 
     wipeAllData() {
-        if(confirm("CRITICAL WARNING: This will permanently delete ALL trade logs and settings. There is no undo.")) {
-            if(confirm("Are you absolutely sure?")) {
+        if(confirm("CRITICAL WARNING: This will delete ALL trades, journal entries, and settings. No undo.")) {
+            if(confirm("Are you absolutely sure? Have you taken a backup using the Backup Data function?")) {
+                localStorage.removeItem('tradeJournal');
                 localStorage.clear();
                 location.reload();
             }
@@ -4023,6 +4123,244 @@ const app = {
 
         container.innerHTML = squares;
     },
+	// --- JOURNAL: CORE LOGIC ---
+    saveJournal() {
+        this.data.journal.philosophy = document.getElementById('jPhilosophy').value;
+        localStorage.setItem('tradeJournal', JSON.stringify(this.data.journal));
+    },
+
+    switchJournalTab(tab) {
+        document.getElementById('jtab-log').classList.add('hidden');
+        document.getElementById('jtab-rules').classList.add('hidden');
+        document.getElementById('btn-jtab-log').className = 'flex-1 py-2 text-xs font-bold rounded-lg transition-colors text-slate-500 hover:text-white';
+        document.getElementById('btn-jtab-rules').className = 'flex-1 py-2 text-xs font-bold rounded-lg transition-colors text-slate-500 hover:text-white';
+
+        document.getElementById(`jtab-${tab}`).classList.remove('hidden');
+        document.getElementById(`btn-jtab-${tab}`).className = 'flex-1 py-2 text-xs font-bold rounded-lg transition-colors bg-blue-600 text-white shadow';
+        
+        if(tab === 'rules') this.renderJournalRules();
+        if(tab === 'log') {
+            if(!document.getElementById('journalDate').value) {
+                document.getElementById('journalDate').value = new Date().toISOString().split('T')[0];
+            }
+            this.renderJournalEntry();
+        }
+    },
+
+    renderJournalRules() {
+        document.getElementById('jPhilosophy').value = this.data.journal.philosophy || '';
+        
+        const rulesDiv = document.getElementById('jRulesList');
+        rulesDiv.innerHTML = this.data.journal.rules.map((r, i) => `
+            <div class="flex gap-2 items-center bg-slate-900 p-2 rounded border border-slate-600">
+                <div class="bg-blue-900/30 text-blue-400 font-bold px-2 py-1 rounded text-xs">#${i+1}</div>
+                <input type="text" value="${r}" onchange="app.updateJournalRule(${i}, this.value)" class="flex-1 bg-transparent text-sm text-white outline-none">
+                <button onclick="app.deleteJournalRule(${i})" class="text-slate-600 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+            </div>
+        `).join('');
+
+        const emDiv = document.getElementById('jEmotionsSettingsList');
+        emDiv.innerHTML = this.data.journal.emotionsList.map((e, i) => `
+            <div class="bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs flex gap-2 items-center">
+                <span>${e}</span>
+                <button onclick="app.deleteEmotionTag(${i})" class="text-slate-500 hover:text-red-400">×</button>
+            </div>
+        `).join('');
+        lucide.createIcons();
+    },
+
+    addJournalRule() { this.data.journal.rules.push("New Rule..."); this.saveJournal(); this.renderJournalRules(); },
+    updateJournalRule(idx, val) { this.data.journal.rules[idx] = val; this.saveJournal(); },
+    deleteJournalRule(idx) { if(confirm("Delete rule?")) { this.data.journal.rules.splice(idx, 1); this.saveJournal(); this.renderJournalRules(); } },
+    
+    addEmotionTag() {
+        const val = document.getElementById('newEmotionInput').value.trim();
+        if(val && !this.data.journal.emotionsList.includes(val)) {
+            this.data.journal.emotionsList.push(val);
+            document.getElementById('newEmotionInput').value = '';
+            this.saveJournal();
+            this.renderJournalRules();
+        }
+    },
+    deleteEmotionTag(idx) { this.data.journal.emotionsList.splice(idx, 1); this.saveJournal(); this.renderJournalRules(); },
+
+    // --- JOURNAL: DAILY LOG ACTIONS ---
+    shiftJournalDate(days) {
+        const input = document.getElementById('journalDate');
+        const d = new Date(input.value);
+        d.setDate(d.getDate() + days);
+        input.value = d.toISOString().split('T')[0];
+        this.renderJournalEntry();
+    },
+    
+    setJournalDiscipline(status) {
+        const date = document.getElementById('journalDate').value;
+        if(!this.data.journal.entries[date]) this.data.journal.entries[date] = {};
+        this.data.journal.entries[date].followedRules = status;
+        this.saveJournal();
+        this.renderJournalEntry();
+    },
+    
+    saveJournalEntry() {
+        const date = document.getElementById('journalDate').value;
+        if(!this.data.journal.entries[date]) this.data.journal.entries[date] = {};
+        this.data.journal.entries[date].notes = document.getElementById('jDailyNotes').value;
+        this.saveJournal();
+    },
+    
+    toggleJournalEmotion(em) {
+        const date = document.getElementById('journalDate').value;
+        if(!this.data.journal.entries[date]) this.data.journal.entries[date] = { emotions: [] };
+        if(!this.data.journal.entries[date].emotions) this.data.journal.entries[date].emotions = [];
+        
+        const list = this.data.journal.entries[date].emotions;
+        if(list.includes(em)) list.splice(list.indexOf(em), 1);
+        else list.push(em);
+        this.saveJournal();
+        this.renderJournalEntry();
+    },
+    
+    async handleJournalPaste(e) {
+        e.preventDefault();
+        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+        for (const item of items) {
+            if (item.type.indexOf("image") === 0) {
+                const blob = item.getAsFile();
+                const id = await imgDB.save(blob);
+                const date = document.getElementById('journalDate').value;
+                if(!this.data.journal.entries[date]) this.data.journal.entries[date] = { images: [] };
+                if(!this.data.journal.entries[date].images) this.data.journal.entries[date].images = [];
+                this.data.journal.entries[date].images.push(id);
+                this.saveJournal();
+                this.renderJournalEntry();
+                return;
+            }
+        }
+        alert("No image found in clipboard.");
+    },
+	
+	getJournalActivity(dateStr) {
+        const activity = [];
+        // 1. Entries
+        this.data.logs.forEach(log => {
+            if (log.date.startsWith(dateStr)) {
+                activity.push({ type: 'ENTRY', log: log, time: new Date(log.date), img: log.entryImg });
+            }
+        });
+        // 2. Exits
+        this.data.logs.forEach(log => {
+            if (log.exits && log.exits.length > 0) {
+                log.exits.forEach((ex, idx) => {
+                    if (ex.date && ex.date.startsWith(dateStr)) {
+                        const isLast = idx === log.exits.length - 1;
+                        const hasExitImg = isLast && log.exitImg;
+                        activity.push({
+                            type: 'EXIT', log: log, exitDetails: ex, time: new Date(ex.date),
+                            img: hasExitImg ? log.exitImg : null, isPartial: !isLast || log.outcome === 'open'
+                        });
+                    }
+                });
+            }
+        });
+        return activity.sort((a,b) => a.time - b.time);
+    },
+
+    async renderJournalEntry() {
+        const date = document.getElementById('journalDate').value;
+        
+        // --- A. AUTOMATED ACTIVITY ---
+        const activity = this.getJournalActivity(date);
+        const feed = document.getElementById('jActivityFeed');
+        const feedContainer = document.getElementById('jActivityContainer');
+        
+        if (activity.length > 0) {
+            feedContainer.classList.remove('hidden');
+            const cards = await Promise.all(activity.map(async (item) => {
+                const timeStr = item.time.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                const ticker = item.log.ticker;
+                let imgHtml = '';
+                if(item.img) {
+                    const src = await imgDB.get(item.img);
+                    if(src) imgHtml = `<img src="${src}" class="mt-2 rounded border border-slate-700 h-20 object-cover cursor-pointer" onclick="app.showImg('${src}')">`;
+                }
+
+                if (item.type === 'ENTRY') {
+                    return `<div class="bg-slate-800/50 border-l-2 border-blue-500 p-3 rounded-r-lg border-y border-r border-slate-700/50">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="text-[10px] font-mono text-slate-500">${timeStr}</span>
+                                <div class="font-bold text-slate-200 text-sm">Opened ${ticker}</div>
+                                <div class="text-[10px] text-slate-400">${item.log.strategy || 'No Strategy'} • Risk: ${item.log.riskVal}${item.log.riskMode==='equity'?'%':'sz'}</div>
+                            </div>
+                            <span class="bg-blue-900/30 text-blue-400 text-[9px] px-1.5 py-0.5 rounded uppercase font-bold">Entry</span>
+                        </div>
+                        ${item.log.notes ? `<div class="text-xs text-slate-500 mt-1 italic">"${item.log.notes}"</div>` : ''}
+                        ${imgHtml}
+                    </div>`;
+                } else {
+                    const badge = item.isPartial ? 'PARTIAL' : 'CLOSED';
+                    const badgeColor = item.isPartial ? 'text-amber-400 bg-amber-900/30' : 'text-emerald-400 bg-emerald-900/30';
+                    const borderColor = item.isPartial ? 'border-amber-500' : 'border-emerald-500';
+                    const pnl = this.getPnl(item.log, item.exitDetails.price, item.exitDetails.qty).formatted;
+
+                    return `<div class="bg-slate-800/50 border-l-2 ${borderColor} p-3 rounded-r-lg border-y border-r border-slate-700/50">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="text-[10px] font-mono text-slate-500">${timeStr}</span>
+                                <div class="font-bold text-slate-200 text-sm">Sold ${item.exitDetails.qty} ${ticker}</div>
+                                <div class="text-[10px] text-slate-400">@ ${item.exitDetails.price} • P&L: <span class="text-slate-300 font-mono">${pnl}</span></div>
+                            </div>
+                            <span class="${badgeColor} text-[9px] px-1.5 py-0.5 rounded uppercase font-bold">${badge}</span>
+                        </div>
+                        ${imgHtml}
+                    </div>`;
+                }
+            }));
+            feed.innerHTML = cards.join('');
+        } else {
+            feedContainer.classList.add('hidden');
+            feed.innerHTML = '';
+        }
+
+        // --- B. MANUAL JOURNAL ENTRY ---
+        const entry = this.data.journal.entries[date] || { notes: '', emotions: [], followedRules: null, images: [] };
+        
+        document.getElementById('jDailyNotes').value = entry.notes || '';
+        
+        const btnYes = document.getElementById('btn-disc-yes');
+        const btnNo = document.getElementById('btn-disc-no');
+        
+        btnYes.className = 'flex-1 py-4 rounded-xl border border-emerald-900/50 bg-slate-900 text-slate-500 font-bold transition-all flex flex-col items-center gap-1 hover:border-emerald-500';
+        btnNo.className = 'flex-1 py-4 rounded-xl border border-red-900/50 bg-slate-900 text-slate-500 font-bold transition-all flex flex-col items-center gap-1 hover:border-red-500';
+
+        if (entry.followedRules === true) {
+            btnYes.classList.replace('bg-slate-900', 'bg-emerald-600');
+            btnYes.classList.replace('text-slate-500', 'text-white');
+            btnYes.classList.replace('border-emerald-900/50', 'border-emerald-500');
+        } else if (entry.followedRules === false) {
+            btnNo.classList.replace('bg-slate-900', 'bg-red-600');
+            btnNo.classList.replace('text-slate-500', 'text-white');
+            btnNo.classList.replace('border-red-900/50', 'border-red-500');
+        }
+
+        const emContainer = document.getElementById('jDailyEmotions');
+        emContainer.innerHTML = this.data.journal.emotionsList.map(em => {
+            const isSelected = entry.emotions && entry.emotions.includes(em);
+            const bgClass = isSelected ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-slate-900 text-slate-400 border-slate-700 hover:border-slate-500';
+            return `<button onclick="app.toggleJournalEmotion('${em}')" class="px-3 py-1 rounded-full text-xs border transition-colors ${bgClass}">${em}</button>`;
+        }).join('');
+
+        const imgContainer = document.getElementById('jDailyImages');
+        if(entry.images && entry.images.length > 0) {
+            const imgHtmls = await Promise.all(entry.images.map(async (id) => {
+                const src = await imgDB.get(id);
+                return `<div class="relative group"><img src="${src}" class="w-full h-24 object-cover rounded border border-slate-600 cursor-pointer" onclick="app.showImg('${src}')"></div>`;
+            }));
+            imgContainer.innerHTML = imgHtmls.join('');
+        } else { imgContainer.innerHTML = ''; }
+        
+        lucide.createIcons();
+    },
 }; // <--- This is the end of the app object
 	
 
@@ -4039,131 +4377,125 @@ app.toggleHeatmapMode = function(mode) {
     app.renderStats(); 
 };
 
-// 2. Upgraded Heatmap Function
+// Add support for DISC mode
+app.toggleHeatmapMode = function(mode) {
+    app.heatmapMode = mode;
+    app.drawConsistencyHeatmap(app.data.logs);
+};
+
+// Update details view to show discipline status
+app.viewDayDetails = function(el, date, count, pnl) {
+    document.querySelectorAll('.heatmap-day').forEach(d => d.classList.remove('ring-2', 'ring-white', 'z-10'));
+    if(el) el.classList.add('ring-2', 'ring-white', 'z-10');
+
+    const info = document.getElementById('heatmapInfo');
+    if(!info) return;
+
+    // Check Journal
+    const entry = app.data.journal.entries[date];
+    let discText = "";
+    if (entry && entry.followedRules === true) discText = ` • <span class="text-emerald-400 font-bold">Rules Followed</span>`;
+    if (entry && entry.followedRules === false) discText = ` • <span class="text-red-400 font-bold">Rules Broken</span>`;
+
+    if (count === 0 && !discText) {
+        info.innerHTML = `<span class="text-slate-500">${date}: No Trades</span>`;
+    } else {
+        const pnlClass = pnl > 0 ? 'text-emerald-400' : (pnl < 0 ? 'text-red-400' : 'text-slate-300');
+        const sign = pnl > 0 ? '+' : '';
+        const tradeText = count > 0 ? `<span class="text-slate-400">${count} Trades</span> • <span class="${pnlClass} font-bold">${sign}${pnl.toFixed(2)}R</span>` : '<span class="text-slate-500">No Trades</span>';
+        info.innerHTML = `<span class="text-white font-bold">${date}</span> • ${tradeText}${discText}`;
+    }
+};
+
+// Updated Heatmap Function
 app.drawConsistencyHeatmap = function(logs) {
     const container = document.getElementById('consistencyGrid');
     if (!container) return;
 
-    // Ensure Default State
     if (!app.heatmapMode) app.heatmapMode = 'ENTRY';
 
-    // A. Inject Toggle Controls (Idempotent check)
     let controls = document.getElementById('heatmapControls');
     if (!controls) {
         controls = document.createElement('div');
         controls.id = 'heatmapControls';
         controls.className = 'flex justify-center gap-2 mb-4 animate-in fade-in';
-        // Insert BEFORE the grid container
         container.parentNode.insertBefore(controls, container);
     }
     
-    // Render Buttons (Visual State Update)
     const isEntry = app.heatmapMode === 'ENTRY';
+    const isExit = app.heatmapMode === 'EXIT';
+    const isDisc = app.heatmapMode === 'DISC';
+
+    const btnClass = (active, col) => `text-[10px] px-3 py-1 rounded border transition-all font-bold ${active ? `bg-${col}-600 text-white border-${col}-600 shadow-lg scale-105` : 'border-slate-600 text-slate-500 hover:text-white'}`;
+
     controls.innerHTML = `
-        <button onclick="app.toggleHeatmapMode('ENTRY')" 
-            class="text-[10px] px-3 py-1 rounded border transition-all font-bold ${isEntry ? 'bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-900/50 scale-105' : 'border-slate-600 text-slate-500 hover:text-white'}">
-            By Entry (Decision)
-        </button>
-        <button onclick="app.toggleHeatmapMode('EXIT')" 
-            class="text-[10px] px-3 py-1 rounded border transition-all font-bold ${!isEntry ? 'bg-emerald-600 text-white border-emerald-600 shadow-lg shadow-emerald-900/50 scale-105' : 'border-slate-600 text-slate-500 hover:text-white'}">
-            By Exit (Banked)
-        </button>
+        <button onclick="app.toggleHeatmapMode('ENTRY')" class="${btnClass(isEntry, 'blue')}">By Entry</button>
+        <button onclick="app.toggleHeatmapMode('EXIT')" class="${btnClass(isExit, 'emerald')}">By Exit</button>
+        <button onclick="app.toggleHeatmapMode('DISC')" class="${btnClass(isDisc, 'purple')}">By Discipline</button>
     `;
 
-    // B. Initialize Calendar Grid (Last 90 Days)
     const dayMap = {};
-    const daysToShow = 90; 
     const getIsoDate = (d) => d.toISOString().split('T')[0];
-
-    for (let i = daysToShow - 1; i >= 0; i--) {
-        const d = new Date();
-        d.setUTCHours(12, 0, 0, 0); 
-        d.setUTCDate(d.getUTCDate() - i);
-        const key = getIsoDate(d); 
-        dayMap[key] = { pnl: 0, count: 0 };
+    for (let i = 89; i >= 0; i--) {
+        const d = new Date(); d.setUTCHours(12, 0, 0, 0); d.setUTCDate(d.getUTCDate() - i);
+        dayMap[getIsoDate(d)] = { pnl: 0, count: 0 };
     }
 
-    // C. Populate Data
     logs.forEach(l => {
         const riskPerShare = Math.abs(l.entry - l.stop);
-        // Safety: Ensure we don't divide by zero or NaN
         const totalInitialRisk = (l.initialQty || 0) * riskPerShare;
-        
         if (!totalInitialRisk || totalInitialRisk <= 0) return;
 
         if (app.heatmapMode === 'EXIT') {
-            // --- MODE: EXIT (Realized Date) ---
-            if (l.exits && l.exits.length > 0) {
-                l.exits.forEach(ex => {
-                    if (!ex.date) return;
-                    const dKey = getIsoDate(new Date(ex.date));
-                    
-                    if (dayMap[dKey]) {
-                        // Calculate R for just this chunk
-                        const chunkPnL = (l.direction === 'SHORT' ? l.entry - ex.price : ex.price - l.entry) * ex.qty;
-                        const chunkR = chunkPnL / totalInitialRisk;
-                        
-                        dayMap[dKey].pnl += chunkR;
-                        dayMap[dKey].count++; 
-                    }
-                });
-            }
+            if (l.exits) l.exits.forEach(ex => {
+                if (ex.date && dayMap[getIsoDate(new Date(ex.date))]) {
+                    const chunkR = ((l.direction === 'SHORT' ? l.entry - ex.price : ex.price - l.entry) * ex.qty) / totalInitialRisk;
+                    dayMap[getIsoDate(new Date(ex.date))].pnl += chunkR;
+                    dayMap[getIsoDate(new Date(ex.date))].count++;
+                }
+            });
         } else {
-            // --- MODE: ENTRY (Decision Date) ---
             const dKey = getIsoDate(new Date(l.date));
-            
             if (dayMap[dKey]) {
                 let netR = 0;
-                let hasActivity = false;
-
+                let active = false;
                 if (l.exits && l.exits.length > 0) {
-                    let pnl = 0;
-                    l.exits.forEach(ex => pnl += (l.direction === 'SHORT' ? l.entry - ex.price : ex.price - l.entry) * ex.qty);
-                    netR = pnl / totalInitialRisk;
-                    hasActivity = true;
+                    let pnl = 0; l.exits.forEach(ex => pnl += (l.direction==='SHORT'?l.entry-ex.price:ex.price-l.entry)*ex.qty);
+                    netR = pnl/totalInitialRisk; active = true;
                 } else if (l.exitPrice) {
-                    netR = (l.direction === 'SHORT' ? l.entry - l.exitPrice : l.exitPrice - l.entry) / riskPerShare;
-                    hasActivity = true;
+                    netR = (l.direction==='SHORT'?l.entry-l.exitPrice:l.exitPrice-l.entry)/riskPerShare; active = true;
                 }
-                
-                if (hasActivity) {
-                    dayMap[dKey].pnl += netR;
-                    dayMap[dKey].count++; 
-                }
+                if(active) { dayMap[dKey].pnl += netR; dayMap[dKey].count++; }
             }
         }
     });
 
-    // D. Render Grid Visuals
     const squares = Object.keys(dayMap).sort().map(key => {
         const data = dayMap[key];
-        let colorClass = 'bg-slate-800 border border-slate-700/50'; 
-        
-        if (data.count > 0) {
-            if (data.pnl > 0) {
-                if (data.pnl > 2) colorClass = 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)] z-10'; 
-                else if (data.pnl > 1) colorClass = 'bg-emerald-500'; 
-                else colorClass = 'bg-emerald-600/80'; 
-            } else if (data.pnl < 0) {
-                if (data.pnl < -2) colorClass = 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)] z-10'; 
-                else if (data.pnl < -1) colorClass = 'bg-red-500/90'; 
-                else colorClass = 'bg-red-600/80'; 
-            } else {
-                colorClass = 'bg-slate-500'; 
+        let colorClass = 'bg-slate-800 border border-slate-700/50';
+
+        if (app.heatmapMode === 'DISC') {
+            const entry = app.data.journal.entries[key];
+            if (entry) {
+                if (entry.followedRules === true) colorClass = 'bg-emerald-500 shadow-[0_0_8px_rgba(52,211,153,0.5)] z-10';
+                else if (entry.followedRules === false) colorClass = 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)] z-10';
+                else if (entry.notes || (entry.images && entry.images.length)) colorClass = 'bg-blue-600/50';
             }
+        } else if (data.count > 0) {
+            if (data.pnl > 0) colorClass = data.pnl > 2 ? 'bg-emerald-400 shadow-sm z-10' : (data.pnl > 1 ? 'bg-emerald-500' : 'bg-emerald-600/80');
+            else if (data.pnl < 0) colorClass = data.pnl < -2 ? 'bg-red-500 shadow-sm z-10' : (data.pnl < -1 ? 'bg-red-500/90' : 'bg-red-600/80');
+            else colorClass = 'bg-slate-500';
         }
 
         return `<div onclick="app.viewDayDetails(this, '${key}', ${data.count}, ${data.pnl.toFixed(2)})" 
-                     class="heatmap-day w-3 h-3 rounded-sm ${colorClass} transition-all cursor-pointer relative hover:scale-125 hover:z-20 hover:brightness-110"></div>`;
+             class="heatmap-day w-3 h-3 rounded-sm ${colorClass} transition-all cursor-pointer relative hover:scale-125 hover:z-20 hover:brightness-110"></div>`;
     }).join('');
 
     container.innerHTML = squares;
-    
-    // E. Update Info Text
     const infoLabel = document.getElementById('heatmapInfo');
     if(infoLabel) {
-        const label = app.heatmapMode === 'EXIT' ? 'Showing Realized P&L (Banked)' : 'Showing Decision Result (Entry)';
-        infoLabel.innerHTML = `<span class="opacity-30 italic">${label}</span>`;
+        const labels = { 'EXIT': 'Realized P&L', 'ENTRY': 'Decision Result', 'DISC': 'Rule Adherence' };
+        infoLabel.innerHTML = `<span class="opacity-30 italic">Showing ${labels[app.heatmapMode]}</span>`;
     }
 };
 
