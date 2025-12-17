@@ -4425,7 +4425,12 @@ const app = {
     },
 	openManualLogModal() {
         ['manTicker','manPrice','manQty','manStop'].forEach(id => document.getElementById(id).value = '');
-        document.getElementById('manDate').value = new Date().toISOString().split('T')[0];
+        
+        // FIX: Use local date YYYY-MM-DD (instead of UTC)
+        const d = new Date();
+        const localDate = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+        document.getElementById('manDate').value = localDate;
+        
         document.getElementById('manualLogModal').classList.remove('hidden');
     },
 
@@ -4440,8 +4445,23 @@ const app = {
         if(!ticker || !price || !qty || isNaN(stop)) return alert("All fields required");
         if ((dir === 'LONG' && stop >= price) || (dir === 'SHORT' && stop <= price)) return alert("Invalid Stop placement");
 
-        let finalDate = new Date().toISOString();
-        if(dateStr) { const d = new Date(dateStr); d.setHours(12,0,0,0); finalDate = d.toISOString(); }
+        // --- TIME LOGIC FIX ---
+        let finalDateObj = new Date();
+        
+        // Generate "Today" string in local time to compare
+        const now = new Date();
+        const todayStr = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
+
+        if(dateStr === todayStr) {
+            // IT IS TODAY: Use the real current time
+            finalDateObj = new Date(); 
+        } else {
+            // IT IS BACKDATED: Use Noon to prevent timezone shifts
+            finalDateObj = new Date(dateStr);
+            finalDateObj.setHours(12, 0, 0, 0); 
+        }
+        const finalDate = finalDateObj.toISOString();
+        // ----------------------
 
         const masterAcc = this.data.accounts.find(a => a.isMaster);
         const riskVal = (masterAcc && masterAcc.size > 0) ? parseFloat((((Math.abs(price-stop)*qty)/masterAcc.size)*100).toFixed(2)) : 0;
@@ -4455,7 +4475,6 @@ const app = {
         document.getElementById('manualLogModal').classList.add('hidden');
         this.renderLogs(); 
         this.updateHeatWidget();
-        // If you have heatmap function from Journal update:
         if(this.drawConsistencyHeatmap) this.drawConsistencyHeatmap(this.data.logs);
     },
 }; // <--- This is the end of the app object
