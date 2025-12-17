@@ -608,6 +608,9 @@
 
     <div id="view-logs" class="hidden p-4 max-w-4xl mx-auto h-full flex flex-col">
         <div class="flex gap-2 mb-4">
+			<button onclick="app.openManualLogModal()" class="bg-blue-600 hover:bg-blue-500 text-white p-2 rounded-lg shadow-lg flex-shrink-0">
+				<i data-lucide="plus" class="w-5 h-5"></i>
+			</button>
             <div class="relative flex-1">
                 <i data-lucide="search" class="absolute left-3 top-3 w-4 h-4 text-slate-500"></i>
                 <input type="text" id="logSearch" placeholder="Search Ticker..." onkeyup="app.renderLogs()" class="w-full bg-slate-800 border-none rounded-lg pl-10 py-2 text-sm focus:ring-2 focus:ring-blue-500 text-white">
@@ -925,6 +928,55 @@
 
   <div id="imgModal" class="hidden fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm" onclick="this.classList.add('hidden')">
     <img id="imgModalSrc" class="max-w-full max-h-full rounded-lg shadow-2xl border border-slate-700" src="" />
+</div>
+<div id="manualLogModal" class="hidden fixed inset-0 z-50 bg-slate-900/90 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-800 rounded-2xl border border-slate-700 w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in-95">
+        
+        <div class="bg-slate-900/50 p-4 border-b border-slate-700 flex justify-between items-center">
+            <h3 class="font-bold text-white flex items-center gap-2">
+                <i data-lucide="pen-tool" class="w-4 h-4 text-amber-400"></i> Manual Entry
+            </h3>
+            <button onclick="document.getElementById('manualLogModal').classList.add('hidden')" class="text-slate-500 hover:text-white">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <div class="p-4 space-y-4">
+            <div class="flex gap-2">
+                <input type="text" id="manTicker" placeholder="TICKER" class="flex-1 bg-slate-900 border border-slate-600 rounded p-3 text-sm font-bold uppercase text-white outline-none focus:border-blue-500">
+                <select id="manDirection" class="bg-slate-900 border border-slate-600 rounded p-3 text-sm font-bold text-slate-300 outline-none">
+                    <option value="LONG">LONG</option>
+                    <option value="SHORT">SHORT</option>
+                </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="text-[10px] text-slate-500 font-bold uppercase">Price</label>
+                    <input type="number" id="manPrice" step="any" placeholder="0.00" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white font-mono outline-none focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="text-[10px] text-amber-500 font-bold uppercase">Qty</label>
+                    <input type="number" id="manQty" step="any" placeholder="100" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white font-mono outline-none focus:border-amber-500">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="text-[10px] text-slate-500 font-bold uppercase">Date</label>
+                    <input type="date" id="manDate" class="w-full bg-slate-900 border border-slate-600 rounded p-2 text-xs text-slate-300 outline-none">
+                </div>
+                <div>
+                    <label class="text-[10px] text-red-400 font-bold uppercase">Stop (Req)</label>
+                    <input type="number" id="manStop" step="any" placeholder="Required" class="w-full bg-slate-900 border border-red-900/50 rounded p-2 text-white font-mono outline-none focus:border-red-500">
+                </div>
+            </div>
+            
+            <button onclick="app.saveManualLog()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all">
+                Log Trade
+            </button>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -4365,6 +4417,41 @@ const app = {
         } else { imgContainer.innerHTML = ''; }
         
         lucide.createIcons();
+    },
+	openManualLogModal() {
+        ['manTicker','manPrice','manQty','manStop'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('manDate').value = new Date().toISOString().split('T')[0];
+        document.getElementById('manualLogModal').classList.remove('hidden');
+    },
+
+    saveManualLog() {
+        const ticker = document.getElementById('manTicker').value.toUpperCase();
+        const dir = document.getElementById('manDirection').value;
+        const price = parseFloat(document.getElementById('manPrice').value);
+        const qty = parseFloat(document.getElementById('manQty').value);
+        const stop = parseFloat(document.getElementById('manStop').value);
+        const dateStr = document.getElementById('manDate').value;
+
+        if(!ticker || !price || !qty || isNaN(stop)) return alert("All fields required");
+        if ((dir === 'LONG' && stop >= price) || (dir === 'SHORT' && stop <= price)) return alert("Invalid Stop placement");
+
+        let finalDate = new Date().toISOString();
+        if(dateStr) { const d = new Date(dateStr); d.setHours(12,0,0,0); finalDate = d.toISOString(); }
+
+        const masterAcc = this.data.accounts.find(a => a.isMaster);
+        const riskVal = (masterAcc && masterAcc.size > 0) ? parseFloat((((Math.abs(price-stop)*qty)/masterAcc.size)*100).toFixed(2)) : 0;
+
+        this.data.logs.unshift({
+            id: Date.now(), date: finalDate, ticker: ticker, direction: dir, entry: price, stop: stop, initialQty: qty,
+            riskMode: 'equity', riskVal: riskVal, strategy: 'Manual Entry', notes: 'Manual Log', outcome: 'open', exits: [], exchangeRate: 1,
+            stopMeta: { mode: 'single', price: stop }
+        });
+        localStorage.setItem('tradeLogs', JSON.stringify(this.data.logs));
+        document.getElementById('manualLogModal').classList.add('hidden');
+        this.renderLogs(); 
+        this.updateHeatWidget();
+        // If you have heatmap function from Journal update:
+        if(this.drawConsistencyHeatmap) this.drawConsistencyHeatmap(this.data.logs);
     },
 }; // <--- This is the end of the app object
 	
