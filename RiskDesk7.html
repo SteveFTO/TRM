@@ -985,6 +985,12 @@
                 </div>
 
                 <div class="col-span-2 min-w-0">
+                    <label class="text-[10px] text-slate-500 font-bold uppercase block mb-1">Strategy</label>
+                    <select id="manStrategy" class="w-full bg-slate-900 border border-slate-600 rounded p-2.5 text-sm font-bold text-slate-300 outline-none h-10 appearance-none min-w-0">
+                        </select>
+                </div>
+
+                <div class="col-span-2 min-w-0">
                     <label class="text-[10px] text-slate-500 font-bold uppercase block mb-1">Date</label>
                     <input type="date" id="manDate" class="w-full bg-slate-900 border border-slate-600 rounded p-2.5 text-xs text-slate-300 outline-none h-10 appearance-none min-w-0">
                 </div>
@@ -1240,10 +1246,19 @@ const app = {
                 zone.classList.add('has-image');
                 lucide.createIcons();
 
+                // 1. Calculator Entry
                 if(type === 'entry') this.data.tempCalculation.entryImgId = id;
+                
+                // 2. Existing Trade: Exit Chart
                 if(type === 'exit' && logId) {
                     const log = this.data.logs.find(l => l.id === logId);
                     if(log) { log.exitImg = id; localStorage.setItem('tradeLogs', JSON.stringify(this.data.logs)); this.openManageView(logId); }
+                }
+
+                // 3. NEW: Existing Trade: Entry Chart
+                if(type === 'entry-update' && logId) {
+                    const log = this.data.logs.find(l => l.id === logId);
+                    if(log) { log.entryImg = id; localStorage.setItem('tradeLogs', JSON.stringify(this.data.logs)); this.openManageView(logId); }
                 }
                 return;
             }
@@ -2229,75 +2244,53 @@ const app = {
 
     // --- PATCH 26: DYNAMIC DE-RISKING ENGINE ---
 
-    async openManageView(id) {
+   async openManageView(id) {
         this.data.editingId = id;
         const log = this.data.logs.find(l => l.id === id);
         if(!log) return;
         if(typeof log.currentStop === 'undefined') log.currentStop = log.stop;
 
-        // 1. Calculate Core Metrics
+        // --- 1. Metrics Calculation ---
         const totalSold = log.exits ? log.exits.reduce((a,b) => a+b.qty, 0) : 0;
         const remaining = log.initialQty - totalSold;
         
         let realizedPnL = 0;
         if (log.exits) {
             log.exits.forEach(ex => {
-                const pnl = (log.direction === 'SHORT' ? (log.entry - ex.price) : (ex.price - log.entry)) * ex.qty;
-                realizedPnL += pnl;
+                realizedPnL += (log.direction === 'SHORT' ? (log.entry - ex.price) : (ex.price - log.entry)) * ex.qty;
             });
         }
 
-        // 2. Determine Active Risk (NER)
+        // --- 2. De-Risk / NER Calculation (Preserved) ---
         const activeStop = (typeof log.currentStop === 'number') ? log.currentStop : log.stop;
-        let riskDist = 0;
-        if(log.direction === 'LONG') {
-            riskDist = Math.max(0, log.entry - activeStop); 
-        } else {
-            riskDist = Math.max(0, activeStop - log.entry);
-        }
+        let riskDist = log.direction === 'LONG' ? Math.max(0, log.entry - activeStop) : Math.max(0, activeStop - log.entry);
         
         const grossRisk = remaining * riskDist;
         const currentNER = Math.max(0, grossRisk - realizedPnL);
         
-        // Calculate NER % Impact (for display)
         let nerPctString = "";
         const masterAcc = this.data.accounts.find(a => a.isMaster);
         if (currentNER > 0 && masterAcc && masterAcc.size > 0) {
             const rate = log.exchangeRate || 1;
-            const nerBase = currentNER / rate;
-            const pct = (nerBase / masterAcc.size) * 100;
+            const pct = ((currentNER / rate) / masterAcc.size) * 100;
             nerPctString = `<span class="bg-amber-900/30 text-amber-500 text-[10px] px-2 py-0.5 rounded border border-amber-500/30 ml-2 font-bold animate-pulse">Contributing ${pct.toFixed(2)}% NER</span>`;
         }
 
-        // 3. Generate De-Risk Section HTML
+        // --- 3. Generate De-Risk HTML (Preserved) ---
         let deriskHtml = '';
-        
         if (remaining > 0) {
             if (currentNER <= 0) {
-                // Scenario: DE-RISKED
                 deriskHtml = `
                 <div class="card bg-emerald-900/10 border border-emerald-500/50 p-3 mb-4 rounded-xl flex items-center justify-center gap-2">
                     <i data-lucide="shield-check" class="w-5 h-5 text-emerald-400"></i>
                     <span class="text-sm font-bold text-emerald-400 uppercase tracking-wide">Trade De-Risked</span>
                 </div>`;
             } else {
-                // Scenario: ACTIVE RISK -> Calculate Dynamic Targets
-                // Formula: Target = Entry + ( (NER / QtyToSell) - CurrentRiskPerShare )
-                // Note: For SHORTs, we SUBTRACT the result from Entry
-                
                 const dirMult = log.direction === 'LONG' ? 1 : -1;
-                
                 const calcTarget = (denom) => {
                     const q = Math.floor(remaining / denom);
                     if (q <= 0) return { q: 0, p: 0 };
-                    
-                    // The "Gap" we need to cover per share sold
                     const profitPerShareNeeded = (currentNER / q) - riskDist;
-                    
-                    // If result is negative, it means even selling at entry covers it (math quirk of partials), 
-                    // but usually implies we just need to bank *something*. 
-                    // We clamp to at least "current price" logic or just show the math result.
-                    
                     let target = log.entry + (profitPerShareNeeded * dirMult);
                     return { q, p: target.toFixed(2) };
                 };
@@ -2305,7 +2298,6 @@ const app = {
                 const t3 = calcTarget(3);
                 const t4 = calcTarget(4);
                 const t5 = calcTarget(5);
-                
                 const stopLabel = activeStop !== log.stop ? `Adjusted Stop (${activeStop})` : `Stop (${activeStop})`;
 
                 deriskHtml = `
@@ -2344,73 +2336,40 @@ const app = {
             }
         }
 
-        // 4. Standard UI Components (Summary, Stop Input, Charts)
-        // (Re-using standard display logic from previous patches)
-        
+        // --- 4. Dynamic Elements Preparation ---
+
+        // A. Duration
         let durationStr = "Active";
         if (log.outcome === 'open') {
              durationStr = this.formatDuration ? this.formatDuration(log.date) + " (Open)" : "Active";
-        } else {
-             if (log.exits && log.exits.length > 0) {
-                const sortedExits = [...log.exits].sort((a,b) => new Date(a.date) - new Date(b.date));
-                durationStr = this.formatDuration ? this.formatDuration(log.date, sortedExits[sortedExits.length-1].date) : "-";
-             } else { durationStr = "-"; }
+        } else if (log.exits && log.exits.length > 0) {
+            const sortedExits = [...log.exits].sort((a,b) => new Date(a.date) - new Date(b.date));
+            durationStr = this.formatDuration ? this.formatDuration(log.date, sortedExits[sortedExits.length-1].date) : "-";
         }
 
+        // B. Images (Entry & Exit)
         const entryImgUrl = log.entryImg ? await imgDB.get(log.entryImg) : null;
         const exitImgUrl = log.exitImg ? await imgDB.get(log.exitImg) : null;
 
-        // Total P&L String
+        // C. Strategy Options (NEW)
+        const stratOptions = this.data.settings.strategies.map(s => 
+            `<option value="${s}" ${s === log.strategy ? 'selected' : ''}>${s}</option>`
+        ).join('');
+
+        // --- 5. Render HTML ---
+        
+        // P&L Display
         const sym = this.getSymbol ? this.getSymbol(this.data.settings.baseCurrency) : "";
         let totalPnlVal = 0;
-        // Use helper if available, else manual
-        if(this.getPnl && log.exits) {
-             log.exits.forEach(ex => totalPnlVal += this.getPnl(log, ex.price, ex.qty).val);
-        }
+        if(this.getPnl && log.exits) log.exits.forEach(ex => totalPnlVal += this.getPnl(log, ex.price, ex.qty).val);
         const totalPnlStr = `${totalPnlVal>=0?'+':''}${sym}${Math.abs(totalPnlVal).toFixed(2)}`;
         const totalPnlClass = totalPnlVal >= 0 ? 'text-emerald-400' : 'text-red-400';
 
-        // Qty HTML (Editable if no sales)
-        const canEditQty = totalSold === 0;
-        const qtyHtml = canEditQty 
+        // Qty Display
+        const qtyHtml = totalSold === 0 
             ? `<div class="flex items-center gap-1"><input type="number" id="manageEditQty" value="${log.initialQty}" class="bg-slate-800 border border-slate-600 rounded w-16 text-center text-sm font-bold text-white p-1"><button onclick="app.updateTradeQty()" class="bg-blue-900/50 text-blue-400 p-1 rounded hover:bg-blue-600 hover:text-white"><i data-lucide="save" class="w-3 h-3"></i></button></div>`
             : `<div class="font-bold text-white text-lg">${log.initialQty}</div>`;
 
-        // Stops UI
-        const isStaggered = log.stopMeta && log.stopMeta.mode === 'staggered';
-        const stopDisplayHtml = `
-        <div class="bg-slate-900/50 p-3 rounded-lg mb-4 border border-slate-700/50">
-            <div class="flex justify-between items-center mb-2">
-                <span class="text-[10px] text-slate-500 uppercase font-bold">Initial Stop</span>
-                <span class="text-xs text-slate-400 font-mono">${isStaggered ? 'Staggered' : log.stop}</span>
-            </div>
-            <div class="flex justify-between items-center gap-3">
-                <div class="flex-1">
-                    <label class="text-[10px] text-blue-400 uppercase font-bold block mb-1">Current Stop</label>
-                    <input type="number" step="any" value="${log.currentStop}" id="manageCurrentStopInput"
-                        class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-sm text-white font-mono focus:border-blue-500 outline-none">
-                </div>
-                <button onclick="app.updateCurrentStop()" class="self-end mb-1 px-3 py-2 bg-slate-700 hover:bg-blue-600 text-white text-xs rounded transition-colors">Update</button>
-            </div>
-        </div>`;
-
-        // Chart UI
-        const chartHtml = `
-        <div class="grid grid-cols-2 gap-3 mb-4">
-            <div class="bg-slate-900 p-2 rounded-xl border border-slate-700 text-center relative">
-                <div class="text-[10px] text-slate-500 mb-2 font-bold uppercase">Entry Chart</div>
-                ${entryImgUrl ? `<img src="${entryImgUrl}" class="rounded h-24 w-full object-cover cursor-pointer border border-slate-600" onclick="app.showImg('${entryImgUrl}')">` : `<div class="h-24 flex items-center justify-center text-xs italic text-slate-600 border border-dashed border-slate-700 rounded">No Image</div>`}
-            </div>
-            <div class="bg-slate-900 p-2 rounded-xl border border-slate-700 text-center relative">
-                <div class="text-[10px] text-slate-500 mb-2 font-bold uppercase">Closure Chart</div>
-                ${exitImgUrl ? `<img src="${exitImgUrl}" class="rounded h-24 w-full object-cover cursor-pointer border border-slate-600" onclick="app.showImg('${exitImgUrl}')">` : `<div class="paste-zone h-24 min-h-0 border-slate-600" contenteditable="true" onpaste="app.handlePaste(event, 'exit', ${log.id})"><span class="text-[10px]">Paste Exit<br>Chart</span></div>`}
-            </div>
-        </div>`;
-
-        // Date Value
-        const dateVal = log.date.substring(0, 16);
-
-        // Assemble Final HTML
         document.getElementById('manageSummary').innerHTML = `
             <div class="flex justify-between items-start mb-2">
                 <div>
@@ -2423,11 +2382,19 @@ const app = {
                 </div>
             </div>
             
-            <div class="bg-slate-900/50 p-2 rounded-lg mb-3 flex justify-between items-center border border-slate-700/50">
+            <div class="bg-slate-900/50 p-2 rounded-lg mb-2 flex justify-between items-center border border-slate-700/50">
                  <label class="text-[10px] text-slate-500 font-bold uppercase">Entry Date</label>
-                 <input type="datetime-local" value="${dateVal}" 
+                 <input type="datetime-local" value="${log.date.substring(0, 16)}" 
                     onchange="app.updateLogDate(${id}, this.value)"
                     class="bg-transparent text-white text-sm font-mono focus:outline-none text-right">
+            </div>
+
+            <div class="bg-slate-900/50 p-2 rounded-lg mb-3 flex justify-between items-center border border-slate-700/50">
+                 <label class="text-[10px] text-slate-500 font-bold uppercase">Strategy</label>
+                 <select onchange="app.updateLogStrategy(${id}, this.value)" class="bg-transparent text-white text-sm font-bold focus:outline-none text-right cursor-pointer hover:text-blue-400 transition-colors">
+                    <option value="">(None Set)</option>
+                    ${stratOptions}
+                 </select>
             </div>
 
             <div class="grid grid-cols-4 gap-2 text-center bg-slate-900/50 p-2 rounded-lg mb-3 items-center">
@@ -2450,8 +2417,34 @@ const app = {
             </div>
             <div class="text-center text-[10px] text-slate-500 mb-2 font-mono italic">Held: ${durationStr}</div>
             
-            ${stopDisplayHtml}
-            ${chartHtml}
+            <div class="bg-slate-900/50 p-3 rounded-lg mb-4 border border-slate-700/50">
+                <div class="flex justify-between items-center gap-3">
+                    <div class="flex-1">
+                        <label class="text-[10px] text-blue-400 uppercase font-bold block mb-1">Current Stop</label>
+                        <input type="number" step="any" value="${log.currentStop}" id="manageCurrentStopInput"
+                            class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-sm text-white font-mono focus:border-blue-500 outline-none">
+                    </div>
+                    <button onclick="app.updateCurrentStop()" class="self-end mb-1 px-3 py-2 bg-slate-700 hover:bg-blue-600 text-white text-xs rounded transition-colors">Update</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <div class="bg-slate-900 p-2 rounded-xl border border-slate-700 text-center relative">
+                    <div class="text-[10px] text-slate-500 mb-2 font-bold uppercase">Entry Chart</div>
+                    ${entryImgUrl 
+                        ? `<img src="${entryImgUrl}" class="rounded h-24 w-full object-cover cursor-pointer border border-slate-600" onclick="app.showImg('${entryImgUrl}')">` 
+                        : `<div class="paste-zone h-24 min-h-0 border-slate-600" contenteditable="true" onpaste="app.handlePaste(event, 'entry-update', ${log.id})"><span class="text-[10px]">Paste Entry<br>Chart</span></div>`
+                    }
+                </div>
+                <div class="bg-slate-900 p-2 rounded-xl border border-slate-700 text-center relative">
+                    <div class="text-[10px] text-slate-500 mb-2 font-bold uppercase">Closure Chart</div>
+                    ${exitImgUrl 
+                        ? `<img src="${exitImgUrl}" class="rounded h-24 w-full object-cover cursor-pointer border border-slate-600" onclick="app.showImg('${exitImgUrl}')">` 
+                        : `<div class="paste-zone h-24 min-h-0 border-slate-600" contenteditable="true" onpaste="app.handlePaste(event, 'exit', ${log.id})"><span class="text-[10px]">Paste Exit<br>Chart</span></div>`
+                    }
+                </div>
+            </div>
+            
             ${deriskHtml} 
         `;
 
@@ -4450,35 +4443,21 @@ const app = {
         this.updatePrivacyIcons();
         lucide.createIcons();
     },
+	
 	openManualLogModal() {
         ['manTicker','manPrice','manQty','manStop'].forEach(id => document.getElementById(id).value = '');
         
-        // Default to Current Date & Time
-        const now = new Date();
-        
-        // Format YYYY-MM-DD
-        const localDate = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
-        document.getElementById('manDate').value = localDate;
-        
-        // Format HH:MM
-        const localTime = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
-        document.getElementById('manTime').value = localTime;
+        // 1. Populate Strategies
+        const stratSel = document.getElementById('manStrategy');
+        stratSel.innerHTML = '<option value="">(Select Strategy...)</option>' + 
+            this.data.settings.strategies.map(s => `<option value="${s}">${s}</option>`).join('');
 
-        document.getElementById('manualLogModal').classList.remove('hidden');
-    },
-
-    openManualLogModal() {
-        ['manTicker','manPrice','manQty','manStop'].forEach(id => document.getElementById(id).value = '');
-        
-        // Default to Current Date & Time
+        // 2. Default to Current Date & Time
         const now = new Date();
-        
-        // Format YYYY-MM-DD
         const localDate = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
-        document.getElementById('manDate').value = localDate;
-        
-        // Format HH:MM
         const localTime = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+        
+        document.getElementById('manDate').value = localDate;
         document.getElementById('manTime').value = localTime;
 
         document.getElementById('manualLogModal').classList.remove('hidden');
@@ -4490,29 +4469,38 @@ const app = {
         const price = parseFloat(document.getElementById('manPrice').value);
         const qty = parseFloat(document.getElementById('manQty').value);
         const stop = parseFloat(document.getElementById('manStop').value);
+        const strategy = document.getElementById('manStrategy').value; // Capture Strategy
         const dateStr = document.getElementById('manDate').value;
         const timeStr = document.getElementById('manTime').value;
 
         if(!ticker || !price || !qty || isNaN(stop) || !dateStr || !timeStr) return alert("All fields required");
         if ((dir === 'LONG' && stop >= price) || (dir === 'SHORT' && stop <= price)) return alert("Invalid Stop placement");
 
-        // Construct Final Date from User Inputs
-        // "YYYY-MM-DD" + "T" + "HH:MM" creates a local-time ISO string context
         const combinedDate = new Date(`${dateStr}T${timeStr}`);
-        
-        // Validate Date
         if(isNaN(combinedDate.getTime())) return alert("Invalid Date/Time");
-        
         const finalDate = combinedDate.toISOString();
 
         const masterAcc = this.data.accounts.find(a => a.isMaster);
         const riskVal = (masterAcc && masterAcc.size > 0) ? parseFloat((((Math.abs(price-stop)*qty)/masterAcc.size)*100).toFixed(2)) : 0;
 
         this.data.logs.unshift({
-            id: Date.now(), date: finalDate, ticker: ticker, direction: dir, entry: price, stop: stop, initialQty: qty,
-            riskMode: 'equity', riskVal: riskVal, strategy: 'Manual Entry', notes: 'Manual Log', outcome: 'open', exits: [], exchangeRate: 1,
-            stopMeta: { mode: 'single', price: stop }
+            id: Date.now(), 
+            date: finalDate, 
+            ticker: ticker, 
+            direction: dir, 
+            entry: price, 
+            stop: stop, 
+            initialQty: qty,
+            riskMode: 'equity', 
+            riskVal: riskVal, 
+            strategy: strategy || 'Manual Entry', // Use selected strategy or default
+            notes: 'Manual Log', 
+            outcome: 'open', 
+            exits: [], 
+            exchangeRate: 1,
+            stopMeta: { mode: 'single', price: stop } 
         });
+        
         localStorage.setItem('tradeLogs', JSON.stringify(this.data.logs));
         document.getElementById('manualLogModal').classList.add('hidden');
         this.renderLogs(); 
@@ -4885,6 +4873,16 @@ const app = {
             alert("Error creating snapshot");
             btn.innerHTML = originalIcon;
             lucide.createIcons();
+        }
+    },
+	updateLogStrategy(id, val) {
+        const log = this.data.logs.find(l => l.id === id);
+        if(log) {
+            log.strategy = val;
+            localStorage.setItem('tradeLogs', JSON.stringify(this.data.logs));
+            // No need to re-render the whole view, just save it.
+            // But we do need to re-render Logs list in background if filtering
+            this.renderLogs();
         }
     },
 }; // <--- This is the end of the app object
