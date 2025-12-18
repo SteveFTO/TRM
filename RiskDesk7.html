@@ -1016,8 +1016,17 @@
       </button>
   </nav>
 
-  <div id="imgModal" class="hidden fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm" onclick="this.classList.add('hidden')">
-    <img id="imgModalSrc" class="max-w-full max-h-full rounded-lg shadow-2xl border border-slate-700" src="" />
+<div id="imgModal" class="hidden fixed inset-0 z-[60] bg-black/95 flex flex-col items-center justify-center p-4 backdrop-blur-sm" onclick="if(event.target.id === 'imgModal') this.classList.add('hidden')">
+    
+    <button onclick="document.getElementById('imgModal').classList.add('hidden')" class="absolute top-6 right-6 text-slate-400 hover:text-white bg-slate-800/50 p-2 rounded-full">
+        <i data-lucide="x" class="w-8 h-8"></i>
+    </button>
+
+    <img id="imgModalSrc" class="max-w-full max-h-[80vh] rounded-lg shadow-2xl border border-slate-700 object-contain" src="" />
+    
+    <p class="text-slate-500 text-xs mt-4 animate-pulse">
+        Long-press image to Save/Share
+    </p>
 </div>
 
 
@@ -4639,89 +4648,120 @@ const app = {
         }
     },
 
-    // SINGLE ROW SHARER (With Headers + Watermark)
-    async shareLogImage(btn) {
+   // 1. Share Single Row (Mobile First)
+    async shareLogImage(btn, id) {
         const row = btn.closest('.log-row');
         if (!row) return;
 
-        // Visual Feedback
         const originalIcon = btn.innerHTML;
-        btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin text-blue-400"></i>`;
+        btn.innerHTML = `<i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i>`;
         lucide.createIcons();
 
         try {
-            // 1. CREATE CANVAS CONTAINER
-            // We create a new 'Card' div to hold the Header + Row + Footer
-            const container = document.createElement('div');
-            container.style.position = 'absolute';
-            container.style.left = '-9999px';
-            container.style.width = '900px'; 
-            container.style.background = '#0f172a'; // Slate 900
-            container.style.borderRadius = '12px';
-            container.style.overflow = 'hidden'; // Clip corners
-            container.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1)';
-
-            // 2. CLONE HEADER
-            // We find the header inside the wrapper (it's the first child of the wrapper div)
-            const wrapper = document.getElementById('logsTableWrapper');
-            const headerOriginal = wrapper ? wrapper.firstElementChild : null;
-            
-            if (headerOriginal) {
-                const headerClone = headerOriginal.cloneNode(true);
-                // Adjust style for the snapshot
-                headerClone.className = 'grid grid-cols-10 gap-2 p-4 bg-slate-800 text-xs font-bold text-slate-400 border-b border-slate-700';
-                container.appendChild(headerClone);
-            }
-
-            // 3. CLONE ROW
-            const rowClone = row.cloneNode(true);
-            // Adjust styling to match the container width/padding
-            rowClone.className = 'grid grid-cols-10 gap-2 p-4 bg-slate-900 text-slate-200 items-center';
-            // Hide the buttons in the screenshot
-            const actions = rowClone.querySelector('.action-buttons');
-            if(actions) actions.style.visibility = 'hidden';
-            
-            container.appendChild(rowClone);
-
-            // 4. ADD WATERMARK FOOTER
-            const footer = document.createElement('div');
-            footer.className = 'flex justify-between items-center px-4 py-3 bg-slate-950 border-t border-slate-800';
-            footer.innerHTML = `
-                <div class="flex items-center gap-2">
-                    <div class="w-4 h-4 rounded bg-gradient-to-br from-blue-500 to-emerald-400"></div>
-                    <span class="text-xs font-bold text-slate-300 tracking-wide">RiskDesk</span>
-                </div>
-                <div class="text-[10px] font-mono text-slate-600">www.riskdesk.io</div>
-            `;
-            container.appendChild(footer);
-
-            // 5. RENDER & CAPTURE
-            document.body.appendChild(container);
-            
-            const canvas = await html2canvas(container, {
-                backgroundColor: '#0f172a',
-                scale: 3 // High Res
-            });
-
-            document.body.removeChild(container);
-
-            // 6. SHARE
+            const canvas = await html2canvas(row, { backgroundColor: '#1e293b', scale: 2 });
             canvas.toBlob(async (blob) => {
+                const file = new File([blob], `Trade_${id}.png`, { type: 'image/png' });
+
+                // STRATEGY A: Native Mobile Share Sheet (Best for iPhone)
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    try {
+                        await navigator.share({
+                            files: [file],
+                            title: 'Trade Log',
+                            text: `Trade: ${id}`
+                        });
+                        btn.innerHTML = originalIcon; // Reset icon immediately
+                        lucide.createIcons();
+                        return; // Success, stop here
+                    } catch (err) {
+                        console.log("Share Sheet cancelled or failed", err);
+                    }
+                }
+
+                // STRATEGY B: Clipboard (Desktop)
                 try {
                     await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-                    alert("Trade Snapshot copied!");
+                    alert("Trade Copied to Clipboard!");
                 } catch (err) {
-                    app.showImg(URL.createObjectURL(blob));
+                    // STRATEGY C: Visual Fallback
+                    const url = URL.createObjectURL(blob);
+                    app.showImg(url);
+                    // alert("Long-press the image to save.");
                 }
+                
                 btn.innerHTML = originalIcon;
                 lucide.createIcons();
             });
-
-        } catch(e) {
+        } catch (e) {
             console.error(e);
-            alert("Error creating snapshot");
+            alert("Error creating image");
             btn.innerHTML = originalIcon;
             lucide.createIcons();
+        }
+    },
+
+    // 2. Share Full Page (Mobile First)
+    async shareLogView() {
+        const source = document.getElementById('logsTableWrapper');
+        if(!source) return;
+
+        const btn = document.getElementById('sharePageBtn');
+        const originalIcon = btn ? btn.innerHTML : '';
+        if(btn) {
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin text-blue-400"></i>`;
+            lucide.createIcons();
+        }
+
+        try {
+            const clone = source.cloneNode(true);
+            clone.style.position = 'absolute';
+            clone.style.left = '-9999px';
+            clone.style.width = '800px'; 
+            clone.style.height = 'auto'; 
+            clone.style.overflow = 'visible'; 
+            
+            const cloneContainer = clone.querySelector('#logsContainer');
+            if(cloneContainer) {
+                cloneContainer.style.overflow = 'visible';
+                cloneContainer.style.height = 'auto';
+            }
+
+            document.body.appendChild(clone);
+            const canvas = await html2canvas(clone, { backgroundColor: '#0f172a', scale: 2 });
+            document.body.removeChild(clone);
+
+            canvas.toBlob(async (blob) => {
+                const file = new File([blob], `RiskDesk_Log_${new Date().toISOString().split('T')[0]}.png`, { type: 'image/png' });
+
+                // STRATEGY A: Native Mobile Share Sheet
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    try {
+                        await navigator.share({
+                            files: [file],
+                            title: 'RiskDesk Log'
+                        });
+                        if(btn) { btn.innerHTML = originalIcon; lucide.createIcons(); }
+                        return; 
+                    } catch (err) {
+                        console.log("Share cancelled");
+                    }
+                }
+
+                // STRATEGY B: Clipboard
+                try {
+                    await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+                    alert("Log Copied to Clipboard!");
+                } catch (err) {
+                    // STRATEGY C: Fallback
+                    app.showImg(URL.createObjectURL(blob));
+                }
+                if(btn) { btn.innerHTML = originalIcon; lucide.createIcons(); }
+            });
+
+        } catch (e) {
+            console.error(e);
+            alert("Error creating snapshot");
+            if(btn) { btn.innerHTML = originalIcon; lucide.createIcons(); }
         }
     },
 	
