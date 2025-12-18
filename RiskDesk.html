@@ -947,8 +947,10 @@
                     <label class="text-[10px] text-red-400 font-bold uppercase block mb-1">Stop Loss</label>
                     <input type="number" id="manStop" step="any" placeholder="0.00" class="w-full bg-slate-900 border border-red-900/50 rounded p-2.5 text-white font-mono text-sm outline-none focus:border-red-500 h-10 appearance-none min-w-0 focus:ring-1 focus:ring-red-500">
                 </div>
-                
-                <div class="hidden sm:block"></div> 
+                <div class="min-w-0">
+                    <label class="text-[10px] text-slate-500 font-bold uppercase block mb-1">Time</label>
+                    <input type="time" id="manTime" class="w-full bg-slate-900 border border-slate-600 rounded p-2.5 text-xs text-slate-300 outline-none h-10 appearance-none min-w-0">
+                </div>
 
                 <div class="col-span-2 min-w-0">
                     <label class="text-[10px] text-slate-500 font-bold uppercase block mb-1">Date</label>
@@ -4429,11 +4431,34 @@ const app = {
 	openManualLogModal() {
         ['manTicker','manPrice','manQty','manStop'].forEach(id => document.getElementById(id).value = '');
         
-        // FIX: Use local date YYYY-MM-DD (instead of UTC)
-        const d = new Date();
-        const localDate = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+        // Default to Current Date & Time
+        const now = new Date();
+        
+        // Format YYYY-MM-DD
+        const localDate = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
         document.getElementById('manDate').value = localDate;
         
+        // Format HH:MM
+        const localTime = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+        document.getElementById('manTime').value = localTime;
+
+        document.getElementById('manualLogModal').classList.remove('hidden');
+    },
+
+    openManualLogModal() {
+        ['manTicker','manPrice','manQty','manStop'].forEach(id => document.getElementById(id).value = '');
+        
+        // Default to Current Date & Time
+        const now = new Date();
+        
+        // Format YYYY-MM-DD
+        const localDate = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
+        document.getElementById('manDate').value = localDate;
+        
+        // Format HH:MM
+        const localTime = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+        document.getElementById('manTime').value = localTime;
+
         document.getElementById('manualLogModal').classList.remove('hidden');
     },
 
@@ -4444,27 +4469,19 @@ const app = {
         const qty = parseFloat(document.getElementById('manQty').value);
         const stop = parseFloat(document.getElementById('manStop').value);
         const dateStr = document.getElementById('manDate').value;
+        const timeStr = document.getElementById('manTime').value;
 
-        if(!ticker || !price || !qty || isNaN(stop)) return alert("All fields required");
+        if(!ticker || !price || !qty || isNaN(stop) || !dateStr || !timeStr) return alert("All fields required");
         if ((dir === 'LONG' && stop >= price) || (dir === 'SHORT' && stop <= price)) return alert("Invalid Stop placement");
 
-        // --- TIME LOGIC FIX ---
-        let finalDateObj = new Date();
+        // Construct Final Date from User Inputs
+        // "YYYY-MM-DD" + "T" + "HH:MM" creates a local-time ISO string context
+        const combinedDate = new Date(`${dateStr}T${timeStr}`);
         
-        // Generate "Today" string in local time to compare
-        const now = new Date();
-        const todayStr = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
-
-        if(dateStr === todayStr) {
-            // IT IS TODAY: Use the real current time
-            finalDateObj = new Date(); 
-        } else {
-            // IT IS BACKDATED: Use Noon to prevent timezone shifts
-            finalDateObj = new Date(dateStr);
-            finalDateObj.setHours(12, 0, 0, 0); 
-        }
-        const finalDate = finalDateObj.toISOString();
-        // ----------------------
+        // Validate Date
+        if(isNaN(combinedDate.getTime())) return alert("Invalid Date/Time");
+        
+        const finalDate = combinedDate.toISOString();
 
         const masterAcc = this.data.accounts.find(a => a.isMaster);
         const riskVal = (masterAcc && masterAcc.size > 0) ? parseFloat((((Math.abs(price-stop)*qty)/masterAcc.size)*100).toFixed(2)) : 0;
