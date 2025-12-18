@@ -12,6 +12,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://gumroad.com/js/gumroad.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   
   <style>
     /* Custom Dark Theme Tweaks */
@@ -607,26 +608,35 @@
 
 
     <div id="view-logs" class="hidden p-4 max-w-4xl mx-auto h-full flex flex-col">
-        <div class="flex gap-2 mb-4">
-			<button onclick="app.openManualLogModal()" class="bg-blue-600 hover:bg-blue-500 text-white p-2 rounded-lg shadow-lg flex-shrink-0">
-				<i data-lucide="plus" class="w-5 h-5"></i>
-			</button>
+        <div class="flex gap-2 mb-4 items-center">
+            <button onclick="app.openManualLogModal()" class="bg-blue-600 hover:bg-blue-500 text-white p-2 rounded-lg shadow-lg flex-shrink-0">
+                <i data-lucide="plus" class="w-5 h-5"></i>
+            </button>
+            
             <div class="relative flex-1">
                 <i data-lucide="search" class="absolute left-3 top-3 w-4 h-4 text-slate-500"></i>
-                <input type="text" id="logSearch" placeholder="Search Ticker..." onkeyup="app.renderLogs()" class="w-full bg-slate-800 border-none rounded-lg pl-10 py-2 text-sm focus:ring-2 focus:ring-blue-500 text-white">
+                <input type="text" id="logSearch" placeholder="Search" onkeyup="app.renderLogs()" class="w-full bg-slate-800 border-none rounded-lg pl-10 py-2 text-sm focus:ring-2 focus:ring-blue-500 text-white">
             </div>
-            <button onclick="app.exportLogs()" class="bg-slate-800 p-2 rounded-lg text-slate-400 hover:text-white">
+
+            <button onclick="app.exportLogs()" class="bg-slate-800 p-2 rounded-lg text-slate-400 hover:text-white border border-slate-700" title="Export CSV">
                 <i data-lucide="download" class="w-5 h-5"></i>
+            </button>
+            
+            <button onclick="app.captureAndShare('logsTableWrapper', 'sharePageBtn')" id="sharePageBtn" class="bg-slate-800 p-2 rounded-lg text-slate-400 hover:text-white border border-slate-700" title="Share List">
+                <i data-lucide="camera" class="w-5 h-5"></i>
+            </button>
+            
+            <button onclick="app.togglePrivacyMode()" id="privacyToggleBtn" class="bg-slate-800 p-2 rounded-lg text-slate-400 hover:text-white border border-slate-700" title="Toggle Privacy">
+                <i data-lucide="eye" class="w-5 h-5"></i>
             </button>
         </div>
 
-        <div class="bg-slate-900 rounded-xl border border-slate-800 flex-1 overflow-hidden flex flex-col">
-            <div class="grid grid-cols-12 gap-2 p-3 bg-slate-800 text-xs font-bold text-slate-400 border-b border-slate-700">
+        <div id="logsTableWrapper" class="bg-slate-900 rounded-xl border border-slate-800 flex-1 overflow-hidden flex flex-col">
+            <div class="grid grid-cols-10 gap-2 p-3 bg-slate-800 text-xs font-bold text-slate-400 border-b border-slate-700">
                 <div class="col-span-2">DATE</div>
                 <div class="col-span-2">TICKER</div>
-                <div class="col-span-2 text-right">RISK</div>
-                <div class="col-span-2 text-right">R-MULT</div>
-                <div class="col-span-4 text-center">STATUS</div>
+                <div class="col-span-2 text-left">RISK / R</div>
+                <div class="col-span-4 text-right">STATUS / P&L</div>
             </div>
             <div id="logsContainer" class="overflow-y-auto flex-1 p-2 space-y-1">
                 </div>
@@ -674,7 +684,19 @@
     </div>
 
 	<div id="view-stats" class="hidden p-4 max-w-lg mx-auto pb-24 animate-in slide-in-from-right">
-        
+        <div class="flex items-center justify-between mb-6">
+			<h1 class="text-2xl font-bold text-white flex items-center gap-2">
+				<i data-lucide="bar-chart-2" class="w-6 h-6 text-indigo-400"></i> Statistics
+			</h1>
+        <div class="flex gap-2">
+            <button onclick="app.captureAndShare('view-stats', 'statsShareBtn')" id="statsShareBtn" class="bg-slate-800 p-2 rounded-lg text-slate-400 hover:text-white transition-colors border border-slate-700" title="Share Stats">
+                <i data-lucide="camera" class="w-5 h-5"></i>
+            </button>
+            <button onclick="app.togglePrivacyMode()" id="statsPrivacyBtn" class="bg-slate-800 p-2 rounded-lg text-slate-400 hover:text-white transition-colors border border-slate-700" title="Toggle Privacy">
+                <i data-lucide="eye" class="w-5 h-5"></i>
+            </button>
+        </div>
+    </div>
         <div class="grid grid-cols-2 gap-3 mb-6">
             <div>
                  <label class="text-[10px] text-slate-500 uppercase font-bold">Filter Strategy</label>
@@ -822,10 +844,18 @@
     </div>
 	
 	<div id="view-journal" class="hidden p-4 max-w-lg mx-auto pb-24 animate-in slide-in-from-right">
-        <div class="flex items-center gap-2 mb-6">
+        <div class="flex items-center justify-between mb-6">
             <h1 class="text-2xl font-bold text-white flex items-center gap-2">
-                <i data-lucide="book" class="w-6 h-6 text-amber-400"></i> Trader's Journal
+                <i data-lucide="book" class="w-6 h-6 text-amber-400"></i> Journal
             </h1>
+            <div class="flex gap-2">
+                 <button onclick="app.shareActiveJournalTab()" id="journalShareBtn" class="bg-slate-800 p-2 rounded-lg text-slate-400 hover:text-white transition-colors border border-slate-700" title="Share Page">
+                    <i data-lucide="camera" class="w-5 h-5"></i>
+                </button>
+                <button onclick="app.togglePrivacyMode()" id="journalPrivacyBtn" class="bg-slate-800 p-2 rounded-lg text-slate-400 hover:text-white transition-colors border border-slate-700" title="Toggle Privacy">
+                    <i data-lucide="eye" class="w-5 h-5"></i>
+                </button>
+            </div>
         </div>
 
         <div class="flex bg-slate-900 p-1 rounded-xl mb-6 border border-slate-700">
@@ -834,28 +864,30 @@
         </div>
 
         <div id="jtab-rules" class="hidden space-y-6">
-            <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
-                <h3 class="text-xs font-bold text-amber-400 uppercase mb-2">My Trading Philosophy</h3>
-                <textarea id="jPhilosophy" rows="4" placeholder="e.g. I am a risk manager first, trader second..." 
-                    class="w-full bg-slate-900 border border-slate-600 rounded p-3 text-sm text-slate-200 outline-none focus:border-amber-400"
-                    onchange="app.saveJournal()"></textarea>
-            </div>
+            <div id="journalRulesContainer" class="space-y-6">
+                <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                    <h3 class="text-xs font-bold text-amber-400 uppercase mb-2">My Trading Philosophy</h3>
+                    <textarea id="jPhilosophy" rows="4" placeholder="e.g. I am a risk manager first, trader second..." 
+                        class="w-full bg-slate-900 border border-slate-600 rounded p-3 text-sm text-slate-200 outline-none focus:border-amber-400"
+                        onchange="app.saveJournal()"></textarea>
+                </div>
 
-            <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
-                <div class="flex justify-between items-center mb-3">
-                    <h3 class="text-xs font-bold text-blue-400 uppercase">My Trading Rules</h3>
-                    <button onclick="app.addJournalRule()" class="text-xs bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded text-white">+ Add Rule</button>
+                <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="text-xs font-bold text-blue-400 uppercase">My Trading Rules</h3>
+                        <button onclick="app.addJournalRule()" class="text-xs bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded text-white">+ Add Rule</button>
+                    </div>
+                    <div id="jRulesList" class="space-y-2"></div>
                 </div>
-                <div id="jRulesList" class="space-y-2"></div>
-            </div>
-            
-            <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
-                <h3 class="text-xs font-bold text-purple-400 uppercase mb-3">Manage Emotions List</h3>
-                <div class="flex gap-2 mb-3">
-                    <input type="text" id="newEmotionInput" placeholder="New Emotion..." class="flex-1 bg-slate-900 border border-slate-600 rounded p-2 text-sm text-white">
-                    <button onclick="app.addEmotionTag()" class="bg-purple-600 text-white px-3 rounded font-bold text-xs">Add</button>
+                
+                <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                    <h3 class="text-xs font-bold text-purple-400 uppercase mb-3">Manage Emotions List</h3>
+                    <div class="flex gap-2 mb-3">
+                        <input type="text" id="newEmotionInput" placeholder="New Emotion..." class="flex-1 bg-slate-900 border border-slate-600 rounded p-2 text-sm text-white">
+                        <button onclick="app.addEmotionTag()" class="bg-purple-600 text-white px-3 rounded font-bold text-xs">Add</button>
+                    </div>
+                    <div id="jEmotionsSettingsList" class="flex flex-wrap gap-2"></div>
                 </div>
-                <div id="jEmotionsSettingsList" class="flex flex-wrap gap-2"></div>
             </div>
         </div>
 
@@ -866,41 +898,41 @@
                 <button onclick="app.shiftJournalDate(1)" class="p-2 text-slate-400 hover:text-white"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
             </div>
 
-            <div id="jActivityContainer" class="hidden space-y-3">
-                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">Market Activity</h3>
-                <div id="jActivityFeed" class="space-y-2"></div>
-            </div>
-
-            <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
-                <h3 class="text-xs font-bold text-slate-500 uppercase mb-4 text-center tracking-widest">Did you follow your rules today?</h3>
-                <div class="flex gap-4">
-                    <button onclick="app.setJournalDiscipline(true)" id="btn-disc-yes" class="flex-1 py-4 rounded-xl border border-emerald-900/50 bg-slate-900 text-slate-500 font-bold transition-all flex flex-col items-center gap-1 hover:border-emerald-500">
-                        <i data-lucide="check-circle" class="w-6 h-6"></i>
-                        YES
-                    </button>
-                    <button onclick="app.setJournalDiscipline(false)" id="btn-disc-no" class="flex-1 py-4 rounded-xl border border-red-900/50 bg-slate-900 text-slate-500 font-bold transition-all flex flex-col items-center gap-1 hover:border-red-500">
-                        <i data-lucide="x-circle" class="w-6 h-6"></i>
-                        NO
-                    </button>
-                </div>
-            </div>
-
-            <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
-                <div class="mb-4">
-                    <label class="text-[10px] text-slate-500 uppercase font-bold mb-2 block">Emotions Felt</label>
-                    <div id="jDailyEmotions" class="flex flex-wrap gap-2"></div>
-                </div>
-                
-                <div class="mb-4">
-                    <label class="text-[10px] text-slate-500 uppercase font-bold mb-2 block">Journal Notes</label>
-                    <textarea id="jDailyNotes" rows="6" class="w-full bg-slate-900 border border-slate-600 rounded p-3 text-sm text-slate-200 outline-none focus:border-blue-500" placeholder="How was the session? What did you learn?" onchange="app.saveJournalEntry()"></textarea>
+            <div id="journalLogContainer" class="space-y-6">
+                <div id="jActivityContainer" class="hidden space-y-3">
+                    <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">Market Activity</h3>
+                    <div id="jActivityFeed" class="space-y-2"></div>
                 </div>
 
-                <div class="paste-zone min-h-[100px]" contenteditable="true" onpaste="app.handleJournalPaste(event)">
-                    <i data-lucide="image-plus" class="w-6 h-6 mb-1"></i>
-                    <span class="text-xs">Paste Charts Here (Ctrl+V)</span>
+                <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                    <h3 class="text-xs font-bold text-slate-500 uppercase mb-4 text-center tracking-widest">Did you follow your rules today?</h3>
+                    <div class="flex gap-4">
+                        <button onclick="app.setJournalDiscipline(true)" id="btn-disc-yes" class="flex-1 py-4 rounded-xl border border-emerald-900/50 bg-slate-900 text-slate-500 font-bold transition-all flex flex-col items-center gap-1 hover:border-emerald-500">
+                            <i data-lucide="check-circle" class="w-6 h-6"></i> YES
+                        </button>
+                        <button onclick="app.setJournalDiscipline(false)" id="btn-disc-no" class="flex-1 py-4 rounded-xl border border-red-900/50 bg-slate-900 text-slate-500 font-bold transition-all flex flex-col items-center gap-1 hover:border-red-500">
+                            <i data-lucide="x-circle" class="w-6 h-6"></i> NO
+                        </button>
+                    </div>
                 </div>
-                <div id="jDailyImages" class="grid grid-cols-2 gap-2 mt-4"></div>
+
+                <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                    <div class="mb-4">
+                        <label class="text-[10px] text-slate-500 uppercase font-bold mb-2 block">Emotions Felt</label>
+                        <div id="jDailyEmotions" class="flex flex-wrap gap-2"></div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="text-[10px] text-slate-500 uppercase font-bold mb-2 block">Journal Notes</label>
+                        <textarea id="jDailyNotes" rows="6" class="w-full bg-slate-900 border border-slate-600 rounded p-3 text-sm text-slate-200 outline-none focus:border-blue-500" placeholder="How was the session? What did you learn?" onchange="app.saveJournalEntry()"></textarea>
+                    </div>
+
+                    <div class="paste-zone min-h-[100px]" contenteditable="true" onpaste="app.handleJournalPaste(event)">
+                        <i data-lucide="image-plus" class="w-6 h-6 mb-1"></i>
+                        <span class="text-xs">Paste Charts Here (Ctrl+V)</span>
+                    </div>
+                    <div id="jDailyImages" class="grid grid-cols-2 gap-2 mt-4"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -953,6 +985,12 @@
                 </div>
 
                 <div class="col-span-2 min-w-0">
+                    <label class="text-[10px] text-slate-500 font-bold uppercase block mb-1">Strategy</label>
+                    <select id="manStrategy" class="w-full bg-slate-900 border border-slate-600 rounded p-2.5 text-sm font-bold text-slate-300 outline-none h-10 appearance-none min-w-0">
+                        </select>
+                </div>
+
+                <div class="col-span-2 min-w-0">
                     <label class="text-[10px] text-slate-500 font-bold uppercase block mb-1">Date</label>
                     <input type="date" id="manDate" class="w-full bg-slate-900 border border-slate-600 rounded p-2.5 text-xs text-slate-300 outline-none h-10 appearance-none min-w-0">
                 </div>
@@ -984,8 +1022,17 @@
       </button>
   </nav>
 
-  <div id="imgModal" class="hidden fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4 backdrop-blur-sm" onclick="this.classList.add('hidden')">
-    <img id="imgModalSrc" class="max-w-full max-h-full rounded-lg shadow-2xl border border-slate-700" src="" />
+<div id="imgModal" class="hidden fixed inset-0 z-[60] bg-black/95 flex flex-col items-center justify-center p-4 backdrop-blur-sm" onclick="if(event.target.id === 'imgModal') this.classList.add('hidden')">
+    
+    <button onclick="document.getElementById('imgModal').classList.add('hidden')" class="absolute top-6 right-6 text-slate-400 hover:text-white bg-slate-800/50 p-2 rounded-full">
+        <i data-lucide="x" class="w-8 h-8"></i>
+    </button>
+
+    <img id="imgModalSrc" class="max-w-full max-h-[80vh] rounded-lg shadow-2xl border border-slate-700 object-contain" src="" />
+    
+    <p class="text-slate-500 text-xs mt-4 animate-pulse">
+        Long-press image to Save/Share
+    </p>
 </div>
 
 
@@ -1199,10 +1246,19 @@ const app = {
                 zone.classList.add('has-image');
                 lucide.createIcons();
 
+                // 1. Calculator Entry
                 if(type === 'entry') this.data.tempCalculation.entryImgId = id;
+                
+                // 2. Existing Trade: Exit Chart
                 if(type === 'exit' && logId) {
                     const log = this.data.logs.find(l => l.id === logId);
                     if(log) { log.exitImg = id; localStorage.setItem('tradeLogs', JSON.stringify(this.data.logs)); this.openManageView(logId); }
+                }
+
+                // 3. NEW: Existing Trade: Entry Chart
+                if(type === 'entry-update' && logId) {
+                    const log = this.data.logs.find(l => l.id === logId);
+                    if(log) { log.entryImg = id; localStorage.setItem('tradeLogs', JSON.stringify(this.data.logs)); this.openManageView(logId); }
                 }
                 return;
             }
@@ -2188,75 +2244,53 @@ const app = {
 
     // --- PATCH 26: DYNAMIC DE-RISKING ENGINE ---
 
-    async openManageView(id) {
+   async openManageView(id) {
         this.data.editingId = id;
         const log = this.data.logs.find(l => l.id === id);
         if(!log) return;
         if(typeof log.currentStop === 'undefined') log.currentStop = log.stop;
 
-        // 1. Calculate Core Metrics
+        // --- 1. Metrics Calculation ---
         const totalSold = log.exits ? log.exits.reduce((a,b) => a+b.qty, 0) : 0;
         const remaining = log.initialQty - totalSold;
         
         let realizedPnL = 0;
         if (log.exits) {
             log.exits.forEach(ex => {
-                const pnl = (log.direction === 'SHORT' ? (log.entry - ex.price) : (ex.price - log.entry)) * ex.qty;
-                realizedPnL += pnl;
+                realizedPnL += (log.direction === 'SHORT' ? (log.entry - ex.price) : (ex.price - log.entry)) * ex.qty;
             });
         }
 
-        // 2. Determine Active Risk (NER)
+        // --- 2. De-Risk / NER Calculation (Preserved) ---
         const activeStop = (typeof log.currentStop === 'number') ? log.currentStop : log.stop;
-        let riskDist = 0;
-        if(log.direction === 'LONG') {
-            riskDist = Math.max(0, log.entry - activeStop); 
-        } else {
-            riskDist = Math.max(0, activeStop - log.entry);
-        }
+        let riskDist = log.direction === 'LONG' ? Math.max(0, log.entry - activeStop) : Math.max(0, activeStop - log.entry);
         
         const grossRisk = remaining * riskDist;
         const currentNER = Math.max(0, grossRisk - realizedPnL);
         
-        // Calculate NER % Impact (for display)
         let nerPctString = "";
         const masterAcc = this.data.accounts.find(a => a.isMaster);
         if (currentNER > 0 && masterAcc && masterAcc.size > 0) {
             const rate = log.exchangeRate || 1;
-            const nerBase = currentNER / rate;
-            const pct = (nerBase / masterAcc.size) * 100;
+            const pct = ((currentNER / rate) / masterAcc.size) * 100;
             nerPctString = `<span class="bg-amber-900/30 text-amber-500 text-[10px] px-2 py-0.5 rounded border border-amber-500/30 ml-2 font-bold animate-pulse">Contributing ${pct.toFixed(2)}% NER</span>`;
         }
 
-        // 3. Generate De-Risk Section HTML
+        // --- 3. Generate De-Risk HTML (Preserved) ---
         let deriskHtml = '';
-        
         if (remaining > 0) {
             if (currentNER <= 0) {
-                // Scenario: DE-RISKED
                 deriskHtml = `
                 <div class="card bg-emerald-900/10 border border-emerald-500/50 p-3 mb-4 rounded-xl flex items-center justify-center gap-2">
                     <i data-lucide="shield-check" class="w-5 h-5 text-emerald-400"></i>
                     <span class="text-sm font-bold text-emerald-400 uppercase tracking-wide">Trade De-Risked</span>
                 </div>`;
             } else {
-                // Scenario: ACTIVE RISK -> Calculate Dynamic Targets
-                // Formula: Target = Entry + ( (NER / QtyToSell) - CurrentRiskPerShare )
-                // Note: For SHORTs, we SUBTRACT the result from Entry
-                
                 const dirMult = log.direction === 'LONG' ? 1 : -1;
-                
                 const calcTarget = (denom) => {
                     const q = Math.floor(remaining / denom);
                     if (q <= 0) return { q: 0, p: 0 };
-                    
-                    // The "Gap" we need to cover per share sold
                     const profitPerShareNeeded = (currentNER / q) - riskDist;
-                    
-                    // If result is negative, it means even selling at entry covers it (math quirk of partials), 
-                    // but usually implies we just need to bank *something*. 
-                    // We clamp to at least "current price" logic or just show the math result.
-                    
                     let target = log.entry + (profitPerShareNeeded * dirMult);
                     return { q, p: target.toFixed(2) };
                 };
@@ -2264,7 +2298,6 @@ const app = {
                 const t3 = calcTarget(3);
                 const t4 = calcTarget(4);
                 const t5 = calcTarget(5);
-                
                 const stopLabel = activeStop !== log.stop ? `Adjusted Stop (${activeStop})` : `Stop (${activeStop})`;
 
                 deriskHtml = `
@@ -2303,73 +2336,40 @@ const app = {
             }
         }
 
-        // 4. Standard UI Components (Summary, Stop Input, Charts)
-        // (Re-using standard display logic from previous patches)
-        
+        // --- 4. Dynamic Elements Preparation ---
+
+        // A. Duration
         let durationStr = "Active";
         if (log.outcome === 'open') {
              durationStr = this.formatDuration ? this.formatDuration(log.date) + " (Open)" : "Active";
-        } else {
-             if (log.exits && log.exits.length > 0) {
-                const sortedExits = [...log.exits].sort((a,b) => new Date(a.date) - new Date(b.date));
-                durationStr = this.formatDuration ? this.formatDuration(log.date, sortedExits[sortedExits.length-1].date) : "-";
-             } else { durationStr = "-"; }
+        } else if (log.exits && log.exits.length > 0) {
+            const sortedExits = [...log.exits].sort((a,b) => new Date(a.date) - new Date(b.date));
+            durationStr = this.formatDuration ? this.formatDuration(log.date, sortedExits[sortedExits.length-1].date) : "-";
         }
 
+        // B. Images (Entry & Exit)
         const entryImgUrl = log.entryImg ? await imgDB.get(log.entryImg) : null;
         const exitImgUrl = log.exitImg ? await imgDB.get(log.exitImg) : null;
 
-        // Total P&L String
+        // C. Strategy Options (NEW)
+        const stratOptions = this.data.settings.strategies.map(s => 
+            `<option value="${s}" ${s === log.strategy ? 'selected' : ''}>${s}</option>`
+        ).join('');
+
+        // --- 5. Render HTML ---
+        
+        // P&L Display
         const sym = this.getSymbol ? this.getSymbol(this.data.settings.baseCurrency) : "";
         let totalPnlVal = 0;
-        // Use helper if available, else manual
-        if(this.getPnl && log.exits) {
-             log.exits.forEach(ex => totalPnlVal += this.getPnl(log, ex.price, ex.qty).val);
-        }
+        if(this.getPnl && log.exits) log.exits.forEach(ex => totalPnlVal += this.getPnl(log, ex.price, ex.qty).val);
         const totalPnlStr = `${totalPnlVal>=0?'+':''}${sym}${Math.abs(totalPnlVal).toFixed(2)}`;
         const totalPnlClass = totalPnlVal >= 0 ? 'text-emerald-400' : 'text-red-400';
 
-        // Qty HTML (Editable if no sales)
-        const canEditQty = totalSold === 0;
-        const qtyHtml = canEditQty 
+        // Qty Display
+        const qtyHtml = totalSold === 0 
             ? `<div class="flex items-center gap-1"><input type="number" id="manageEditQty" value="${log.initialQty}" class="bg-slate-800 border border-slate-600 rounded w-16 text-center text-sm font-bold text-white p-1"><button onclick="app.updateTradeQty()" class="bg-blue-900/50 text-blue-400 p-1 rounded hover:bg-blue-600 hover:text-white"><i data-lucide="save" class="w-3 h-3"></i></button></div>`
             : `<div class="font-bold text-white text-lg">${log.initialQty}</div>`;
 
-        // Stops UI
-        const isStaggered = log.stopMeta && log.stopMeta.mode === 'staggered';
-        const stopDisplayHtml = `
-        <div class="bg-slate-900/50 p-3 rounded-lg mb-4 border border-slate-700/50">
-            <div class="flex justify-between items-center mb-2">
-                <span class="text-[10px] text-slate-500 uppercase font-bold">Initial Stop</span>
-                <span class="text-xs text-slate-400 font-mono">${isStaggered ? 'Staggered' : log.stop}</span>
-            </div>
-            <div class="flex justify-between items-center gap-3">
-                <div class="flex-1">
-                    <label class="text-[10px] text-blue-400 uppercase font-bold block mb-1">Current Stop</label>
-                    <input type="number" step="any" value="${log.currentStop}" id="manageCurrentStopInput"
-                        class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-sm text-white font-mono focus:border-blue-500 outline-none">
-                </div>
-                <button onclick="app.updateCurrentStop()" class="self-end mb-1 px-3 py-2 bg-slate-700 hover:bg-blue-600 text-white text-xs rounded transition-colors">Update</button>
-            </div>
-        </div>`;
-
-        // Chart UI
-        const chartHtml = `
-        <div class="grid grid-cols-2 gap-3 mb-4">
-            <div class="bg-slate-900 p-2 rounded-xl border border-slate-700 text-center relative">
-                <div class="text-[10px] text-slate-500 mb-2 font-bold uppercase">Entry Chart</div>
-                ${entryImgUrl ? `<img src="${entryImgUrl}" class="rounded h-24 w-full object-cover cursor-pointer border border-slate-600" onclick="app.showImg('${entryImgUrl}')">` : `<div class="h-24 flex items-center justify-center text-xs italic text-slate-600 border border-dashed border-slate-700 rounded">No Image</div>`}
-            </div>
-            <div class="bg-slate-900 p-2 rounded-xl border border-slate-700 text-center relative">
-                <div class="text-[10px] text-slate-500 mb-2 font-bold uppercase">Closure Chart</div>
-                ${exitImgUrl ? `<img src="${exitImgUrl}" class="rounded h-24 w-full object-cover cursor-pointer border border-slate-600" onclick="app.showImg('${exitImgUrl}')">` : `<div class="paste-zone h-24 min-h-0 border-slate-600" contenteditable="true" onpaste="app.handlePaste(event, 'exit', ${log.id})"><span class="text-[10px]">Paste Exit<br>Chart</span></div>`}
-            </div>
-        </div>`;
-
-        // Date Value
-        const dateVal = log.date.substring(0, 16);
-
-        // Assemble Final HTML
         document.getElementById('manageSummary').innerHTML = `
             <div class="flex justify-between items-start mb-2">
                 <div>
@@ -2382,11 +2382,19 @@ const app = {
                 </div>
             </div>
             
-            <div class="bg-slate-900/50 p-2 rounded-lg mb-3 flex justify-between items-center border border-slate-700/50">
+            <div class="bg-slate-900/50 p-2 rounded-lg mb-2 flex justify-between items-center border border-slate-700/50">
                  <label class="text-[10px] text-slate-500 font-bold uppercase">Entry Date</label>
-                 <input type="datetime-local" value="${dateVal}" 
+                 <input type="datetime-local" value="${log.date.substring(0, 16)}" 
                     onchange="app.updateLogDate(${id}, this.value)"
                     class="bg-transparent text-white text-sm font-mono focus:outline-none text-right">
+            </div>
+
+            <div class="bg-slate-900/50 p-2 rounded-lg mb-3 flex justify-between items-center border border-slate-700/50">
+                 <label class="text-[10px] text-slate-500 font-bold uppercase">Strategy</label>
+                 <select onchange="app.updateLogStrategy(${id}, this.value)" class="bg-transparent text-white text-sm font-bold focus:outline-none text-right cursor-pointer hover:text-blue-400 transition-colors">
+                    <option value="">(None Set)</option>
+                    ${stratOptions}
+                 </select>
             </div>
 
             <div class="grid grid-cols-4 gap-2 text-center bg-slate-900/50 p-2 rounded-lg mb-3 items-center">
@@ -2409,8 +2417,34 @@ const app = {
             </div>
             <div class="text-center text-[10px] text-slate-500 mb-2 font-mono italic">Held: ${durationStr}</div>
             
-            ${stopDisplayHtml}
-            ${chartHtml}
+            <div class="bg-slate-900/50 p-3 rounded-lg mb-4 border border-slate-700/50">
+                <div class="flex justify-between items-center gap-3">
+                    <div class="flex-1">
+                        <label class="text-[10px] text-blue-400 uppercase font-bold block mb-1">Current Stop</label>
+                        <input type="number" step="any" value="${log.currentStop}" id="manageCurrentStopInput"
+                            class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-sm text-white font-mono focus:border-blue-500 outline-none">
+                    </div>
+                    <button onclick="app.updateCurrentStop()" class="self-end mb-1 px-3 py-2 bg-slate-700 hover:bg-blue-600 text-white text-xs rounded transition-colors">Update</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <div class="bg-slate-900 p-2 rounded-xl border border-slate-700 text-center relative">
+                    <div class="text-[10px] text-slate-500 mb-2 font-bold uppercase">Entry Chart</div>
+                    ${entryImgUrl 
+                        ? `<img src="${entryImgUrl}" class="rounded h-24 w-full object-cover cursor-pointer border border-slate-600" onclick="app.showImg('${entryImgUrl}')">` 
+                        : `<div class="paste-zone h-24 min-h-0 border-slate-600" contenteditable="true" onpaste="app.handlePaste(event, 'entry-update', ${log.id})"><span class="text-[10px]">Paste Entry<br>Chart</span></div>`
+                    }
+                </div>
+                <div class="bg-slate-900 p-2 rounded-xl border border-slate-700 text-center relative">
+                    <div class="text-[10px] text-slate-500 mb-2 font-bold uppercase">Closure Chart</div>
+                    ${exitImgUrl 
+                        ? `<img src="${exitImgUrl}" class="rounded h-24 w-full object-cover cursor-pointer border border-slate-600" onclick="app.showImg('${exitImgUrl}')">` 
+                        : `<div class="paste-zone h-24 min-h-0 border-slate-600" contenteditable="true" onpaste="app.handlePaste(event, 'exit', ${log.id})"><span class="text-[10px]">Paste Exit<br>Chart</span></div>`
+                    }
+                </div>
+            </div>
+            
             ${deriskHtml} 
         `;
 
@@ -2794,34 +2828,40 @@ const app = {
         document.getElementById('statTotal').innerHTML = `${current.count} <div class="text-[9px] text-slate-500 mt-1">Trades ${scratchText}</div>`;
         updateHeader('statTotal', 'Trades');
 
-
-        // 4. RENDER FINANCIAL HEALTH TABLE (Zone 1)
+		// 4. RENDER FINANCIAL HEALTH TABLE (Zone 1)
         const baseSym = this.getSymbol ? this.getSymbol(this.data.settings.baseCurrency) : this.data.settings.baseCurrency;
         const financialTarget = document.getElementById('financialStatsTarget');
+        const hidePnL = this.data.settings.hidePnL || false; // Check Privacy
+
+        // Helper
+        const fmtMoney = (val) => {
+            if (hidePnL) return '<span class="opacity-50 blur-[2px]">****</span>';
+            return `${baseSym}${Math.abs(val).toFixed(0)}`;
+        };
         
         if (financialTarget) {
             financialTarget.innerHTML = `
             <div class="grid grid-cols-2 gap-3 mb-6 animate-in slide-in-from-bottom-4 fade-in">
                 <div class="bg-slate-800 p-3 rounded-xl border border-slate-700 col-span-2">
                     <h4 class="text-xs font-bold text-slate-400 uppercase mb-3 flex items-center gap-2">
-                        <i data-lucide="coins" class="w-4 h-4 text-amber-400"></i> Financial Performance (${baseSym})
+                        <i data-lucide="coins" class="w-4 h-4 text-amber-400"></i> Financial Performance
                     </h4>
                     <div class="grid grid-cols-4 gap-2 text-center">
                         <div class="bg-slate-900/30 rounded p-2">
                             <div class="text-[9px] text-slate-500 uppercase">Avg Win ${icon}</div>
-                            <div class="text-sm font-mono text-emerald-400 font-bold">${baseSym}${Math.abs(current.avgWinAmt).toFixed(0)}</div>
+                            <div class="text-sm font-mono text-emerald-400 font-bold">${fmtMoney(current.avgWinAmt)}</div>
                         </div>
                         <div class="bg-slate-900/30 rounded p-2">
                             <div class="text-[9px] text-slate-500 uppercase">Avg Loss ${icon}</div>
-                            <div class="text-sm font-mono text-red-400 font-bold">${baseSym}${Math.abs(current.avgLossAmt).toFixed(0)}</div>
+                            <div class="text-sm font-mono text-red-400 font-bold">${fmtMoney(current.avgLossAmt)}</div>
                         </div>
                         <div class="bg-slate-900/30 rounded p-2">
                             <div class="text-[9px] text-slate-500 uppercase">Max Win</div>
-                            <div class="text-sm font-mono text-emerald-400 font-bold">${baseSym}${Math.abs(current.largestWin).toFixed(0)}</div>
+                            <div class="text-sm font-mono text-emerald-400 font-bold">${fmtMoney(current.largestWin)}</div>
                         </div>
                         <div class="bg-slate-900/30 rounded p-2">
                             <div class="text-[9px] text-slate-500 uppercase">Max Loss</div>
-                            <div class="text-sm font-mono text-red-400 font-bold">${baseSym}${Math.abs(current.largestLoss).toFixed(0)}</div>
+                            <div class="text-sm font-mono text-red-400 font-bold">${fmtMoney(current.largestLoss)}</div>
                         </div>
                     </div>
                 </div>
@@ -2847,6 +2887,7 @@ const app = {
                 </div>
             </div>`;
         }
+        
 
 
         // 5. RENDER DIRECTIONAL STATS (Zone 2)
@@ -3909,77 +3950,53 @@ const app = {
     },
 
     renderLogs(limit = 50) {
-        // 1. INJECT FILTER UI (If not present)
+        // 1. INJECT UI
         const header = document.querySelector('#view-logs .flex.gap-2.mb-4');
-        // Check if header exists and if we haven't added the filter yet
         if (header && !document.getElementById('logStatusFilter')) {
-                const select = document.createElement('select');
-                select.id = 'logStatusFilter';
-                select.className = 'bg-slate-800 border-none rounded-lg py-2 px-3 text-xs font-bold focus:ring-2 focus:ring-blue-500 text-slate-300 outline-none cursor-pointer hover:text-white transition-colors';
-                select.innerHTML = `
-                <option value="ALL">All Status</option>
-                <option value="OPEN">Open (Active)</option>
-                <option value="CLOSED">Closed Only</option>
-                <option value="WIN">Wins Only</option>
-                <option value="LOSS">Losses Only</option>
-                `;
-                // Re-render when changed
-                select.onchange = () => app.renderLogs();
-                
-                // Insert at the start of the header row (before the search bar)
-                header.insertBefore(select, header.firstChild);
+            const select = document.createElement('select');
+            select.id = 'logStatusFilter';
+            select.className = 'bg-slate-800 border-none rounded-lg py-2 px-3 text-xs font-bold focus:ring-2 focus:ring-blue-500 text-slate-300 outline-none cursor-pointer hover:text-white transition-colors';
+            select.innerHTML = `<option value="ALL">All Status</option><option value="OPEN">Open (Active)</option><option value="CLOSED">Closed Only</option><option value="WIN">Wins Only</option><option value="LOSS">Losses Only</option>`;
+            select.onchange = () => app.renderLogs();
+            header.insertBefore(select, header.firstChild);
         }
+        this.updatePrivacyIcons();
 
-        // 2. GET FILTER VALUES
+        // 2. DATA PREP
         const statusFilter = document.getElementById('logStatusFilter') ? document.getElementById('logStatusFilter').value : 'ALL';
         const searchVal = document.getElementById('logSearch').value.toUpperCase();
         const container = document.getElementById('logsContainer');
-        
         if (!container) return;
 
-        // 3. FILTER LOGIC
         const allMatches = this.data.logs.filter(l => {
-                // A. Search Filter (Ticker or Strategy)
-                const matchSearch = l.ticker.includes(searchVal) || (l.strategy && l.strategy.toUpperCase().includes(searchVal));
-                if(!matchSearch) return false;
+            const matchSearch = l.ticker.includes(searchVal) || (l.strategy && l.strategy.toUpperCase().includes(searchVal));
+            if(!matchSearch) return false;
+            
+            let totalSold = l.exits ? l.exits.reduce((a,b)=>a+b.qty,0) : 0;
+            let isClosed = l.outcome !== 'open' || (l.initialQty > 0 && totalSold >= l.initialQty);
 
-                // B. Status Filter (Optimization: Skip math if ALL)
-                if(statusFilter === 'ALL') return true;
+            if(statusFilter === 'ALL') return true;
+            if(statusFilter === 'OPEN') return !isClosed;
+            if(statusFilter === 'CLOSED') return isClosed;
 
-                // Calculate Status
-                let totalSold = l.exits ? l.exits.reduce((a,b)=>a+b.qty,0) : 0;
-                // A trade is CLOSED if outcome is set to something other than open, OR if all shares are sold
-                let isClosed = l.outcome !== 'open' || (l.initialQty > 0 && totalSold >= l.initialQty);
-
-                if (statusFilter === 'OPEN') return !isClosed;   // Returns Active trades (including partials)
-                if (statusFilter === 'CLOSED') return isClosed;
-
-                // For Win/Loss, the trade must be CLOSED first
-                if (!isClosed) return false;
-
-                // Calculate Net R for Win/Loss check
-                let netR = 0;
-                const riskPerShare = Math.abs(l.entry - l.stop);
-                const totalRisk = (l.initialQty || 0) * riskPerShare;
-                
-                if (l.exits && l.exits.length > 0) {
-                    let pnl = 0;
-                    l.exits.forEach(ex => pnl += (l.direction === 'SHORT' ? l.entry - ex.price : ex.price - l.entry) * ex.qty);
-                    if (totalRisk > 0) netR = pnl / totalRisk;
-                } else if (l.exitPrice) {
-                    netR = (l.direction === 'SHORT' ? l.entry - l.exitPrice : l.exitPrice - l.entry) / riskPerShare;
-                }
-
-                if (statusFilter === 'WIN') return netR > 0.1;
-                if (statusFilter === 'LOSS') return netR < -0.1;
-
-                return true;
+            let netR = 0;
+            const riskPerShare = Math.abs(l.entry - l.stop);
+            if(l.exits && l.exits.length > 0) {
+                let pnl = 0;
+                l.exits.forEach(ex => pnl += (l.direction === 'SHORT' ? l.entry - ex.price : ex.price - l.entry) * ex.qty);
+                if(l.initialQty*riskPerShare > 0) netR = pnl / (l.initialQty * riskPerShare);
+            } else if (l.exitPrice) {
+                netR = (l.direction === 'SHORT' ? l.entry - l.exitPrice : l.exitPrice - l.entry) / riskPerShare;
+            }
+            if (statusFilter === 'WIN') return netR > 0.1;
+            if (statusFilter === 'LOSS') return netR < -0.1;
+            return true;
         });
 
-        // 4. SORT & RENDER
         allMatches.sort((a,b) => new Date(b.date) - new Date(a.date));
         const visibleLogs = allMatches.slice(0, limit);
         
+        // 3. RENDER ROWS (2-2-2-4 LAYOUT)
         const htmlRows = visibleLogs.map(log => {
             let totalSold = log.exits ? log.exits.reduce((acc, ex) => acc + ex.qty, 0) : 0;
             let isOpen = log.outcome === 'open';
@@ -3987,123 +4004,106 @@ const app = {
             let totalRealizedPnl = 0;
             const riskPerShare = Math.abs(log.entry - log.stop);
             
-            // Duration Logic
-            let durationStr = "";
-            if (isOpen) {
-                durationStr = this.formatDuration ? `<span class="text-slate-500 italic">${this.formatDuration(log.date)}</span>` : "Active";
-            } else {
-                if (log.exits && log.exits.length > 0) {
-                    const sortedExits = [...log.exits].sort((a,b) => new Date(a.date) - new Date(b.date));
-                    durationStr = this.formatDuration ? this.formatDuration(log.date, sortedExits[sortedExits.length-1].date) : "-";
-                } else if (log.exitDate) {
-                    durationStr = this.formatDuration ? this.formatDuration(log.date, log.exitDate) : "-";
-                } else {
-                    durationStr = "-";
-                }
+            // Date
+            let dateDisplay = log.date.substring(5, 10);
+            let timeDisplay = "";
+            if (log.date.includes('T')) {
+                const d = new Date(log.date);
+                dateDisplay = `${d.getDate()}/${d.getMonth()+1}`;
+                timeDisplay = `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
             }
 
-            // Calculate R & P&L
+            // Calcs
             let realizedPnLValue = 0; 
             if (log.exits && log.exits.length > 0) {
                 log.exits.forEach(ex => {
                     const pnlObj = this.getPnl(log, ex.price, ex.qty);
                     totalRealizedPnl += pnlObj.val;
-                    
-                    const rawPnl = (log.direction === 'SHORT' ? (log.entry - ex.price) : (ex.price - log.entry)) * ex.qty;
-                    realizedPnLValue += rawPnl;
+                    realizedPnLValue += (log.direction === 'SHORT' ? (log.entry - ex.price) : (ex.price - log.entry)) * ex.qty;
                 });
                 const totalRiskAmount = log.initialQty * riskPerShare;
                 if (totalRiskAmount > 0) realizedR = realizedPnLValue / totalRiskAmount;
             } else if (!log.initialQty && log.exitPrice) {
-                    const diff = log.direction === 'SHORT' ? (log.entry - log.exitPrice) : (log.exitPrice - log.entry);
-                    realizedR = diff / riskPerShare;
-                    isOpen = false;
+                const diff = log.direction === 'SHORT' ? (log.entry - log.exitPrice) : (log.exitPrice - log.entry);
+                realizedR = diff / riskPerShare;
+                isOpen = false;
             }
 
-            // NER Badge
+            // Badges
             let nerBadge = '';
             if (isOpen) {
                 const remaining = (log.initialQty || 0) - totalSold;
                 if (remaining > 0) {
-                    let currentRiskDist = 0;
                     const activeStop = (typeof log.currentStop === 'number') ? log.currentStop : log.stop;
-                    if(log.direction === 'LONG') currentRiskDist = Math.max(0, log.entry - activeStop);
-                    else currentRiskDist = Math.max(0, activeStop - log.entry);
-                    const grossRisk = remaining * currentRiskDist;
-                    
-                    if (grossRisk - realizedPnLValue > 0) {
-                        nerBadge = `<span class="bg-amber-900/40 text-amber-400 border border-amber-500/30 text-[9px] px-1.5 py-0.5 rounded font-bold ml-1 tracking-wider">NER</span>`;
-                    }
+                    const dist = log.direction==='LONG' ? Math.max(0, log.entry-activeStop) : Math.max(0, activeStop-log.entry);
+                    if ((remaining * dist) - realizedPnLValue > 0) nerBadge = `<span class="bg-amber-500 text-slate-900 text-[9px] px-1 rounded font-bold tracking-tighter mb-0.5" title="Net Equity Risk">NER</span>`;
                 }
             }
 
-            // Status Badge
-            let statusBadge = `<span class="bg-blue-900/50 text-blue-400 text-[10px] px-2 py-1 rounded">OPEN</span>`;
-            if(!isOpen) {
-                if (realizedR > 0.1) statusBadge = `<span class="bg-emerald-900/50 text-emerald-400 text-[10px] px-2 py-1 rounded">WIN</span>`;
-                else if (realizedR < -0.1) statusBadge = `<span class="bg-red-900/50 text-red-400 text-[10px] px-2 py-1 rounded">LOSS</span>`;
-                else statusBadge = `<span class="bg-slate-700 text-slate-300 text-[10px] px-2 py-1 rounded">SCRATCH</span>`;
-            } else if (totalSold > 0) {
-                    const pctClosed = Math.round((totalSold/log.initialQty)*100);
-                    statusBadge = `<span class="bg-amber-900/50 text-amber-400 text-[10px] px-2 py-1 rounded">${pctClosed}% SOLD</span>`;
-            }
+            let statusBadge = isOpen 
+                ? (totalSold > 0 ? `<span class="text-blue-400 font-bold text-[10px]">OPEN(${Math.round((totalSold/log.initialQty)*100)}%)</span>` : `<span class="text-blue-400 font-bold text-[10px]">OPEN</span>`)
+                : (realizedR > 0.1 ? `<span class="text-emerald-400 font-bold text-[10px]">WIN</span>` : (realizedR < -0.1 ? `<span class="text-red-400 font-bold text-[10px]">LOSS</span>` : `<span class="text-slate-400 font-bold text-[10px]">SCRATCH</span>`));
 
-            // P&L String
+            // Privacy & Pnl
             const sym = this.getSymbol ? this.getSymbol(this.data.settings.baseCurrency) : "";
-            const pnlString = totalRealizedPnl === 0 ? '' : 
-                `<div class="text-[10px] ${totalRealizedPnl>=0?'text-emerald-500':'text-red-500'} font-bold">
-                    ${totalRealizedPnl>=0?'+':''}${sym}${Math.abs(totalRealizedPnl).toFixed(2)}
-                    </div>`;
-
-            // R Display
-            let rDisplay = '-';
-            let rClass = 'text-slate-500';
-            if (!isOpen || (log.exits && log.exits.length > 0)) {
-                const rVal = realizedR.toFixed(2);
-                rDisplay = `${rVal > 0 ? '+' : ''}${rVal}R`;
-                rClass = realizedR > 0 ? 'text-emerald-400 font-bold' : 'text-red-400 font-bold';
+            let pnlString = '<span class="text-slate-600 text-[10px]">-</span>';
+            if (totalRealizedPnl !== 0) {
+                if (this.data.settings.hidePnL) {
+                    const color = totalRealizedPnl >= 0 ? 'text-emerald-500' : 'text-red-500';
+                    pnlString = `<div class="text-[10px] ${color} font-bold opacity-50 select-none">****</div>`;
+                } else {
+                    const sign = totalRealizedPnl < 0 ? '-' : ''; // No '+' for positive
+                    const color = totalRealizedPnl >= 0 ? 'text-emerald-500' : 'text-red-500';
+                    pnlString = `<div class="text-[10px] ${color} font-bold">${sign}${sym}${Math.abs(totalRealizedPnl).toFixed(2)}</div>`;
+                }
             }
 
-            let dateDisplay = log.date.substring(5, 10); 
-            if (log.date.includes('T')) {
-                const d = new Date(log.date);
-                dateDisplay = `${d.getDate()}/${d.getMonth()+1} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
-            }
+            let rDisplay = (!isOpen || (log.exits && log.exits.length > 0)) ? `${realizedR>0?'+':''}${realizedR.toFixed(2)}R` : '-';
+            let rClass = realizedR > 0 ? 'text-emerald-400 font-bold' : (realizedR < 0 ? 'text-red-400 font-bold' : 'text-slate-500');
 
+            // RENDER: 2-2-2-4
             return `
-            <div class="grid grid-cols-12 gap-2 p-3 bg-slate-800/50 border-b border-slate-700 items-center hover:bg-slate-800 transition-colors">
+            <div onclick="app.openManageView(${log.id})" class="log-row grid grid-cols-10 gap-2 p-3 bg-slate-800/50 border-b border-slate-700 items-center hover:bg-slate-800 transition-colors cursor-pointer active:bg-slate-700">
+                
                 <div class="col-span-2">
-                    <div class="text-xs text-slate-400 font-mono leading-tight">${dateDisplay}</div>
-                    <div class="text-[9px] font-mono mt-0.5">${durationStr}</div>
+                    <div class="text-xs text-slate-300 font-bold">${dateDisplay}</div>
+                    <div class="text-[9px] text-slate-500 font-mono">${timeDisplay}</div>
                 </div>
-                <div class="col-span-2 font-bold text-white relative">
-                    ${log.ticker} <span class="text-[8px] text-slate-500 block">${log.direction}</span>
+                
+                <div class="col-span-2">
+                    <div class="font-black text-white text-sm leading-tight">${log.ticker} <span class="text-[8px] text-slate-500 font-normal">${log.direction.substring(0,1)}</span></div>
+                    <div class="text-[10px] text-slate-400 font-mono">@ ${log.entry}</div>
                 </div>
-                <div class="col-span-2 text-right text-xs font-mono">${log.riskVal}${log.riskMode === 'equity' ? '%' : 'sz'}</div>
-                <div class="col-span-2 text-right">
-                    <div class="text-sm font-mono ${rClass}">${rDisplay}</div>
-                    ${pnlString}
+                
+                <div class="col-span-2 text-left">
+                    <div class="text-[9px] text-slate-500">${log.riskVal}${log.riskMode === 'equity' ? '%' : 'sz'}</div>
+                    <div class="text-xs font-mono ${rClass}">${rDisplay}</div>
                 </div>
-                <div class="col-span-4 flex justify-end gap-2 items-center">
-                    ${nerBadge}
-                    ${statusBadge}
-                    <button onclick="app.openManageView(${log.id})" class="text-slate-400 hover:text-blue-400 bg-slate-700/50 p-1.5 rounded-full"><i data-lucide="pencil" class="w-3 h-3"></i></button>
+                
+                <div class="col-span-4 flex justify-between items-center pl-1">
+                    <div class="flex-1 flex flex-col items-end gap-0.5 mr-2">
+                         ${pnlString}
+                         <div class="flex items-center gap-1 justify-end">${nerBadge}${statusBadge}</div>
+                    </div>
+                    
+                    <div class="flex gap-1 action-buttons">
+                        <button onclick="event.stopPropagation(); app.shareLogImage(this)" class="text-slate-400 hover:text-white bg-slate-700/50 p-2 rounded-lg" title="Share">
+                            <i data-lucide="share-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
                 </div>
+
             </div>`;
         }).join('');
 
         let loadMoreHtml = '';
-        if (allMatches.length > limit) {
-            const remaining = allMatches.length - limit;
-            loadMoreHtml = `<div class="p-2 text-center"><button onclick="app.renderLogs(${limit + 50})" class="text-xs font-bold text-blue-400 hover:text-white border border-slate-700 bg-slate-800 rounded-full px-4 py-2 transition-all">Show Older Trades (${remaining} more)</button></div>`;
-        } else if (allMatches.length === 0) {
-            loadMoreHtml = `<div class="p-8 text-center text-slate-500 text-sm">No trades found matching filters.</div>`;
-        }
+        if (allMatches.length > limit) loadMoreHtml = `<div class="p-2 text-center"><button onclick="event.stopPropagation(); app.renderLogs(${limit + 50})" class="text-xs font-bold text-blue-400 hover:text-white border border-slate-700 bg-slate-800 rounded-full px-4 py-2 transition-all">Show Older Trades (${allMatches.length - limit} more)</button></div>`;
+        else if (allMatches.length === 0) loadMoreHtml = `<div class="p-8 text-center text-slate-500 text-sm">No trades found matching filters.</div>`;
 
         container.innerHTML = htmlRows + loadMoreHtml;
         lucide.createIcons();
     },
-
+	
 	// --- PATCH 37: INTERACTIVE HEATMAP (Mobile Friendly) ---
 
     viewDayDetails(el, date, count, pnl) {
@@ -4219,10 +4219,14 @@ const app = {
         
         const rulesDiv = document.getElementById('jRulesList');
         rulesDiv.innerHTML = this.data.journal.rules.map((r, i) => `
-            <div class="flex gap-2 items-center bg-slate-900 p-2 rounded border border-slate-600">
-                <div class="bg-blue-900/30 text-blue-400 font-bold px-2 py-1 rounded text-xs">#${i+1}</div>
-                <input type="text" value="${r}" onchange="app.updateJournalRule(${i}, this.value)" class="flex-1 bg-transparent text-sm text-white outline-none">
-                <button onclick="app.deleteJournalRule(${i})" class="text-slate-600 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+            <div class="flex gap-2 items-start bg-slate-900 p-2 rounded border border-slate-600">
+                <div class="bg-blue-900/30 text-blue-400 font-bold px-2 py-1 rounded text-xs mt-0.5">#${i+1}</div>
+                <textarea onchange="app.updateJournalRule(${i}, this.value)" 
+                    class="flex-1 bg-transparent text-sm text-white outline-none resize-none leading-relaxed" 
+                    rows="2" placeholder="Define your rule here...">${r}</textarea>
+                <button onclick="app.deleteJournalRule(${i})" class="text-slate-600 hover:text-red-500 mt-0.5">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
             </div>
         `).join('');
 
@@ -4332,19 +4336,25 @@ const app = {
         return activity.sort((a,b) => a.time - b.time);
     },
 
-    async renderJournalEntry() {
+   async renderJournalEntry() {
         const date = document.getElementById('journalDate').value;
+        const hidePnL = this.data.settings.hidePnL || false;
         
-        // --- A. AUTOMATED ACTIVITY ---
+        // --- A. AUTOMATED MARKET ACTIVITY ---
         const activity = this.getJournalActivity(date);
         const feed = document.getElementById('jActivityFeed');
-        const feedContainer = document.getElementById('jActivityContainer');
+        document.getElementById('jActivityContainer').classList.toggle('hidden', activity.length === 0);
         
         if (activity.length > 0) {
-            feedContainer.classList.remove('hidden');
-            const cards = await Promise.all(activity.map(async (item) => {
+            feed.innerHTML = (await Promise.all(activity.map(async (item) => {
                 const timeStr = item.time.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                 const ticker = item.log.ticker;
+                
+                // --- Privacy Helper ---
+                // Masks Qty (Shares) and P&L ($) but SHOWS Price and R
+                const fmtQty = (q) => hidePnL ? '****' : q;
+                const fmtPnl = (valStr) => hidePnL ? '<span class="opacity-50 blur-[2px]">****</span>' : `<span class="text-slate-300 font-mono">${valStr}</span>`;
+                
                 let imgHtml = '';
                 if(item.img) {
                     const src = await imgDB.get(item.img);
@@ -4352,111 +4362,102 @@ const app = {
                 }
 
                 if (item.type === 'ENTRY') {
+                    // ENTRY CARD: Shows Price & Qty
                     return `<div class="bg-slate-800/50 border-l-2 border-blue-500 p-3 rounded-r-lg border-y border-r border-slate-700/50">
                         <div class="flex justify-between items-start">
                             <div>
                                 <span class="text-[10px] font-mono text-slate-500">${timeStr}</span>
                                 <div class="font-bold text-slate-200 text-sm">Opened ${ticker}</div>
-                                <div class="text-[10px] text-slate-400">${item.log.strategy || 'No Strategy'} • Risk: ${item.log.riskVal}${item.log.riskMode==='equity'?'%':'sz'}</div>
+                                <div class="text-[10px] text-slate-400">
+                                    Bot <span class="text-white font-bold">${fmtQty(item.log.initialQty)}</span> @ <span class="text-amber-400 font-mono">${item.log.entry}</span>
+                                </div>
                             </div>
                             <span class="bg-blue-900/30 text-blue-400 text-[9px] px-1.5 py-0.5 rounded uppercase font-bold">Entry</span>
                         </div>
-                        ${item.log.notes ? `<div class="text-xs text-slate-500 mt-1 italic">"${item.log.notes}"</div>` : ''}
+                        ${item.log.notes ? `<div class="text-xs text-slate-500 mt-1 italic">"${item.log.notes}"</div>` : ''} 
                         ${imgHtml}
                     </div>`;
-                } else {
+                } 
+                else {
+                    // EXIT CARD: Shows Chunk R or Total R
                     const badge = item.isPartial ? 'PARTIAL' : 'CLOSED';
                     const badgeColor = item.isPartial ? 'text-amber-400 bg-amber-900/30' : 'text-emerald-400 bg-emerald-900/30';
                     const borderColor = item.isPartial ? 'border-amber-500' : 'border-emerald-500';
-                    const pnl = this.getPnl(item.log, item.exitDetails.price, item.exitDetails.qty).formatted;
+                    
+                    // Financial Calcs
+                    const pnlObj = this.getPnl(item.log, item.exitDetails.price, item.exitDetails.qty);
+                    
+                    // R Calcs
+                    let rInfo = '';
+                    const riskPerShare = Math.abs(item.log.entry - item.log.stop);
+                    const totalRisk = item.log.initialQty * riskPerShare;
+                    
+                    if(totalRisk > 0) {
+                        if(item.isPartial) {
+                            // Chunk R: The R realized in THIS specific transaction
+                            const chunkPnl = (item.log.direction==='SHORT'? item.log.entry - item.exitDetails.price : item.exitDetails.price - item.log.entry) * item.exitDetails.qty;
+                            const chunkR = chunkPnl / totalRisk;
+                            rInfo = `Chunk: <span class="${chunkR>=0?'text-emerald-400':'text-red-400'} font-bold">${chunkR>=0?'+':''}${chunkR.toFixed(2)}R</span>`;
+                        } else {
+                            // Total R: The R realized for the WHOLE trade
+                            let totalPnl = 0;
+                            if(item.log.exits) item.log.exits.forEach(ex => totalPnl += (item.log.direction==='SHORT'? item.log.entry - ex.price : ex.price - item.log.entry) * ex.qty);
+                            const totalR = totalPnl / totalRisk;
+                            rInfo = `Total: <span class="${totalR>=0?'text-emerald-400':'text-red-400'} font-bold">${totalR>=0?'+':''}${totalR.toFixed(2)}R</span>`;
+                        }
+                    }
 
                     return `<div class="bg-slate-800/50 border-l-2 ${borderColor} p-3 rounded-r-lg border-y border-r border-slate-700/50">
                         <div class="flex justify-between items-start">
                             <div>
                                 <span class="text-[10px] font-mono text-slate-500">${timeStr}</span>
-                                <div class="font-bold text-slate-200 text-sm">Sold ${item.exitDetails.qty} ${ticker}</div>
-                                <div class="text-[10px] text-slate-400">@ ${item.exitDetails.price} • P&L: <span class="text-slate-300 font-mono">${pnl}</span></div>
+                                <div class="font-bold text-slate-200 text-sm">Sold <span class="text-white">${fmtQty(item.exitDetails.qty)}</span> ${ticker}</div>
+                                <div class="text-[10px] text-slate-400">@ ${item.exitDetails.price} • ${rInfo}</div>
+                                <div class="text-[10px] text-slate-500 mt-0.5">P&L: ${fmtPnl(pnlObj.formatted)}</div>
                             </div>
                             <span class="${badgeColor} text-[9px] px-1.5 py-0.5 rounded uppercase font-bold">${badge}</span>
                         </div>
                         ${imgHtml}
                     </div>`;
                 }
-            }));
-            feed.innerHTML = cards.join('');
-        } else {
-            feedContainer.classList.add('hidden');
-            feed.innerHTML = '';
+            }))).join('');
         }
 
-        // --- B. MANUAL JOURNAL ENTRY ---
+        // --- B. MANUAL JOURNAL (Existing Logic) ---
         const entry = this.data.journal.entries[date] || { notes: '', emotions: [], followedRules: null, images: [] };
-        
         document.getElementById('jDailyNotes').value = entry.notes || '';
         
-        const btnYes = document.getElementById('btn-disc-yes');
-        const btnNo = document.getElementById('btn-disc-no');
+        const btnYes = document.getElementById('btn-disc-yes'), btnNo = document.getElementById('btn-disc-no');
         
-        btnYes.className = 'flex-1 py-4 rounded-xl border border-emerald-900/50 bg-slate-900 text-slate-500 font-bold transition-all flex flex-col items-center gap-1 hover:border-emerald-500';
-        btnNo.className = 'flex-1 py-4 rounded-xl border border-red-900/50 bg-slate-900 text-slate-500 font-bold transition-all flex flex-col items-center gap-1 hover:border-red-500';
-
-        if (entry.followedRules === true) {
-            btnYes.classList.replace('bg-slate-900', 'bg-emerald-600');
-            btnYes.classList.replace('text-slate-500', 'text-white');
-            btnYes.classList.replace('border-emerald-900/50', 'border-emerald-500');
-        } else if (entry.followedRules === false) {
-            btnNo.classList.replace('bg-slate-900', 'bg-red-600');
-            btnNo.classList.replace('text-slate-500', 'text-white');
-            btnNo.classList.replace('border-red-900/50', 'border-red-500');
-        }
-
-        const emContainer = document.getElementById('jDailyEmotions');
-        emContainer.innerHTML = this.data.journal.emotionsList.map(em => {
-            const isSelected = entry.emotions && entry.emotions.includes(em);
-            const bgClass = isSelected ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-slate-900 text-slate-400 border-slate-700 hover:border-slate-500';
-            return `<button onclick="app.toggleJournalEmotion('${em}')" class="px-3 py-1 rounded-full text-xs border transition-colors ${bgClass}">${em}</button>`;
+        btnYes.className = `flex-1 py-4 rounded-xl border font-bold transition-all flex flex-col items-center gap-1 ${entry.followedRules===true ? 'bg-emerald-600 text-white border-emerald-500' : 'bg-slate-900 border-emerald-900/50 text-slate-500 hover:border-emerald-500'}`;
+        btnNo.className = `flex-1 py-4 rounded-xl border font-bold transition-all flex flex-col items-center gap-1 ${entry.followedRules===false ? 'bg-red-600 text-white border-red-500' : 'bg-slate-900 border-red-900/50 text-slate-500 hover:border-red-500'}`;
+        
+        document.getElementById('jDailyEmotions').innerHTML = this.data.journal.emotionsList.map(em => {
+            const active = entry.emotions && entry.emotions.includes(em);
+            return `<button onclick="app.toggleJournalEmotion('${em}')" class="px-3 py-1 rounded-full text-xs border transition-colors ${active ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-slate-900 text-slate-400 border-slate-700 hover:border-slate-500'}">${em}</button>`;
         }).join('');
-
-        const imgContainer = document.getElementById('jDailyImages');
-        if(entry.images && entry.images.length > 0) {
-            const imgHtmls = await Promise.all(entry.images.map(async (id) => {
-                const src = await imgDB.get(id);
-                return `<div class="relative group"><img src="${src}" class="w-full h-24 object-cover rounded border border-slate-600 cursor-pointer" onclick="app.showImg('${src}')"></div>`;
-            }));
-            imgContainer.innerHTML = imgHtmls.join('');
-        } else { imgContainer.innerHTML = ''; }
         
+        const imgHtmls = entry.images ? await Promise.all(entry.images.map(async (id) => `<div class="relative group"><img src="${await imgDB.get(id)}" class="w-full h-24 object-cover rounded border border-slate-600 cursor-pointer" onclick="app.showImg('${await imgDB.get(id)}')"></div>`)) : [];
+        document.getElementById('jDailyImages').innerHTML = imgHtmls.join('');
+        
+        this.updatePrivacyIcons();
         lucide.createIcons();
     },
+	
 	openManualLogModal() {
         ['manTicker','manPrice','manQty','manStop'].forEach(id => document.getElementById(id).value = '');
         
-        // Default to Current Date & Time
-        const now = new Date();
-        
-        // Format YYYY-MM-DD
-        const localDate = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
-        document.getElementById('manDate').value = localDate;
-        
-        // Format HH:MM
-        const localTime = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
-        document.getElementById('manTime').value = localTime;
+        // 1. Populate Strategies
+        const stratSel = document.getElementById('manStrategy');
+        stratSel.innerHTML = '<option value="">(Select Strategy...)</option>' + 
+            this.data.settings.strategies.map(s => `<option value="${s}">${s}</option>`).join('');
 
-        document.getElementById('manualLogModal').classList.remove('hidden');
-    },
-
-    openManualLogModal() {
-        ['manTicker','manPrice','manQty','manStop'].forEach(id => document.getElementById(id).value = '');
-        
-        // Default to Current Date & Time
+        // 2. Default to Current Date & Time
         const now = new Date();
-        
-        // Format YYYY-MM-DD
         const localDate = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
-        document.getElementById('manDate').value = localDate;
-        
-        // Format HH:MM
         const localTime = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+        
+        document.getElementById('manDate').value = localDate;
         document.getElementById('manTime').value = localTime;
 
         document.getElementById('manualLogModal').classList.remove('hidden');
@@ -4468,34 +4469,421 @@ const app = {
         const price = parseFloat(document.getElementById('manPrice').value);
         const qty = parseFloat(document.getElementById('manQty').value);
         const stop = parseFloat(document.getElementById('manStop').value);
+        const strategy = document.getElementById('manStrategy').value; // Capture Strategy
         const dateStr = document.getElementById('manDate').value;
         const timeStr = document.getElementById('manTime').value;
 
         if(!ticker || !price || !qty || isNaN(stop) || !dateStr || !timeStr) return alert("All fields required");
         if ((dir === 'LONG' && stop >= price) || (dir === 'SHORT' && stop <= price)) return alert("Invalid Stop placement");
 
-        // Construct Final Date from User Inputs
-        // "YYYY-MM-DD" + "T" + "HH:MM" creates a local-time ISO string context
         const combinedDate = new Date(`${dateStr}T${timeStr}`);
-        
-        // Validate Date
         if(isNaN(combinedDate.getTime())) return alert("Invalid Date/Time");
-        
         const finalDate = combinedDate.toISOString();
 
         const masterAcc = this.data.accounts.find(a => a.isMaster);
         const riskVal = (masterAcc && masterAcc.size > 0) ? parseFloat((((Math.abs(price-stop)*qty)/masterAcc.size)*100).toFixed(2)) : 0;
 
         this.data.logs.unshift({
-            id: Date.now(), date: finalDate, ticker: ticker, direction: dir, entry: price, stop: stop, initialQty: qty,
-            riskMode: 'equity', riskVal: riskVal, strategy: 'Manual Entry', notes: 'Manual Log', outcome: 'open', exits: [], exchangeRate: 1,
-            stopMeta: { mode: 'single', price: stop }
+            id: Date.now(), 
+            date: finalDate, 
+            ticker: ticker, 
+            direction: dir, 
+            entry: price, 
+            stop: stop, 
+            initialQty: qty,
+            riskMode: 'equity', 
+            riskVal: riskVal, 
+            strategy: strategy || 'Manual Entry', // Use selected strategy or default
+            notes: 'Manual Log', 
+            outcome: 'open', 
+            exits: [], 
+            exchangeRate: 1,
+            stopMeta: { mode: 'single', price: stop } 
         });
+        
         localStorage.setItem('tradeLogs', JSON.stringify(this.data.logs));
         document.getElementById('manualLogModal').classList.add('hidden');
         this.renderLogs(); 
         this.updateHeatWidget();
         if(this.drawConsistencyHeatmap) this.drawConsistencyHeatmap(this.data.logs);
+    },
+	// --- SHARING & PRIVACY ENGINE ---
+
+    // --- SHARING & PRIVACY ENGINE ---
+
+    togglePrivacyMode() {
+        this.data.settings.hidePnL = !this.data.settings.hidePnL;
+        this.saveSettings();
+        
+        // Refresh Views
+        const logView = document.getElementById('view-logs');
+        const jourView = document.getElementById('view-journal');
+        const statsView = document.getElementById('view-stats');
+        
+        if (logView && !logView.classList.contains('hidden')) this.renderLogs();
+        if (jourView && !jourView.classList.contains('hidden')) this.renderJournalEntry();
+        if (statsView && !statsView.classList.contains('hidden')) this.renderStats();
+        
+        this.updatePrivacyIcons();
+    },
+
+    updatePrivacyIcons() {
+        const isHidden = this.data.settings.hidePnL;
+        const iconHtml = isHidden 
+            ? `<i data-lucide="eye-off" class="w-5 h-5 text-amber-400"></i>` 
+            : `<i data-lucide="eye" class="w-5 h-5"></i>`;
+
+        ['journalPrivacyBtn', 'statsPrivacyBtn', 'privacyToggleBtn'].forEach(id => {
+            const btn = document.getElementById(id);
+            if(btn) { btn.innerHTML = iconHtml; lucide.createIcons(); }
+        });
+    },
+
+	// MASTER SNAPSHOT (High-Res + Chart Fix + Text Fix)
+    async captureAndShare(elementId, loadingBtnId = null) {
+        const source = document.getElementById(elementId);
+        if(!source) return;
+
+        let originalIcon = '';
+        const btn = loadingBtnId ? document.getElementById(loadingBtnId) : null;
+        if(btn) {
+            originalIcon = btn.innerHTML;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin text-blue-400"></i>`;
+            lucide.createIcons();
+        }
+
+        try {
+            // A. CLONE
+            const clone = source.cloneNode(true);
+            
+            // B. STYLE CLONE
+            clone.style.position = 'absolute';
+            clone.style.left = '-9999px';
+            clone.style.top = '0';
+            clone.style.width = '1200px'; 
+            clone.style.height = 'auto';
+            clone.style.background = '#0f172a';
+            clone.style.padding = '30px';
+            clone.style.borderRadius = '16px';
+            
+            if(elementId === 'logsTableWrapper') {
+                const inner = clone.querySelector('#logsContainer');
+                if(inner) { inner.style.overflow = 'visible'; inner.style.height = 'auto'; }
+            }
+
+            // --- 1. CANVAS REPAIR (Fix Charts) ---
+            const origCanvases = source.querySelectorAll('canvas');
+            const cloneCanvases = clone.querySelectorAll('canvas');
+            origCanvases.forEach((orig, i) => {
+                const dest = cloneCanvases[i];
+                if (dest) {
+                    dest.width = orig.width;
+                    dest.height = orig.height;
+                    dest.style.width = orig.style.width;
+                    dest.style.height = orig.style.height;
+                    dest.getContext('2d').drawImage(orig, 0, 0);
+                }
+            });
+
+            // --- 2. FORM REPAIR (Fix Textareas/Inputs for Readability) ---
+            const origForms = source.querySelectorAll('input[type="text"], textarea');
+            const cloneForms = clone.querySelectorAll('input[type="text"], textarea');
+            
+            origForms.forEach((orig, i) => {
+                const target = cloneForms[i];
+                if(target) {
+                    // Create a clean text div to replace the input box
+                    const textDiv = document.createElement('div');
+                    textDiv.innerText = orig.value; // Grab the true text value
+                    textDiv.className = 'text-sm text-slate-200 whitespace-pre-wrap leading-relaxed';
+                    
+                    // Maintain container style if it was a philosophy box
+                    if(orig.tagName === 'TEXTAREA' && orig.classList.contains('bg-slate-900')) {
+                         textDiv.className += ' p-3 bg-slate-900 border border-slate-600 rounded';
+                    }
+                    
+                    target.parentNode.replaceChild(textDiv, target);
+                }
+            });
+
+            // C. WATERMARK
+            const footer = document.createElement('div');
+            footer.className = 'flex justify-between items-center mt-8 pt-6 border-t border-slate-800';
+            footer.innerHTML = `<div class="flex items-center gap-3"><div class="w-6 h-6 rounded bg-gradient-to-br from-blue-500 to-emerald-400 shadow-lg shadow-blue-500/20"></div><span class="text-sm font-bold text-slate-200 tracking-wide">RiskDesk</span></div><div class="text-xs font-mono text-slate-500">www.riskdesk.io</div>`;
+            clone.appendChild(footer);
+
+            document.body.appendChild(clone);
+            const canvas = await html2canvas(clone, { backgroundColor: '#0f172a', scale: 3, logging: false });
+            document.body.removeChild(clone);
+
+            canvas.toBlob(async (blob) => {
+                try { await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]); alert("Snapshot copied!"); } 
+                catch (err) { app.showImg(URL.createObjectURL(blob)); }
+                if(btn) { btn.innerHTML = originalIcon; lucide.createIcons(); }
+            });
+        } catch (e) {
+            console.error(e); alert("Snapshot failed.");
+            if(btn) { btn.innerHTML = originalIcon; lucide.createIcons(); }
+        }
+    },
+
+    shareActiveJournalTab() {
+        const rules = document.getElementById('jtab-rules');
+        if (!rules.classList.contains('hidden')) {
+            this.captureAndShare('journalRulesContainer', 'journalShareBtn');
+        } else {
+            this.captureAndShare('journalLogContainer', 'journalShareBtn');
+        }
+    },
+
+   // 1. Share Single Row (Mobile First)
+    async shareLogImage(btn, id) {
+        const row = btn.closest('.log-row');
+        if (!row) return;
+
+        const originalIcon = btn.innerHTML;
+        btn.innerHTML = `<i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i>`;
+        lucide.createIcons();
+
+        try {
+            const canvas = await html2canvas(row, { backgroundColor: '#1e293b', scale: 2 });
+            canvas.toBlob(async (blob) => {
+                const file = new File([blob], `Trade_${id}.png`, { type: 'image/png' });
+
+                // STRATEGY A: Native Mobile Share Sheet (Best for iPhone)
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    try {
+                        await navigator.share({
+                            files: [file],
+                            title: 'Trade Log',
+                            text: `Trade: ${id}`
+                        });
+                        btn.innerHTML = originalIcon; // Reset icon immediately
+                        lucide.createIcons();
+                        return; // Success, stop here
+                    } catch (err) {
+                        console.log("Share Sheet cancelled or failed", err);
+                    }
+                }
+
+                // STRATEGY B: Clipboard (Desktop)
+                try {
+                    await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+                    alert("Trade Copied to Clipboard!");
+                } catch (err) {
+                    // STRATEGY C: Visual Fallback
+                    const url = URL.createObjectURL(blob);
+                    app.showImg(url);
+                    // alert("Long-press the image to save.");
+                }
+                
+                btn.innerHTML = originalIcon;
+                lucide.createIcons();
+            });
+        } catch (e) {
+            console.error(e);
+            alert("Error creating image");
+            btn.innerHTML = originalIcon;
+            lucide.createIcons();
+        }
+    },
+
+    // 2. Share Full Page (Mobile First)
+    async shareLogView() {
+        const source = document.getElementById('logsTableWrapper');
+        if(!source) return;
+
+        const btn = document.getElementById('sharePageBtn');
+        const originalIcon = btn ? btn.innerHTML : '';
+        if(btn) {
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin text-blue-400"></i>`;
+            lucide.createIcons();
+        }
+
+        try {
+            const clone = source.cloneNode(true);
+            clone.style.position = 'absolute';
+            clone.style.left = '-9999px';
+            clone.style.width = '800px'; 
+            clone.style.height = 'auto'; 
+            clone.style.overflow = 'visible'; 
+            
+            const cloneContainer = clone.querySelector('#logsContainer');
+            if(cloneContainer) {
+                cloneContainer.style.overflow = 'visible';
+                cloneContainer.style.height = 'auto';
+            }
+
+            document.body.appendChild(clone);
+            const canvas = await html2canvas(clone, { backgroundColor: '#0f172a', scale: 2 });
+            document.body.removeChild(clone);
+
+            canvas.toBlob(async (blob) => {
+                const file = new File([blob], `RiskDesk_Log_${new Date().toISOString().split('T')[0]}.png`, { type: 'image/png' });
+
+                // STRATEGY A: Native Mobile Share Sheet
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    try {
+                        await navigator.share({
+                            files: [file],
+                            title: 'RiskDesk Log'
+                        });
+                        if(btn) { btn.innerHTML = originalIcon; lucide.createIcons(); }
+                        return; 
+                    } catch (err) {
+                        console.log("Share cancelled");
+                    }
+                }
+
+                // STRATEGY B: Clipboard
+                try {
+                    await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+                    alert("Log Copied to Clipboard!");
+                } catch (err) {
+                    // STRATEGY C: Fallback
+                    app.showImg(URL.createObjectURL(blob));
+                }
+                if(btn) { btn.innerHTML = originalIcon; lucide.createIcons(); }
+            });
+
+        } catch (e) {
+            console.error(e);
+            alert("Error creating snapshot");
+            if(btn) { btn.innerHTML = originalIcon; lucide.createIcons(); }
+        }
+    },
+	
+    // ROUTER for Journal Tabs
+    shareActiveJournalTab() {
+        const rules = document.getElementById('jtab-rules');
+        if (!rules.classList.contains('hidden')) {
+            this.captureAndShare('journalRulesContainer', 'journalShareBtn');
+        } else {
+            this.captureAndShare('journalLogContainer', 'journalShareBtn');
+        }
+    },
+
+    // SINGLE ROW SHARER (With Headers + Watermark) - ROBUST VERSION
+    async shareLogImage(btn) {
+        const row = btn.closest('.log-row');
+        if (!row) return;
+
+        // Visual Feedback
+        const originalIcon = btn.innerHTML;
+        btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin text-blue-400"></i>`;
+        lucide.createIcons();
+
+        try {
+            // 1. CREATE CANVAS CONTAINER (The Card)
+            const container = document.createElement('div');
+            container.style.position = 'absolute';
+            container.style.left = '-9999px';
+            container.style.width = '900px'; 
+            container.style.background = '#0f172a'; // Slate 900
+            container.style.borderRadius = '12px';
+            container.style.overflow = 'hidden'; 
+            container.style.fontFamily = 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif'; // Enforce font
+
+            // 2. FIND HEADER (SMART LOOKUP)
+            // Strategy: Find the container holding the rows, then grab the sibling immediately before it (The Header)
+            let headerOriginal = null;
+            const logsContainer = document.getElementById('logsContainer');
+            if (logsContainer && logsContainer.previousElementSibling) {
+                headerOriginal = logsContainer.previousElementSibling;
+            }
+
+            // 3. CLONE & STYLE HEADER
+            if (headerOriginal) {
+                const headerClone = headerOriginal.cloneNode(true);
+                // Force specific styles to ensure it looks right in the snapshot
+                headerClone.className = ''; // Wipe classes to avoid conflicts
+                headerClone.style.display = 'grid';
+                headerClone.style.gridTemplateColumns = 'repeat(10, minmax(0, 1fr))'; // Match grid-cols-10
+                headerClone.style.gap = '0.5rem';
+                headerClone.style.padding = '1rem';
+                headerClone.style.backgroundColor = '#1e293b'; // Slate 800
+                headerClone.style.borderBottom = '1px solid #334155';
+                headerClone.style.color = '#94a3b8'; // Slate 400
+                headerClone.style.fontSize = '0.75rem'; // text-xs
+                headerClone.style.fontWeight = '700';
+                headerClone.style.textTransform = 'uppercase';
+                
+                container.appendChild(headerClone);
+            }
+
+            // 4. CLONE & STYLE ROW
+            const rowClone = row.cloneNode(true);
+            rowClone.className = ''; // Wipe classes
+            rowClone.style.display = 'grid';
+            rowClone.style.gridTemplateColumns = 'repeat(10, minmax(0, 1fr))';
+            rowClone.style.gap = '0.5rem';
+            rowClone.style.padding = '1rem';
+            rowClone.style.backgroundColor = '#0f172a'; // Slate 900
+            rowClone.style.alignItems = 'center';
+            rowClone.style.color = '#e2e8f0';
+            
+            // Hide the buttons in the screenshot
+            const actions = rowClone.querySelector('.action-buttons');
+            if(actions) actions.style.visibility = 'hidden';
+            
+            container.appendChild(rowClone);
+
+            // 5. ADD WATERMARK FOOTER
+            const footer = document.createElement('div');
+            footer.style.display = 'flex';
+            footer.style.justifyContent = 'space-between';
+            footer.style.alignItems = 'center';
+            footer.style.padding = '0.75rem 1rem';
+            footer.style.backgroundColor = '#020617'; // Slate 950
+            footer.style.borderTop = '1px solid #1e293b';
+            
+            footer.innerHTML = `
+                <div style="display:flex; align-items:center; gap:0.5rem;">
+                    <div style="width:16px; height:16px; border-radius:4px; background: linear-gradient(to bottom right, #3b82f6, #34d399);"></div>
+                    <span style="font-size:0.75rem; font-weight:700; color:#cbd5e1; letter-spacing:0.025em;">RiskDesk</span>
+                </div>
+                <div style="font-size:0.65rem; font-family:monospace; color:#475569;">www.riskdesk.io</div>
+            `;
+            container.appendChild(footer);
+
+            // 6. RENDER & CAPTURE
+            document.body.appendChild(container);
+            
+            const canvas = await html2canvas(container, {
+                backgroundColor: '#0f172a',
+                scale: 3 // High Res
+            });
+
+            document.body.removeChild(container);
+
+            // 7. SHARE
+            canvas.toBlob(async (blob) => {
+                try {
+                    await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+                    alert("Trade Snapshot copied!");
+                } catch (err) {
+                    app.showImg(URL.createObjectURL(blob));
+                }
+                btn.innerHTML = originalIcon;
+                lucide.createIcons();
+            });
+
+        } catch(e) {
+            console.error(e);
+            alert("Error creating snapshot");
+            btn.innerHTML = originalIcon;
+            lucide.createIcons();
+        }
+    },
+	updateLogStrategy(id, val) {
+        const log = this.data.logs.find(l => l.id === id);
+        if(log) {
+            log.strategy = val;
+            localStorage.setItem('tradeLogs', JSON.stringify(this.data.logs));
+            // No need to re-render the whole view, just save it.
+            // But we do need to re-render Logs list in background if filtering
+            this.renderLogs();
+        }
     },
 }; // <--- This is the end of the app object
 	
