@@ -142,6 +142,16 @@
         .landscape-data { display: block !important; }
         .portrait-only { display: none !important; }
     }
+	.paste-zone.has-image { border-color: #10b981; background-color: rgba(16, 185, 129, 0.1); color: #34d399; }
+
+    /* --- PASTE PATCH 2 HERE --- */
+    /* Hide the top nav rotate hint on Desktop or Landscape */
+    @media (min-width: 768px) {
+        #topNavRotateHint { display: none !important; }
+    }
+    @media (orientation: landscape) {
+        #topNavRotateHint { display: none !important; }
+    }
   </style>
 </head>
 
@@ -184,13 +194,20 @@
       </defs>
     </svg>
     
-    <div class="flex gap-1">
-        <button onclick="app.switchView('help')" class="text-slate-400 hover:text-white p-2">
+    <div class="flex gap-1 items-center">
+          
+          <div id="topNavRotateHint" class="hidden text-amber-400 animate-pulse mr-2 flex items-center gap-1">
+              <span class="text-[10px] font-bold uppercase hidden sm:block">Rotate</span>
+              <i data-lucide="smartphone" class="w-5 h-5 rotate-90"></i>
+          </div>
+
+          <button onclick="app.switchView('help')" class="text-slate-400 hover:text-white p-2 transition-colors">
             <i data-lucide="circle-help" class="w-6 h-6"></i>
-        </button>
-        <button onclick="app.switchView('settings')" class="text-slate-400 hover:text-white p-2">
+          </button>
+          
+          <button onclick="app.switchView('settings')" class="text-slate-400 hover:text-white p-2 transition-colors">
             <i data-lucide="settings" class="w-6 h-6"></i>
-        </button>
+          </button>
     </div>
   </header>
 
@@ -675,21 +692,29 @@
             </button>
         </div>
 
-        <div id="logsTableWrapper" class="bg-slate-900 rounded-xl border border-slate-800 flex-1 overflow-hidden flex flex-col">
-            <div class="log-grid-layout grid grid-cols-10 gap-2 p-3 bg-slate-800 text-xs font-bold text-slate-400 border-b border-slate-700">
-				<div class="col-span-2">DATE</div>
-				<div class="col-span-2">TICKER</div>
-    
-				<div class="landscape-data hidden col-span-2 text-center text-slate-500">QTY (Org/Cur)</div>
-				<div class="landscape-data hidden col-span-1 text-center text-slate-500">STOP</div>
-				<div class="landscape-data hidden col-span-1 text-center text-slate-500">RISK</div>
-				<div class="landscape-data hidden col-span-2 text-center text-slate-500">PERF (EC/%)</div>
-    
-				<div class="portrait-only col-span-2 text-left">RISK</div>
-    
-				<div class="col-span-2 text-right">R / P&L</div>
-				<div class="col-span-4 text-right">STATUS</div>
-		</div>
+       <div id="logsTableWrapper" class="bg-slate-900 rounded-xl border border-slate-800 flex-1 overflow-hidden flex flex-col justify-start">
+            
+            <div class="shrink-0 log-grid-layout grid grid-cols-10 md:grid-cols-16 gap-2 p-3 bg-slate-800 text-xs font-bold text-slate-400 border-b border-slate-700">
+                <div class="col-span-2">DATE</div>
+                <div class="col-span-2">TICKER</div>
+                
+                <div class="landscape-data hidden col-span-2 text-center text-slate-500">QTY (Org/Cur)</div>
+                <div class="landscape-data hidden col-span-1 text-center text-slate-500">STOP</div>
+                <div class="landscape-data hidden col-span-1 text-center text-slate-500">RISK</div>
+                <div class="landscape-data hidden col-span-2 text-center text-slate-500">PERF (EC/%)</div>
+                
+                <div class="portrait-only col-span-2 text-left">RISK / R</div>
+                
+                <div class="landscape-data hidden col-span-2 text-right">R / P&L</div>
+                
+                <div class="col-span-4 md:col-span-3 text-right md:text-center">
+                    <span class="md:hidden">P&L / STATUS</span>
+                    <span class="hidden md:inline">STATUS</span>
+                </div>
+                
+                <div class="hidden md:block md:col-span-1 text-center"></div>
+            </div>
+
             <div id="logsContainer" class="overflow-y-auto flex-1 p-2 space-y-1">
                 </div>
         </div>
@@ -1605,15 +1630,11 @@ const app = {
     },
 
     // --- VIEW MANAGEMENT ---
-    // --- VIEW MANAGEMENT ---
     switchView(viewName) {
-        // 1. Hide all views
-        // ADDED 'journal' to this list so it gets hidden correctly
+        // ... existing hiding logic ...
         ['calculator', 'logs', 'stats', 'journal', 'manage', 'settings', 'help'].forEach(v => {
             const el = document.getElementById(`view-${v}`);
             if(el) el.classList.add('hidden');
-            
-            // Deactivate Nav Icon
             const nav = document.getElementById(`nav-${v}`);
             if(nav) {
                 nav.classList.remove('text-blue-500');
@@ -1621,16 +1642,23 @@ const app = {
             }
         });
 
-        // 2. Show requested view
+        // ... existing show target logic ...
         const target = document.getElementById(`view-${viewName}`);
         if (target) target.classList.remove('hidden');
         
-        // 3. Activate Nav Icon
         const activeNav = document.getElementById(`nav-${viewName}`);
         if(activeNav) {
             activeNav.classList.add('text-blue-500');
             activeNav.classList.remove('text-slate-500');
         }
+
+        // --- NEW: Toggle Top Nav Rotate Hint ---
+        const rotHint = document.getElementById('topNavRotateHint');
+        if(rotHint) {
+            if(viewName === 'logs') rotHint.classList.remove('hidden');
+            else rotHint.classList.add('hidden');
+        }
+        // ---------------------------------------
 
         // 4. View-Specific Triggers
         if (viewName === 'logs') this.renderLogs();
@@ -4033,22 +4061,20 @@ const app = {
     },
 
     renderLogs(limit = 50) {
-        // 1. ROTATE HINT (Only on Portrait Mobile)
+        // 1. INJECT UI CONTROLS (Restored Filter Logic)
         const header = document.querySelector('#view-logs .flex.gap-2.mb-4');
-        if (header && !document.getElementById('rotateHintBtn')) {
-            // Check if controls exist first, if not inject them (standard logic)
-            // ... (Your existing status filter logic here) ...
-            
-            const hint = document.createElement('div');
-            hint.id = 'rotateHintBtn';
-            hint.className = 'md:hidden text-slate-500 animate-pulse ml-1 flex items-center';
-            hint.innerHTML = `<i data-lucide="smartphone" class="w-5 h-5 rotate-90"></i>`;
-            hint.onclick = () => alert("Rotate phone to see detailed Performance Metrics (Qty, Stop, EC%, Gain%).");
-            header.appendChild(hint);
+        if (header && !document.getElementById('logStatusFilter')) {
+            const select = document.createElement('select');
+            select.id = 'logStatusFilter';
+            select.className = 'bg-slate-800 border-none rounded-lg py-2 px-3 text-xs font-bold focus:ring-2 focus:ring-blue-500 text-slate-300 outline-none cursor-pointer hover:text-white transition-colors';
+            select.innerHTML = `<option value="ALL">All Status</option><option value="OPEN">Open (Active)</option><option value="CLOSED">Closed Only</option><option value="WIN">Wins Only</option><option value="LOSS">Losses Only</option>`;
+            select.onchange = () => app.renderLogs();
+            header.insertBefore(select, header.firstChild);
         }
+        
         this.updatePrivacyIcons();
 
-        // 2. DATA PREP (Filter Logic)
+        // 2. DATA PREPARATION
         const statusFilter = document.getElementById('logStatusFilter') ? document.getElementById('logStatusFilter').value : 'ALL';
         const searchVal = document.getElementById('logSearch') ? document.getElementById('logSearch').value.toUpperCase() : '';
         const container = document.getElementById('logsContainer');
@@ -4064,23 +4090,31 @@ const app = {
             if(statusFilter === 'ALL') return true;
             if(statusFilter === 'OPEN') return !isClosed;
             if(statusFilter === 'CLOSED') return isClosed;
-            
-            // Win/Loss filter logic...
-            let netR = 0; 
-            // ... (Keep your existing NetR calculation here for filtering) ...
+
+            let netR = 0;
+            const riskPerShare = Math.abs(l.entry - l.stop);
+            if(l.exits && l.exits.length > 0) {
+                let pnl = 0;
+                l.exits.forEach(ex => pnl += (l.direction === 'SHORT' ? l.entry - ex.price : ex.price - l.entry) * ex.qty);
+                if(l.initialQty*riskPerShare > 0) netR = pnl / (l.initialQty * riskPerShare);
+            } else if (l.exitPrice) {
+                netR = (l.direction === 'SHORT' ? l.entry - l.exitPrice : l.exitPrice - l.entry) / riskPerShare;
+            }
+            if (statusFilter === 'WIN') return netR > 0.1;
+            if (statusFilter === 'LOSS') return netR < -0.1;
             return true;
         });
 
         allMatches.sort((a,b) => new Date(b.date) - new Date(a.date));
         const visibleLogs = allMatches.slice(0, limit);
         
-        // 3. MASTER ACCOUNT (For EC%)
+        // Master Account for EC%
         const masterAcc = this.data.accounts.find(a => a.isMaster);
         const masterSize = masterAcc ? masterAcc.size : 10000;
 
-        // 4. RENDER ROWS
+        // 3. RENDER ROWS
         const htmlRows = visibleLogs.map(log => {
-            // A. Base Data
+            // Stats & Calcs
             let totalSold = log.exits ? log.exits.reduce((acc, ex) => acc + ex.qty, 0) : 0;
             let currentQty = (log.initialQty || 0) - totalSold;
             let isOpen = log.outcome === 'open';
@@ -4089,11 +4123,11 @@ const app = {
             let totalExitProceeds = 0;
             const riskPerShare = Math.abs(log.entry - log.stop);
             
-            // B. Date
+            // Date
             let dateDisplay = log.date.substring(5, 10);
             let timeDisplay = log.date.includes('T') ? new Date(log.date).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : "";
 
-            // C. P&L / Stats
+            // Financials
             if (log.exits && log.exits.length > 0) {
                 log.exits.forEach(ex => {
                     const pnlObj = this.getPnl(log, ex.price, ex.qty);
@@ -4104,42 +4138,25 @@ const app = {
                 const totalRiskAmount = log.initialQty * riskPerShare;
                 if (totalRiskAmount > 0) realizedR = totalRealizedPnl / (totalRiskAmount / (log.exchangeRate||1)); 
             } else if (!log.initialQty && log.exitPrice) {
-                // Legacy support
                 const diff = log.direction === 'SHORT' ? (log.entry - log.exitPrice) : (log.exitPrice - log.entry);
                 realizedR = diff / riskPerShare;
                 isOpen = false;
             }
 
-            // --- NEW: LANDSCAPE METRICS ---
-            
-            // 1. EC% (Equity Contribution)
+            // --- LANDSCAPE METRICS ---
             const ecPct = (totalRealizedPnl / masterSize) * 100;
-            const ecClass = ecPct > 0 ? 'text-emerald-400' : (ecPct < 0 ? 'text-red-400' : 'text-slate-500');
-            const ecDisplay = `<span class="${ecClass} font-bold">${ecPct > 0 ? '+':''}${ecPct.toFixed(2)}%</span>`;
+            const ecDisplay = `<span class="${ecPct>0?'text-emerald-400':(ecPct<0?'text-red-400':'text-slate-500')} font-bold">${ecPct>0?'+':''}${ecPct.toFixed(2)}%</span>`;
 
-            // 2. Gain % (Price Movement)
             let gainPctDisplay = '<span class="text-slate-600">-</span>';
-            let avgExit = 0;
             if (totalSold > 0) {
-                avgExit = totalExitProceeds / totalSold;
-                const gainPct = log.direction === 'LONG' 
-                    ? ((avgExit - log.entry) / log.entry) * 100
-                    : ((log.entry - avgExit) / log.entry) * 100;
-                const gainClass = gainPct >= 0 ? 'text-emerald-400' : 'text-red-400';
-                gainPctDisplay = `<span class="${gainClass}">${gainPct > 0 ? '+':''}${gainPct.toFixed(2)}%</span>`;
+                const avgExit = totalExitProceeds / totalSold;
+                const gainPct = log.direction === 'LONG' ? ((avgExit - log.entry)/log.entry)*100 : ((log.entry - avgExit)/log.entry)*100;
+                gainPctDisplay = `<span class="${gainPct>=0?'text-emerald-400':'text-red-400'}">${gainPct>0?'+':''}${gainPct.toFixed(2)}%</span>`;
             }
-
-            // 3. Active Stop (Weighted if staggered)
+            
             let activeStop = (typeof log.currentStop === 'number') ? log.currentStop : log.stop;
-            if (log.stopMeta && log.stopMeta.mode === 'staggered' && isOpen) {
-                // Calculate weighted average of remaining stops could be complex, 
-                // for summary we just show the weighted average of the original plan or current single override
-                // If user updated currentStop via Manage, it overrides the staggered plan logic for display
-            }
 
-            // -----------------------------
-
-            // D. Standard Badges
+            // Badges
             let nerBadge = '';
             if (isOpen) {
                 const dist = log.direction==='LONG' ? Math.max(0, log.entry-activeStop) : Math.max(0, activeStop-log.entry);
@@ -4149,7 +4166,7 @@ const app = {
                 ? (totalSold > 0 ? `<span class="text-blue-400 font-bold text-[10px]">OPEN(${Math.round((totalSold/log.initialQty)*100)}%)</span>` : `<span class="text-blue-400 font-bold text-[10px]">OPEN</span>`)
                 : (realizedR > 0.1 ? `<span class="text-emerald-400 font-bold text-[10px]">WIN</span>` : (realizedR < -0.1 ? `<span class="text-red-400 font-bold text-[10px]">LOSS</span>` : `<span class="text-slate-400 font-bold text-[10px]">SCRATCH</span>`));
 
-            // E. Privacy & PnL Formatting
+            // Privacy & Text
             const sym = this.getSymbol ? this.getSymbol(this.data.settings.baseCurrency) : "";
             let pnlString = '<span class="text-slate-600 text-[10px]">-</span>';
             if (totalRealizedPnl !== 0) {
@@ -4157,18 +4174,17 @@ const app = {
                     const color = totalRealizedPnl >= 0 ? 'text-emerald-500' : 'text-red-500';
                     pnlString = `<div class="text-[10px] ${color} font-bold opacity-50 select-none">****</div>`;
                 } else {
-                    const sign = totalRealizedPnl < 0 ? '-' : ''; 
                     const color = totalRealizedPnl >= 0 ? 'text-emerald-500' : 'text-red-500';
-                    pnlString = `<div class="text-[10px] ${color} font-bold">${sign}${sym}${Math.abs(totalRealizedPnl).toFixed(2)}</div>`;
+                    pnlString = `<div class="text-[10px] ${color} font-bold">${totalRealizedPnl<0?'-':''}${sym}${Math.abs(totalRealizedPnl).toFixed(2)}</div>`;
                 }
             }
-
+            
             let rDisplay = (!isOpen || (log.exits && log.exits.length > 0)) ? `${realizedR>0?'+':''}${realizedR.toFixed(2)}R` : '-';
             let rClass = realizedR > 0 ? 'text-emerald-400 font-bold' : (realizedR < 0 ? 'text-red-400 font-bold' : 'text-slate-500');
 
-            // F. HTML CONSTRUCTION (Responsive Grid)
+            // --- RESPONSIVE GRID ROW ---
             return `
-            <div onclick="app.openManageView(${log.id})" class="log-grid-layout grid grid-cols-10 gap-2 p-3 bg-slate-800/50 border-b border-slate-700 items-center hover:bg-slate-800 transition-colors cursor-pointer active:bg-slate-700">
+			<div onclick="app.openManageView(${log.id})" class="log-grid-layout grid grid-cols-10 md:grid-cols-16 gap-2 p-3 bg-slate-800/50 border-b border-slate-700 items-center hover:bg-slate-800 transition-colors cursor-pointer active:bg-slate-700">
                 
                 <div class="col-span-2">
                     <div class="text-xs text-slate-300 font-bold">${dateDisplay}</div>
@@ -4194,8 +4210,8 @@ const app = {
 
                 <div class="landscape-data hidden col-span-2 text-center">
                     <div class="flex flex-col text-[10px] font-mono">
-                        <div class="flex justify-between w-full px-2"><span>EC:</span> ${ecDisplay}</div>
-                        <div class="flex justify-between w-full px-2"><span>Px:</span> ${gainPctDisplay}</div>
+                        <div class="flex justify-between w-full px-1"><span>EC:</span> ${ecDisplay}</div>
+                        <div class="flex justify-between w-full px-1"><span>Px:</span> ${gainPctDisplay}</div>
                     </div>
                 </div>
 
@@ -4204,24 +4220,30 @@ const app = {
                     <div class="text-xs font-mono ${rClass}">${rDisplay}</div>
                 </div>
                 
-                <div class="col-span-2 text-right">
-                    <div class="text-xs font-mono ${rClass} landscape-data hidden">${rDisplay}</div>
-                    ${pnlString}
-                </div>
-                
-                <div class="col-span-4 flex justify-between items-center pl-1">
+                <div class="portrait-only col-span-4 flex justify-between items-center pl-1">
                     <div class="flex-1 flex flex-col items-end gap-0.5 mr-2">
+                         ${pnlString}
                          <div class="flex items-center gap-1 justify-end">${nerBadge}${statusBadge}</div>
                     </div>
-                    <div class="flex gap-1 action-buttons">
-                        <button onclick="event.stopPropagation(); app.shareLogImage(this)" class="text-slate-400 hover:text-white bg-slate-700/50 p-2 rounded-lg"><i data-lucide="share-2" class="w-4 h-4"></i></button>
-                    </div>
+                    <button onclick="event.stopPropagation(); app.shareLogImage(this)" class="text-slate-400 hover:text-white bg-slate-700/50 p-2 rounded-lg"><i data-lucide="share-2" class="w-4 h-4"></i></button>
+                </div>
+
+                <div class="landscape-data hidden col-span-2 text-right">
+                    <div class="text-xs font-mono ${rClass}">${rDisplay}</div>
+                    ${pnlString}
+                </div>
+
+                <div class="landscape-data hidden col-span-3 flex items-center justify-center gap-2">
+					${nerBadge}${statusBadge}
+				</div>
+
+                <div class="landscape-data hidden col-span-1 text-center">
+                     <button onclick="event.stopPropagation(); app.shareLogImage(this)" class="text-slate-400 hover:text-white bg-slate-700/50 p-2 rounded-lg"><i data-lucide="share-2" class="w-4 h-4"></i></button>
                 </div>
 
             </div>`;
         }).join('');
 
-        // ... Load More Logic ...
         let loadMoreHtml = '';
         if (allMatches.length > limit) loadMoreHtml = `<div class="p-2 text-center"><button onclick="event.stopPropagation(); app.renderLogs(${limit + 50})" class="text-xs font-bold text-blue-400 hover:text-white border border-slate-700 bg-slate-800 rounded-full px-4 py-2 transition-all">Show Older Trades (${allMatches.length - limit} more)</button></div>`;
         else if (allMatches.length === 0) loadMoreHtml = `<div class="p-8 text-center text-slate-500 text-sm">No trades found matching filters.</div>`;
