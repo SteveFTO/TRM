@@ -657,19 +657,28 @@
 
             <div id="manageSummary" class="bg-slate-800 rounded-xl p-4 border border-slate-700"></div>
 
-            <div class="bg-slate-800 rounded-xl p-4 border border-slate-700">
-                <h3 class="text-sm font-bold text-slate-300 mb-3 uppercase">Add Exit / Partial</h3>
+			<div class="bg-slate-800 rounded-xl p-4 border border-slate-700">
+                <h3 class="text-sm font-bold text-slate-300 mb-3 uppercase flex justify-between items-center">
+                    <span id="exitFormTitle">Add Exit / Partial</span>
+                    <button id="cancelExitEditBtn" onclick="app.cancelExitEdit()" class="hidden text-[10px] text-red-400 hover:underline">Cancel Edit</button>
+                </h3>
+                
+                <div class="mb-3">
+                    <label class="text-[10px] uppercase text-slate-500 font-bold">Date & Time</label>
+                    <input type="datetime-local" id="exitInputDate" class="w-full bg-slate-900 border border-slate-600 rounded p-2 font-mono text-white text-sm focus:border-blue-500 outline-none">
+                </div>
+
                 <div class="grid grid-cols-2 gap-3 mb-3">
                     <div>
-                        <label class="text-[10px] uppercase text-slate-500">Exit Price</label>
-                        <input type="number" id="exitInputPrice" step="any" class="w-full bg-slate-900 border border-slate-600 rounded p-2 font-mono text-white">
+                        <label class="text-[10px] uppercase text-slate-500 font-bold">Exit Price</label>
+                        <input type="number" id="exitInputPrice" step="any" class="w-full bg-slate-900 border border-slate-600 rounded p-2 font-mono text-white focus:border-blue-500 outline-none">
                     </div>
                     <div>
-                        <label class="text-[10px] uppercase text-slate-500">Shares Sold</label>
-                        <input type="number" id="exitInputQty" step="1" class="w-full bg-slate-900 border border-slate-600 rounded p-2 font-mono text-white">
+                        <label class="text-[10px] uppercase text-slate-500 font-bold">Shares Sold</label>
+                        <input type="number" id="exitInputQty" step="1" class="w-full bg-slate-900 border border-slate-600 rounded p-2 font-mono text-white focus:border-blue-500 outline-none">
                     </div>
                 </div>
-                <button onclick="app.addExit()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded-lg">Log Exit</button>
+                <button id="exitActionBtn" onclick="app.addExit()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded-lg transition-colors shadow-lg">Log Exit</button>
             </div>
 
             <div class="bg-slate-800 rounded-xl p-4 border border-slate-700">
@@ -904,17 +913,18 @@
                     <div id="jActivityFeed" class="space-y-2"></div>
                 </div>
 
-                <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
-                    <h3 class="text-xs font-bold text-slate-500 uppercase mb-4 text-center tracking-widest">Did you follow your rules today?</h3>
-                    <div class="flex gap-4">
-                        <button onclick="app.setJournalDiscipline(true)" id="btn-disc-yes" class="flex-1 py-4 rounded-xl border border-emerald-900/50 bg-slate-900 text-slate-500 font-bold transition-all flex flex-col items-center gap-1 hover:border-emerald-500">
-                            <i data-lucide="check-circle" class="w-6 h-6"></i> YES
-                        </button>
-                        <button onclick="app.setJournalDiscipline(false)" id="btn-disc-no" class="flex-1 py-4 rounded-xl border border-red-900/50 bg-slate-900 text-slate-500 font-bold transition-all flex flex-col items-center gap-1 hover:border-red-500">
-                            <i data-lucide="x-circle" class="w-6 h-6"></i> NO
-                        </button>
-                    </div>
-                </div>
+				<div class="bg-slate-800 p-3 rounded-xl border border-slate-700">
+					<h3 class="text-[10px] font-bold text-slate-500 uppercase mb-3 text-center tracking-widest">Did you follow your rules?</h3>
+					<div class="flex gap-3">
+						<button onclick="app.setJournalDiscipline(true)" id="btn-disc-yes" class="flex-1 py-2 rounded-lg border border-emerald-900/50 bg-slate-900 text-slate-500 font-bold transition-all flex flex-col items-center gap-1 hover:border-emerald-500 text-xs">
+							<i data-lucide="check-circle" class="w-5 h-5"></i> YES
+						</button>
+						<button onclick="app.setJournalDiscipline(false)" id="btn-disc-no" class="flex-1 py-2 rounded-lg border border-red-900/50 bg-slate-900 text-slate-500 font-bold transition-all flex flex-col items-center gap-1 hover:border-red-500 text-xs">
+							<i data-lucide="x-circle" class="w-5 h-5"></i> NO
+						</button>
+					</div>
+					<div id="brokenRulesArea"></div> 
+				</div>
 
                 <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
                     <div class="mb-4">
@@ -1141,6 +1151,7 @@ const app = {
         accounts: [],
         editingId: null, 
         isEditingParams: false,
+		editingExitIdx: null,
 		// --- PASTE THIS NEW BLOCK HERE ---
         journal: {
             philosophy: '',
@@ -2450,7 +2461,16 @@ const app = {
 
         document.getElementById('exitInputQty').value = remaining > 0 ? remaining : '';
         document.getElementById('exitInputPrice').value = '';
-
+		// --- RESET EXIT FORM ---
+        this.cancelExitEdit(); // Reset UI state
+        
+        // Set Default Date to Local Now
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        document.getElementById('exitInputDate').value = now.toISOString().slice(0, 16);
+        
+        document.getElementById('exitInputQty').value = remaining > 0 ? remaining : '';
+        document.getElementById('exitInputPrice').value = '';
         this.renderExitHistory(log);
         document.getElementById('view-manage').classList.remove('hidden');
         lucide.createIcons();
@@ -2472,25 +2492,36 @@ const app = {
             return;
         }
 
-        list.innerHTML = log.exits.map((ex, idx) => {
+        // Sort for display
+        const sortedExits = log.exits.map((ex, i) => ({...ex, originalIdx: i})); // Keep track of original index
+        sortedExits.sort((a,b) => new Date(a.date) - new Date(b.date));
+
+        list.innerHTML = sortedExits.map((ex) => {
             const riskPerShare = Math.abs(log.entry - log.stop);
             const pnlPerShare = log.direction === 'SHORT' ? (log.entry - ex.price) : (ex.price - log.entry);
-            const rVal = (pnlPerShare / riskPerShare).toFixed(2);
+            const rVal = (riskPerShare > 0) ? (pnlPerShare / riskPerShare).toFixed(2) : "0.00";
             
-            // Calc P&L for this specific exit
             const pnlObj = this.getPnl(log, ex.price, ex.qty);
             const pnlClass = pnlObj.val >= 0 ? 'text-emerald-400' : 'text-red-400';
+            
+            // Format Date
+            const d = new Date(ex.date);
+            const dateStr = `${d.getDate()}/${d.getMonth()+1} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
 
             return `
-            <div class="flex justify-between items-center bg-slate-900 p-2 rounded border border-slate-700 text-sm">
+            <div class="flex justify-between items-center bg-slate-900 p-2 rounded border border-slate-700 text-sm mb-1">
                 <div>
-                    <span class="text-slate-400 text-xs block">Exit #${idx+1}</span>
+                    <div class="text-[10px] text-slate-500 mb-0.5">${dateStr}</div>
                     <span class="font-bold text-white">${ex.qty} shares @ ${ex.price}</span>
                 </div>
                 <div class="text-right">
-                    <div class="${rVal > 0 ? 'text-emerald-400' : 'text-red-400'} font-bold">${rVal > 0 ? '+' : ''}${rVal}R</div>
+                    <div class="${parseFloat(rVal) >= 0 ? 'text-emerald-400' : 'text-red-400'} font-bold">${parseFloat(rVal) > 0 ? '+' : ''}${rVal}R</div>
                     <div class="${pnlClass} text-xs font-mono">${pnlObj.formatted}</div>
-                    <button onclick="app.removeExit(${idx})" class="text-[9px] text-slate-600 underline mt-1 hover:text-red-500">Undo</button>
+                    
+                    <div class="flex gap-3 justify-end mt-1">
+                        <button onclick="app.editExit(${ex.originalIdx})" class="text-[10px] text-blue-400 hover:text-white hover:underline">Edit</button>
+                        <button onclick="app.removeExit(${ex.originalIdx})" class="text-[10px] text-slate-600 hover:text-red-500 hover:underline">Delete</button>
+                    </div>
                 </div>
             </div>`;
         }).join('');
@@ -4267,7 +4298,14 @@ const app = {
     setJournalDiscipline(status) {
         const date = document.getElementById('journalDate').value;
         if(!this.data.journal.entries[date]) this.data.journal.entries[date] = {};
+        
         this.data.journal.entries[date].followedRules = status;
+        
+        // Reset broken rules if user switches to YES
+        if(status === true) {
+            this.data.journal.entries[date].brokenRules = [];
+        }
+        
         this.saveJournal();
         this.renderJournalEntry();
     },
@@ -4336,11 +4374,11 @@ const app = {
         return activity.sort((a,b) => a.time - b.time);
     },
 
-   async renderJournalEntry() {
+	async renderJournalEntry() {
         const date = document.getElementById('journalDate').value;
         const hidePnL = this.data.settings.hidePnL || false;
         
-        // --- A. AUTOMATED MARKET ACTIVITY ---
+        // --- A. AUTOMATED MARKET ACTIVITY (Existing Logic) ---
         const activity = this.getJournalActivity(date);
         const feed = document.getElementById('jActivityFeed');
         document.getElementById('jActivityContainer').classList.toggle('hidden', activity.length === 0);
@@ -4349,9 +4387,6 @@ const app = {
             feed.innerHTML = (await Promise.all(activity.map(async (item) => {
                 const timeStr = item.time.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                 const ticker = item.log.ticker;
-                
-                // --- Privacy Helper ---
-                // Masks Qty (Shares) and P&L ($) but SHOWS Price and R
                 const fmtQty = (q) => hidePnL ? '****' : q;
                 const fmtPnl = (valStr) => hidePnL ? '<span class="opacity-50 blur-[2px]">****</span>' : `<span class="text-slate-300 font-mono">${valStr}</span>`;
                 
@@ -4362,49 +4397,41 @@ const app = {
                 }
 
                 if (item.type === 'ENTRY') {
-                    // ENTRY CARD: Shows Price & Qty
+                     let stopDisplay = '';
+                     if (item.log.stopMeta && item.log.stopMeta.mode === 'staggered') {
+                          const levels = item.log.stopMeta.levels.map(l => `${l.pct}% @ ${l.price}`).join(', ');
+                          stopDisplay = `<div class="text-[10px] text-red-400 font-mono mt-0.5"><i data-lucide="shield" class="w-3 h-3 inline mr-0.5"></i>Staggered: ${levels}</div>`;
+                     } else {
+                          const price = (item.log.stopMeta && item.log.stopMeta.price) ? item.log.stopMeta.price : item.log.stop;
+                          stopDisplay = `<div class="text-[10px] text-red-400 font-mono mt-0.5"><i data-lucide="shield" class="w-3 h-3 inline mr-0.5"></i>Stop: ${price}</div>`;
+                     }
                     return `<div class="bg-slate-800/50 border-l-2 border-blue-500 p-3 rounded-r-lg border-y border-r border-slate-700/50">
                         <div class="flex justify-between items-start">
                             <div>
                                 <span class="text-[10px] font-mono text-slate-500">${timeStr}</span>
                                 <div class="font-bold text-slate-200 text-sm">Opened ${ticker}</div>
-                                <div class="text-[10px] text-slate-400">
-                                    Bot <span class="text-white font-bold">${fmtQty(item.log.initialQty)}</span> @ <span class="text-amber-400 font-mono">${item.log.entry}</span>
-                                </div>
+                                <div class="text-[10px] text-slate-400">Bot <span class="text-white font-bold">${fmtQty(item.log.initialQty)}</span> @ <span class="text-amber-400 font-mono">${item.log.entry}</span></div>
+                                ${stopDisplay}
                             </div>
                             <span class="bg-blue-900/30 text-blue-400 text-[9px] px-1.5 py-0.5 rounded uppercase font-bold">Entry</span>
                         </div>
-                        ${item.log.notes ? `<div class="text-xs text-slate-500 mt-1 italic">"${item.log.notes}"</div>` : ''} 
+                        ${item.log.notes ? `<div class="text-xs text-slate-500 mt-1 italic border-t border-slate-700/50 pt-1">"${item.log.notes}"</div>` : ''} 
                         ${imgHtml}
                     </div>`;
                 } 
                 else {
-                    // EXIT CARD: Shows Chunk R or Total R
                     const badge = item.isPartial ? 'PARTIAL' : 'CLOSED';
                     const badgeColor = item.isPartial ? 'text-amber-400 bg-amber-900/30' : 'text-emerald-400 bg-emerald-900/30';
                     const borderColor = item.isPartial ? 'border-amber-500' : 'border-emerald-500';
-                    
-                    // Financial Calcs
                     const pnlObj = this.getPnl(item.log, item.exitDetails.price, item.exitDetails.qty);
                     
-                    // R Calcs
                     let rInfo = '';
                     const riskPerShare = Math.abs(item.log.entry - item.log.stop);
                     const totalRisk = item.log.initialQty * riskPerShare;
-                    
                     if(totalRisk > 0) {
-                        if(item.isPartial) {
-                            // Chunk R: The R realized in THIS specific transaction
-                            const chunkPnl = (item.log.direction==='SHORT'? item.log.entry - item.exitDetails.price : item.exitDetails.price - item.log.entry) * item.exitDetails.qty;
-                            const chunkR = chunkPnl / totalRisk;
-                            rInfo = `Chunk: <span class="${chunkR>=0?'text-emerald-400':'text-red-400'} font-bold">${chunkR>=0?'+':''}${chunkR.toFixed(2)}R</span>`;
-                        } else {
-                            // Total R: The R realized for the WHOLE trade
-                            let totalPnl = 0;
-                            if(item.log.exits) item.log.exits.forEach(ex => totalPnl += (item.log.direction==='SHORT'? item.log.entry - ex.price : ex.price - item.log.entry) * ex.qty);
-                            const totalR = totalPnl / totalRisk;
-                            rInfo = `Total: <span class="${totalR>=0?'text-emerald-400':'text-red-400'} font-bold">${totalR>=0?'+':''}${totalR.toFixed(2)}R</span>`;
-                        }
+                        const chunkPnl = (item.log.direction==='SHORT'? item.log.entry - item.exitDetails.price : item.exitDetails.price - item.log.entry) * item.exitDetails.qty;
+                        const chunkR = chunkPnl / totalRisk;
+                        rInfo = `R: <span class="${chunkR>=0?'text-emerald-400':'text-red-400'} font-bold">${chunkR>=0?'+':''}${chunkR.toFixed(2)}</span>`;
                     }
 
                     return `<div class="bg-slate-800/50 border-l-2 ${borderColor} p-3 rounded-r-lg border-y border-r border-slate-700/50">
@@ -4423,18 +4450,62 @@ const app = {
             }))).join('');
         }
 
-        // --- B. MANUAL JOURNAL (Existing Logic) ---
-        const entry = this.data.journal.entries[date] || { notes: '', emotions: [], followedRules: null, images: [] };
+        // --- B. MANUAL JOURNAL & BROKEN RULES ---
+        const entry = this.data.journal.entries[date] || { notes: '', emotions: [], followedRules: null, images: [], brokenRules: [] };
+        
+        // 1. Generate Broken Rules Checklist (If NO is selected)
+        let brokenRulesHtml = '';
+        if (entry.followedRules === false) {
+            const brokenList = entry.brokenRules || [];
+            const rulesList = this.data.journal.rules.map((rule, idx) => {
+                const isBroken = brokenList.includes(rule);
+                const icon = isBroken ? 'check-square' : 'square';
+                const style = isBroken 
+                    ? 'bg-red-900/40 text-red-300 border-red-500/50 font-bold' 
+                    : 'bg-slate-900 text-slate-400 border-slate-700 hover:border-slate-500 hover:text-slate-200';
+                
+                return `<button onclick="app.toggleBrokenRule(${idx})" class="w-full text-left p-2.5 rounded border text-xs flex items-center gap-3 transition-all ${style} mb-1.5">
+                    <i data-lucide="${icon}" class="w-4 h-4 flex-shrink-0"></i>
+                    <span class="leading-tight">${rule}</span>
+                </button>`;
+            }).join('');
+
+            brokenRulesHtml = `
+            <div class="mt-4 pt-4 border-t border-slate-700/50 animate-in fade-in slide-in-from-top-2">
+                <h4 class="text-[10px] font-bold text-red-400 mb-2 uppercase flex items-center gap-2">
+                    <i data-lucide="alert-circle" class="w-3 h-3"></i> Which rules did you break?
+                </h4>
+                <div>${rulesList}</div>
+            </div>`;
+        }
+
+        // 2. Render Discipline Container
+        const discContainer = document.getElementById('journalDisciplineContainer'); // You might need to add this ID to your HTML parent if not present, see step below.
+        // OR simpler: we inject directly into the existing structure using the HTML string construction:
+
+        // Since we are replacing the whole function, let's target the buttons directly.
+        const btnYes = document.getElementById('btn-disc-yes');
+        const btnNo = document.getElementById('btn-disc-no');
+        
+        // Update Buttons
+		btnYes.className = `flex-1 py-2 rounded-lg border font-bold text-xs transition-all flex flex-col items-center gap-1 ${entry.followedRules===true ? 'bg-emerald-600 text-white border-emerald-500 shadow-lg shadow-emerald-900/20' : 'bg-slate-900 border-emerald-900/30 text-slate-500 hover:border-emerald-500/50'}`;
+        btnNo.className = `flex-1 py-2 rounded-lg border font-bold text-xs transition-all flex flex-col items-center gap-1 ${entry.followedRules===false ? 'bg-red-600 text-white border-red-500 shadow-lg shadow-red-900/20' : 'bg-slate-900 border-red-900/30 text-slate-500 hover:border-red-500/50'}`;
+        
+        // Inject Broken Rules Area
+        let brokenTarget = document.getElementById('brokenRulesArea');
+        if (!brokenTarget) {
+            // Create it if it doesn't exist (append after the button container)
+            brokenTarget = document.createElement('div');
+            brokenTarget.id = 'brokenRulesArea';
+            btnYes.parentElement.parentElement.appendChild(brokenTarget);
+        }
+        brokenTarget.innerHTML = brokenRulesHtml;
+
+        // 3. Notes & Emotions (Standard)
         document.getElementById('jDailyNotes').value = entry.notes || '';
-        
-        const btnYes = document.getElementById('btn-disc-yes'), btnNo = document.getElementById('btn-disc-no');
-        
-        btnYes.className = `flex-1 py-4 rounded-xl border font-bold transition-all flex flex-col items-center gap-1 ${entry.followedRules===true ? 'bg-emerald-600 text-white border-emerald-500' : 'bg-slate-900 border-emerald-900/50 text-slate-500 hover:border-emerald-500'}`;
-        btnNo.className = `flex-1 py-4 rounded-xl border font-bold transition-all flex flex-col items-center gap-1 ${entry.followedRules===false ? 'bg-red-600 text-white border-red-500' : 'bg-slate-900 border-red-900/50 text-slate-500 hover:border-red-500'}`;
-        
         document.getElementById('jDailyEmotions').innerHTML = this.data.journal.emotionsList.map(em => {
             const active = entry.emotions && entry.emotions.includes(em);
-            return `<button onclick="app.toggleJournalEmotion('${em}')" class="px-3 py-1 rounded-full text-xs border transition-colors ${active ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-slate-900 text-slate-400 border-slate-700 hover:border-slate-500'}">${em}</button>`;
+            return `<button onclick="app.toggleJournalEmotion('${em}')" class="px-3 py-1 rounded-full text-xs border transition-colors ${active ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm' : 'bg-slate-900 text-slate-400 border-slate-700 hover:border-slate-500'}">${em}</button>`;
         }).join('');
         
         const imgHtmls = entry.images ? await Promise.all(entry.images.map(async (id) => `<div class="relative group"><img src="${await imgDB.get(id)}" class="w-full h-24 object-cover rounded border border-slate-600 cursor-pointer" onclick="app.showImg('${await imgDB.get(id)}')"></div>`)) : [];
@@ -4884,6 +4955,148 @@ const app = {
             // But we do need to re-render Logs list in background if filtering
             this.renderLogs();
         }
+    },
+	// 1. EDIT MODE TRIGGER
+    editExit(idx) {
+        const log = this.data.logs.find(l => l.id === this.data.editingId);
+        if(!log || !log.exits[idx]) return;
+
+        const ex = log.exits[idx];
+        
+        // Populate Form
+        document.getElementById('exitInputPrice').value = ex.price;
+        document.getElementById('exitInputQty').value = ex.qty;
+        
+        // Format Date for Input
+        if(ex.date) {
+            const d = new Date(ex.date);
+            d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+            document.getElementById('exitInputDate').value = d.toISOString().slice(0, 16);
+        }
+
+        // Set UI State
+        this.data.editingExitIdx = idx;
+        document.getElementById('exitFormTitle').textContent = `Editing Exit #${idx + 1}`;
+        document.getElementById('exitActionBtn').textContent = "Update Exit";
+        document.getElementById('exitActionBtn').classList.replace('bg-blue-600', 'bg-amber-600');
+        document.getElementById('cancelExitEditBtn').classList.remove('hidden');
+    },
+
+    // 2. CANCEL EDIT
+    cancelExitEdit() {
+        this.data.editingExitIdx = null;
+        document.getElementById('exitFormTitle').textContent = "Add Exit / Partial";
+        document.getElementById('exitActionBtn').textContent = "Log Exit";
+        document.getElementById('exitActionBtn').classList.replace('bg-amber-600', 'bg-blue-600');
+        document.getElementById('cancelExitEditBtn').classList.add('hidden');
+        
+        document.getElementById('exitInputPrice').value = '';
+        document.getElementById('exitInputQty').value = '';
+        
+        // Reset Date
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        document.getElementById('exitInputDate').value = now.toISOString().slice(0, 16);
+    },
+
+    // 3. MAIN ACTION (ADD OR UPDATE)
+    addExit() {
+        const log = this.data.logs.find(l => l.id === this.data.editingId);
+        if(!log) return;
+
+        const price = parseFloat(document.getElementById('exitInputPrice').value);
+        const qty = parseInt(document.getElementById('exitInputQty').value);
+        const dateVal = document.getElementById('exitInputDate').value;
+
+        if(!price || !qty || !dateVal) return alert("Please enter Date, Price and Quantity");
+
+        const exitDate = new Date(dateVal).toISOString();
+
+        // Calculate available shares
+        // If editing, we pretend the shares from the 'editing' exit are available again
+        let totalSold = log.exits.reduce((a,b) => a+b.qty, 0);
+        let available = log.initialQty - totalSold;
+        
+        if (this.data.editingExitIdx !== null) {
+            available += log.exits[this.data.editingExitIdx].qty;
+        }
+
+        if(qty > available) {
+            return alert(`Cannot sell ${qty}. Only ${available} shares remaining.`);
+        }
+
+        const masterIdx = this.data.accounts.findIndex(a => a.isMaster);
+        const rate = log.exchangeRate || 1;
+
+        // --- UPDATE LOGIC ---
+        if (this.data.editingExitIdx !== null) {
+            // A. Reverse Old P&L
+            const oldEx = log.exits[this.data.editingExitIdx];
+            const oldPnlTrade = log.direction === 'SHORT' ? (log.entry - oldEx.price)*oldEx.qty : (oldEx.price - log.entry)*oldEx.qty;
+            if(masterIdx !== -1) this.data.accounts[masterIdx].size -= (oldPnlTrade / rate);
+
+            // B. Update Exit Object
+            log.exits[this.data.editingExitIdx] = { price, qty, date: exitDate };
+            
+            // C. Apply New P&L
+            const newPnlTrade = log.direction === 'SHORT' ? (log.entry - price)*qty : (price - log.entry)*qty;
+            if(masterIdx !== -1) this.data.accounts[masterIdx].size += (newPnlTrade / rate);
+            
+            alert("Exit Updated");
+        } 
+        // --- ADD LOGIC ---
+        else {
+            const newPnlTrade = log.direction === 'SHORT' ? (log.entry - price)*qty : (price - log.entry)*qty;
+            if(masterIdx !== -1) this.data.accounts[masterIdx].size += (newPnlTrade / rate);
+            
+            log.exits.push({ price, qty, date: exitDate });
+            
+            const currency = this.data.settings.baseCurrency;
+            const pnlBase = newPnlTrade / rate;
+            const sign = pnlBase >= 0 ? '+' : '';
+            // Optional: alert(`Exit Logged. Account: ${sign}${pnlBase.toFixed(2)} ${currency}`);
+        }
+
+        // Clean up formatting on master account
+        if(masterIdx !== -1) this.data.accounts[masterIdx].size = parseFloat(this.data.accounts[masterIdx].size.toFixed(2));
+
+        // Re-sort exits by date to keep timeline clean
+        log.exits.sort((a,b) => new Date(a.date) - new Date(b.date));
+
+        // Check if fully closed
+        const finalSold = log.exits.reduce((a,b) => a+b.qty, 0);
+        if(finalSold >= log.initialQty) log.outcome = 'profit'; // Simplified outcome logic
+        else log.outcome = 'open';
+
+        localStorage.setItem('tradeLogs', JSON.stringify(this.data.logs));
+        this.saveSettings(); // Save account size
+        
+        this.openManageView(this.data.editingId); 
+        this.renderLogs(); 
+        this.updateHeatWidget();
+    },
+	// --- PATCH: BROKEN RULES LOGIC ---
+    toggleBrokenRule(idx) {
+        const date = document.getElementById('journalDate').value;
+        if (!this.data.journal.entries[date]) this.data.journal.entries[date] = {};
+        
+        // Ensure array exists
+        if (!this.data.journal.entries[date].brokenRules) {
+            this.data.journal.entries[date].brokenRules = [];
+        }
+
+        const ruleText = this.data.journal.rules[idx];
+        const list = this.data.journal.entries[date].brokenRules;
+
+        // Toggle
+        if (list.includes(ruleText)) {
+            list.splice(list.indexOf(ruleText), 1);
+        } else {
+            list.push(ruleText);
+        }
+
+        this.saveJournal();
+        this.renderJournalEntry(); // Re-render to show checkmark
     },
 }; // <--- This is the end of the app object
 	
