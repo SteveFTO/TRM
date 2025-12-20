@@ -99,8 +99,62 @@
     }
     .paste-zone:hover { border-color: #3b82f6; color: #60a5fa; }
     .paste-zone.has-image { border-color: #10b981; background-color: rgba(16, 185, 129, 0.1); color: #34d399; }
+	/* --- PATCH: IMMERSIVE LANDSCAPE MODE --- */
+    
+    /* 1. Hide "App Chrome" on Phones in Landscape */
+    @media (orientation: landscape) and (max-height: 600px) {
+        header, nav, #view-logs > .flex.gap-2.mb-4 { /* Hides Header, Nav, and Search Bar */
+            display: none !important;
+        }
+        #mainContainer {
+            padding-bottom: 0 !important; /* Remove nav padding */
+            padding-top: 10px !important; /* Small top spacing */
+        }
+        #view-logs {
+            height: 100vh;
+            padding: 0 !important;
+        }
+        #logsTableWrapper {
+            border-radius: 0 !important; /* Full width look */
+            border: none !important;
+            height: 100vh !important;
+        }
+        
+        /* Force Grid to 16 Columns on Landscape Mobile */
+        .log-grid-layout {
+            grid-template-columns: repeat(16, minmax(0, 1fr)) !important;
+        }
+        
+        /* Reveal the Extra Data Columns */
+        .landscape-data {
+            display: block !important;
+        }
+        .portrait-only {
+            display: none !important;
+        }
+    }
+
+    /* 2. Desktop/Tablet Support (Width based) */
+    @media (min-width: 768px) {
+        .log-grid-layout {
+            grid-template-columns: repeat(16, minmax(0, 1fr)) !important;
+        }
+        .landscape-data { display: block !important; }
+        .portrait-only { display: none !important; }
+    }
+	.paste-zone.has-image { border-color: #10b981; background-color: rgba(16, 185, 129, 0.1); color: #34d399; }
+
+    /* --- PASTE PATCH 2 HERE --- */
+    /* Hide the top nav rotate hint on Desktop or Landscape */
+    @media (min-width: 768px) {
+        #topNavRotateHint { display: none !important; }
+    }
+    @media (orientation: landscape) {
+        #topNavRotateHint { display: none !important; }
+    }
   </style>
 </head>
+
 <body class="flex flex-col h-screen overflow-hidden text-slate-200">
 
 <!-- LICENSE GATE OVERLAY -->
@@ -140,13 +194,20 @@
       </defs>
     </svg>
     
-    <div class="flex gap-1">
-        <button onclick="app.switchView('help')" class="text-slate-400 hover:text-white p-2">
+    <div class="flex gap-1 items-center">
+          
+          <div id="topNavRotateHint" class="hidden text-amber-400 animate-pulse mr-2 flex items-center gap-1">
+              <span class="text-[9px] font-bold uppercase block text-amber-400">Rotate</span>
+              <i data-lucide="smartphone" class="w-5 h-5 rotate-90"></i>
+          </div>
+
+          <button onclick="app.switchView('help')" class="text-slate-400 hover:text-white p-2 transition-colors">
             <i data-lucide="circle-help" class="w-6 h-6"></i>
-        </button>
-        <button onclick="app.switchView('settings')" class="text-slate-400 hover:text-white p-2">
+          </button>
+          
+          <button onclick="app.switchView('settings')" class="text-slate-400 hover:text-white p-2 transition-colors">
             <i data-lucide="settings" class="w-6 h-6"></i>
-        </button>
+          </button>
     </div>
   </header>
 
@@ -370,241 +431,292 @@
         <div class="h-24"></div>
     </div>
 
-    <div id="view-help" class="hidden p-4 max-w-lg mx-auto slide-in pt-10 pb-24">
-        <div class="flex items-center gap-2 mb-6">
-            <button onclick="app.switchView('calculator')" class="text-slate-400 hover:text-white">
-                <i data-lucide="arrow-left" class="w-6 h-6"></i>
-            </button>
-            <h1 class="text-2xl font-bold text-white">RiskDesk Guide</h1>
-        </div>
-
-        <div class="space-y-3">
+	<div id="view-help" class="hidden absolute inset-0 z-50 bg-slate-900 overflow-y-auto pb-20 animate-in fade-in slide-in-from-bottom-4 duration-300">
             
-            <details class="group bg-slate-800 rounded-xl border border-slate-700 overflow-hidden open:ring-1 open:ring-blue-500/50" open>
-                <summary class="flex justify-between items-center p-4 cursor-pointer select-none bg-slate-800 hover:bg-slate-750">
-                    <h3 class="font-bold text-white flex items-center gap-2">
-                        <i data-lucide="settings" class="w-4 h-4 text-blue-400"></i> Setup & Stats Mode
-                    </h3>
-                    <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 transition-transform group-open:rotate-180"></i>
-                </summary>
-                <div class="p-4 pt-0 text-sm text-slate-300 space-y-3 border-t border-slate-700/50 mt-2">
-                    <p>Configure your environment in <strong>Settings</strong>. The most critical new feature is the <strong>Stats Mode Toggle</strong>.</p>
-                    
-                    <div>
-                        <strong class="text-white block text-xs uppercase mb-2">Impact of "Include Partials" Toggle</strong>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-[10px] text-left border-collapse">
-                                <thead>
-                                    <tr class="border-b border-slate-600 text-slate-400">
-                                        <th class="py-1">Metric</th>
-                                        <th class="py-1 text-emerald-400">OFF (Strict)</th>
-                                        <th class="py-1 text-blue-400">ON (Dynamic)</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="text-slate-300">
-                                    <tr class="border-b border-slate-700/50">
-                                        <td class="py-2 font-bold">Total Net R</td>
-                                        <td class="py-2">Calculated on ALL trades (Matches Bank)</td>
-                                        <td class="py-2">Calculated on ALL trades (Matches Bank)</td>
-                                    </tr>
-                                    <tr class="border-b border-slate-700/50">
-                                        <td class="py-2 font-bold">Win Rate %</td>
-                                        <td class="py-2">Final results only. Accurate.</td>
-                                        <td class="py-2">Includes active partials. Volatile.</td>
-                                    </tr>
-                                    <tr class="border-b border-slate-700/50">
-                                        <td class="py-2 font-bold">Avg Win ($/R)</td>
-                                        <td class="py-2">Final results only. Clean avg.</td>
-                                        <td class="py-2">Realized so far. <strong>Lower</strong> (due to partials).</td>
-                                    </tr>
-                                    <tr class="border-b border-slate-700/50">
-                                        <td class="py-2 font-bold">RRR</td>
-                                        <td class="py-2">True Strategy Edge.</td>
-                                        <td class="py-2">Current "Banked" Ratio. <strong>Lower.</strong></td>
-                                    </tr>
-                                    <tr>
-                                        <td class="py-2 font-bold">Expectancy</td>
-                                        <td class="py-2">True Edge per Trade.</td>
-                                        <td class="py-2">Current Cashflow Expectancy.</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <p class="text-[10px] text-slate-500 mt-2 italic">
-                            <strong>Recommendation:</strong> Use <strong>OFF (Strict)</strong> to analyze your strategy's long-term edge. Use <strong>ON (Dynamic)</strong> to see your current cashflow activity.
-                        </p>
-                    </div>
-                </div>
-            </details>
+            <div class="sticky top-0 bg-slate-900/95 backdrop-blur z-20 border-b border-slate-800 p-4 flex items-center gap-3 shadow-lg">
+                <button onclick="app.switchView('calculator')" class="bg-slate-800 hover:bg-slate-700 p-2 rounded-lg text-slate-400 hover:text-white transition-colors">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                </button>
+                <h2 class="text-lg font-black text-white uppercase tracking-wider">User Guide</h2>
+            </div>
 
-            <details class="group bg-slate-800 rounded-xl border border-slate-700 overflow-hidden open:ring-1 open:ring-blue-500/50">
-                <summary class="flex justify-between items-center p-4 cursor-pointer select-none bg-slate-800 hover:bg-slate-750">
-                    <h3 class="font-bold text-white flex items-center gap-2">
-                        <i data-lucide="sliders" class="w-4 h-4 text-emerald-400"></i> Defining Risk
-                    </h3>
-                    <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 transition-transform group-open:rotate-180"></i>
-                </summary>
-                <div class="p-4 pt-0 text-sm text-slate-300 space-y-3 border-t border-slate-700/50 mt-2">
-                    <p>RiskDesk offers two distinct mathematical models for sizing your trades:</p>
-                    
-                    <div class="bg-slate-900/50 p-2 rounded border-l-2 border-emerald-500">
-                        <strong class="text-white text-xs block">Model A: Equity Risk % (Standard)</strong>
-                        <p class="text-xs text-slate-400">"I want to lose exactly 1.0% of my account if I'm wrong."</p>
-                        <p class="text-[10px] text-slate-500 mt-1">The calculator adjusts your share size based on your Stop Loss width. A tight stop = more shares. A wide stop = fewer shares.</p>
-                    </div>
+            <div class="max-w-2xl mx-auto p-4 space-y-4">
 
-                    <div class="bg-slate-900/50 p-2 rounded border-l-2 border-blue-500">
-                        <strong class="text-white text-xs block">Model B: Position Size %</strong>
-                        <p class="text-xs text-slate-400">"I want to put 10% of my capital into this stock."</p>
-                        <p class="text-[10px] text-slate-500 mt-1">Your share count is fixed based on allocation. Your Risk % will fluctuate depending on how wide your stop is.</p>
-                    </div>
-                </div>
-            </details>
-
-            <details class="group bg-slate-800 rounded-xl border border-slate-700 overflow-hidden open:ring-1 open:ring-blue-500/50">
-                <summary class="flex justify-between items-center p-4 cursor-pointer select-none bg-slate-800 hover:bg-slate-750">
-                    <h3 class="font-bold text-white flex items-center gap-2">
-                        <i data-lucide="flame" class="w-4 h-4 text-red-400"></i> Heat vs. NER
-                    </h3>
-                    <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 transition-transform group-open:rotate-180"></i>
-                </summary>
-                <div class="p-4 pt-0 text-sm text-slate-300 space-y-3 border-t border-slate-700/50 mt-2">
-                    <p>The Dashboard (top left) tracks two critical safety metrics:</p>
-
-                    <div>
-                        <strong class="text-slate-200 block text-xs">1. Open Heat (Gross Exposure)</strong>
-                        <p class="text-xs text-slate-400">The "Worst Case Scenario." If every single open trade hit its stop loss simultaneously, this is the % of equity you would lose. Professionals typically cap this at 6%.</p>
-                    </div>
-
-                    <div>
-                        <strong class="text-amber-400 block text-xs">2. NER (New Exposure Risk)</strong>
-                        <p class="text-xs text-slate-400">This tracks "Unfinanced Risk." It is your Gross Exposure <em>minus</em> any profits you have already banked on those trades.</p>
-                        <ul class="list-disc ml-4 mt-1 text-[10px] text-slate-500">
-                            <li><strong>Example:</strong> A recent position was opened with a -0.25% EC risk based on entry and stop loss. If three positions are now unfinanced, NER totals -0.75% EC. </li>
-                            <li><strong>Goal:</strong> Once you bank enough profit to cover the remaining risk, the trade becomes "Risk Free" or at least much reduced as stop slippage during significant events can still occur.  The <span class="text-amber-500 px-1 border border-amber-500/50 rounded text-[9px]">NER</span> badge disappears from the logs.</li>
-                        </ul>
-                    </div>
-                </div>
-            </details>
-
-            <details class="group bg-slate-800 rounded-xl border border-slate-700 overflow-hidden open:ring-1 open:ring-blue-500/50">
-                <summary class="flex justify-between items-center p-4 cursor-pointer select-none bg-slate-800 hover:bg-slate-750">
-                    <h3 class="font-bold text-white flex items-center gap-2">
-                        <i data-lucide="calculator" class="w-4 h-4 text-purple-400"></i> Calculating & Logging
-                    </h3>
-                    <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 transition-transform group-open:rotate-180"></i>
-                </summary>
-                <div class="p-4 pt-0 text-sm text-slate-300 space-y-3 border-t border-slate-700/50 mt-2">
-                    <ol class="list-decimal ml-4 space-y-2 text-xs text-slate-400">
-                        <li><strong>Input Data:</strong> Enter Ticker, Entry Price, and Stop Loss. You can use a "Single" stop or "Staggered" stops (system will calculate the weighted average).</li>
-                        <li><strong>Review sizing:</strong> The app calculates share counts for <em>all</em> your accounts simultaneously, but only logs the "Master" account data.</li>
-                        <li><strong>Strategy & Notes:</strong> Tag the trade with a strategy (e.g., "Gap & Go") to unlock detailed performance analytics later.</li>
-                        <li><strong>Chart Capture:</strong> Before logging, paste a screenshot of your chart into the "Paste Zone" (Ctrl+V) to save it with the trade record. You can also do this post logging by editing the trade</li>
-                        <li><strong>Log It:</strong> Tap "Add to Log" to commit the trade.</li>
-                    </ol>
-                </div>
-            </details>
-
-            <details class="group bg-slate-800 rounded-xl border border-slate-700 overflow-hidden open:ring-1 open:ring-blue-500/50">
-                <summary class="flex justify-between items-center p-4 cursor-pointer select-none bg-slate-800 hover:bg-slate-750">
-                    <h3 class="font-bold text-white flex items-center gap-2">
-                        <i data-lucide="layers" class="w-4 h-4 text-blue-400"></i> Management & Exits
-                    </h3>
-                    <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 transition-transform group-open:rotate-180"></i>
-                </summary>
-                <div class="p-4 pt-0 text-sm text-slate-300 space-y-3 border-t border-slate-700/50 mt-2">
-                    <p class="text-xs text-slate-400">Tap the <i data-lucide="pencil" class="w-3 h-3 inline"></i> Pencil icon on any log to open the Management Console.</p>
-                    
-                    <div>
-                        <strong class="text-white block text-xs">Partial Exits</strong>
-                        <p class="text-xs text-slate-400">Log partial sells here. The app tracks the "R-Multiple" of every specific chunk you sell. Selling reduces your Open Heat and lowers your NER.</p>
-                    </div>
-
-                    <div>
-                        <strong class="text-white block text-xs">Edits & Updates</strong>
-                        <p class="text-xs text-slate-400">Tap the <i data-lucide="settings-2" class="w-3 h-3 inline"></i> icon in the header to fix entry errors, update notes, or adjust stops.</p>
-                    </div>
-
-                    <div>
-                        <strong class="text-white block text-xs">Chart Gallery</strong>
-                        <p class="text-xs text-slate-400">You can attach an "Exit Chart" here to compare your entry vs. your exit. Tap any image to view it full screen.</p>
-                    </div>
-                </div>
-            </details>
-
-            <details class="group bg-slate-800 rounded-xl border border-slate-700 overflow-hidden open:ring-1 open:ring-blue-500/50">
-                <summary class="flex justify-between items-center p-4 cursor-pointer select-none bg-slate-800 hover:bg-slate-750">
-                    <h3 class="font-bold text-white flex items-center gap-2">
-                        <i data-lucide="bar-chart-2" class="w-4 h-4 text-indigo-400"></i> Stats & Insights
-                    </h3>
-                    <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 transition-transform group-open:rotate-180"></i>
-                </summary>
-                <div class="p-4 pt-0 text-sm text-slate-300 space-y-3 border-t border-slate-700/50 mt-2">
-                    
-                    <div>
-                        <strong class="text-indigo-300 block text-xs mb-1">Pattern Recognition</strong>
-                        <p class="text-[10px] text-slate-400">The app automatically scans your history for patterns. It highlights strengths (e.g., "Best Strategy") and flags risks (e.g., "Negative Skew" - where losses are bigger than wins).</p>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-2">
+                <details class="group bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+                    <summary class="flex items-center justify-between p-4 cursor-pointer list-none bg-slate-800 hover:bg-slate-700/50 transition-colors">
+                        <h3 class="text-amber-400 font-bold uppercase text-xs tracking-widest flex items-center gap-2">
+                            <i data-lucide="settings" class="w-4 h-4"></i> Setup & Configuration
+                        </h3>
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 transition-transform group-open:rotate-180"></i>
+                    </summary>
+                    <div class="p-4 pt-0 text-sm text-slate-300 leading-relaxed border-t border-slate-700/50 mt-2 space-y-4">
+                        
                         <div>
-                            <span class="text-white text-[10px] font-bold block">Growth</span>
-                            <span class="text-[10px] text-slate-500">Your equity curve based on Risk Units (R).</span>
+                            <strong class="text-white block mb-1">Accounts & Master Account</strong>
+                            <p class="text-xs text-slate-400">Define your trading accounts in Settings. You must select one as the <strong>Master Account</strong> using the radio button. This account's size is used as the denominator for "Equity Contribution (EC%)" calculations, allowing you to track how individual trades impact your total net worth across all platforms.</p>
                         </div>
+
                         <div>
-                            <span class="text-white text-[10px] font-bold block">Drawdown</span>
-                            <span class="text-[10px] text-slate-500">Visualizes the depth of pain/loss from your equity peak.</span>
+                            <strong class="text-white block mb-1">Currency & FX API</strong>
+                            <p class="text-xs text-slate-400">Set your Global Base Currency (e.g., GBP, USD). If you regularly trade US stocks you can set that as your trade default, the app uses a live <strong>FX API</strong> to fetch real-time rates (e.g., GBP/USD) for accurate position sizing. </p>
                         </div>
+
                         <div>
-                            <span class="text-white text-[10px] font-bold block">Duration</span>
-                            <span class="text-[10px] text-slate-500">Time vs. Money. Are you holding losers too long?</span>
+                            <strong class="text-white block mb-1">Strategy Manager</strong>
+                            <p class="text-xs text-slate-400">Create custom tags for your setups (e.g., "Gap & Go", "Reversal", "Breakout"). These tags are used throughout the app to filter Logs and analyze performance in Stats.</p>
                         </div>
+
+                        <div class="bg-slate-900/50 p-3 rounded border border-slate-600">
+                            <strong class="text-white block mb-2 text-xs uppercase">Stats Configuration: Partials Impact</strong>
+                            <p class="text-[10px] text-slate-400 mb-3">Found in Settings. This toggle controls how your statistics are calculated.</p>
+                            
+                            <div class="overflow-hidden rounded border border-slate-700">
+                                <table class="w-full text-left text-[10px]">
+                                    <thead class="bg-slate-700 text-slate-200 font-bold uppercase">
+                                        <tr>
+                                            <th class="p-2 border-r border-slate-600">Feature</th>
+                                            <th class="p-2 border-r border-slate-600 text-emerald-400">OFF (Strict Mode)</th>
+                                            <th class="p-2 text-blue-400">ON (Dynamic Mode)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-700 bg-slate-800">
+                                        <tr>
+                                            <td class="p-2 font-bold text-slate-400 border-r border-slate-700">Math</td>
+                                            <td class="p-2 border-r border-slate-700">Calculates averages using ONLY fully closed trades.</td>
+                                            <td class="p-2">Includes Realized P&L from active trades (Partials).</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="p-2 font-bold text-slate-400 border-r border-slate-700">Use Case</td>
+                                            <td class="p-2 border-r border-slate-700">Conservative. "What is my proven, banked edge?"</td>
+                                            <td class="p-2">Cashflow. "How is my account growing right now?"</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
                         <div>
-                            <span class="text-white text-[10px] font-bold block">Distribution</span>
-                            <span class="text-[10px] text-slate-500">A bell curve of your R-multiples. Ideally skewed right.</span>
+                            <strong class="text-white block mb-1">Data Management</strong>
+                            <ul class="list-disc ml-4 text-xs text-slate-400 space-y-1">
+                                <li><strong>Backup & Restore:</strong> Download your entire history as a JSON file. Do this regularly.</li>
+                                <li><strong>Danger Zone:</strong> Located at the bottom of Settings. This performs a Factory Reset, deleting all Logs, Accounts, and Journal entries. <span class="text-red-400">This cannot be undone.</span></li>
+                            </ul>
                         </div>
                     </div>
-                </div>
-            </details>
+                </details>
 
-            <details class="group bg-slate-800 rounded-xl border border-slate-700 overflow-hidden open:ring-1 open:ring-blue-500/50">
-                <summary class="flex justify-between items-center p-4 cursor-pointer select-none bg-slate-800 hover:bg-slate-750">
-                    <h3 class="font-bold text-white flex items-center gap-2">
-                        <i data-lucide="database" class="w-4 h-4 text-slate-400"></i> Data & Backup
-                    </h3>
-                    <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 transition-transform group-open:rotate-180"></i>
-                </summary>
-                <div class="p-4 pt-0 text-sm text-slate-300 space-y-3 border-t border-slate-700/50 mt-2">
-                    <p class="text-xs text-slate-400">Your data is stored locally in your browser/device.</p>
-                    
-                    <ul class="list-disc ml-4 space-y-1 text-xs text-slate-400">
-                        <li><strong>Backup:</strong> Use the Backup button in Settings to download a JSON file. Do this weekly.</li>
-                        <li><strong>Export:</strong> Use the Download icon on the Logs page to get a CSV spreadsheet for Excel/Sheets.</li>
-                        <li><strong>Restore:</strong> You can load a previous JSON backup to restore your history (e.g., moving to a new phone).</li>
-                    </ul>
+                <details class="group bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+                    <summary class="flex items-center justify-between p-4 cursor-pointer list-none bg-slate-800 hover:bg-slate-700/50 transition-colors">
+                        <h3 class="text-blue-400 font-bold uppercase text-xs tracking-widest flex items-center gap-2">
+                            <i data-lucide="calculator" class="w-4 h-4"></i> Using The Calculator
+                        </h3>
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 transition-transform group-open:rotate-180"></i>
+                    </summary>
+                    <div class="p-4 pt-0 text-sm text-slate-300 leading-relaxed border-t border-slate-700/50 mt-2 space-y-4">
+                        
+                        <div>
+                            <strong class="text-white block mb-1">Defining Risk</strong>
+                            <p class="text-xs text-slate-400 mb-2">RiskDesk calculates position size based on the distance between your Entry and Stop Loss. You can choose between two models:</p>
+                            <ul class="list-disc ml-4 text-xs text-slate-400 space-y-1">
+                                <li><strong>Equity Risk %:</strong> "I want to risk 1.0% of my account." The app adjusts share size so that if you hit your stop, you lose exactly that amount.</li>
+                                <li><strong>Position Size %:</strong> "I want to invest 10% of my cash." The app fixes the share count, and your Risk % fluctuates based on the stop width.</li>
+								<li><strong>Trade Currency:</strong> Change your default Trade currency if necessary.  The app will call an API to get the FX rate between your account currency and chosen Trade currency to ensure accurate position sizing based your defined risk.</li>
+                            </ul>
+                        </div>
+
+                        <div>
+                            <strong class="text-white block mb-1">Context & Logging</strong>
+                            <p class="text-xs text-slate-400">Select a <strong>Strategy</strong> tag and add context notes (e.g., "Market choppy, taking smaller size") before logging. This data is crucial for the "Stats & Insights" engine later.</p>
+                        </div>
+
+                        <div>
+                            <strong class="text-white block mb-1">Chart Capture</strong>
+                            <p class="text-xs text-slate-400">You can paste a chart image directly from your clipboard (Ctrl+V or long-press) into the "Paste Zone" on the calculator. This saves the setup chart permanently with the trade record.</p>
+                        </div>
+                    </div>
+                </details>
+
+                <details class="group bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+                    <summary class="flex items-center justify-between p-4 cursor-pointer list-none bg-slate-800 hover:bg-slate-700/50 transition-colors">
+                        <h3 class="text-emerald-400 font-bold uppercase text-xs tracking-widest flex items-center gap-2">
+                            <i data-lucide="list" class="w-4 h-4"></i> Logs & Viewing Modes
+                        </h3>
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 transition-transform group-open:rotate-180"></i>
+                    </summary>
+                    <div class="p-4 pt-0 text-sm text-slate-300 leading-relaxed border-t border-slate-700/50 mt-2 space-y-4">
+                        
+                        <div>
+                            <strong class="text-white block mb-1">Manual Log & Tools</strong>
+                            <p class="text-xs text-slate-400 mb-2">Use the <i data-lucide="plus" class="w-3 h-3 inline"></i> button to manually record past trades. The header also contains:</p>
+                            <ul class="list-disc ml-4 text-xs text-slate-400 grid grid-cols-2 gap-1">
+                                <li><strong>Search:</strong> Ticker or Strategy.</li>
+                                <li><strong>Filter:</strong> Open, Closed, Wins, Losses.</li>
+                                <li><strong>CSV:</strong> Export data for Excel.</li>
+                                <li><strong>Camera:</strong> Share a branded image.</li>
+                            </ul>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-slate-900 p-3 rounded border border-slate-600">
+                                <strong class="text-white block mb-1 text-xs uppercase border-b border-slate-700 pb-1">Portrait Mode (Mobile)</strong>
+                                <p class="text-[10px] text-slate-400 mb-2">Optimized for quick scanning on small screens.</p>
+                                <ul class="text-[10px] text-slate-500 list-disc ml-3 space-y-0.5">
+                                    <li>Date & Time</li>
+                                    <li>Ticker & Direction</li>
+                                    <li>Risk % & R-Multiple</li>
+                                    <li>P&L / Status Badge</li>
+                                </ul>
+                            </div>
+                            <div class="bg-slate-900 p-3 rounded border border-slate-600">
+                                <strong class="text-white block mb-1 text-xs uppercase border-b border-slate-700 pb-1">Landscape Mode (Pro View)</strong>
+                                <p class="text-[10px] text-slate-400 mb-2">Rotate your phone to reveal detailed accounting columns.</p>
+                                <ul class="text-[10px] text-slate-500 list-disc ml-3 space-y-0.5">
+                                    <li><strong class="text-slate-300">Qty:</strong> Original vs Current shares.</li>
+                                    <li><strong class="text-slate-300">Stop:</strong> Weighted avg active stop.</li>
+                                    <li><strong class="text-slate-300">EC%:</strong> Equity Contribution % (Impact).</li>
+                                    <li><strong class="text-slate-300">Gain%:</strong> Price movement captured.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </details>
+
+                <details class="group bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+                    <summary class="flex items-center justify-between p-4 cursor-pointer list-none bg-slate-800 hover:bg-slate-700/50 transition-colors">
+                        <h3 class="text-purple-400 font-bold uppercase text-xs tracking-widest flex items-center gap-2">
+                            <i data-lucide="layers" class="w-4 h-4"></i> Management & Exits
+                        </h3>
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 transition-transform group-open:rotate-180"></i>
+                    </summary>
+                    <div class="p-4 pt-0 text-sm text-slate-300 leading-relaxed border-t border-slate-700/50 mt-2 space-y-4">
+                        <p class="text-xs text-slate-400">Tap any Log entry to open the Management View.</p>
+
+                        <div>
+                            <strong class="text-white block mb-1">Stop Adjustments</strong>
+                            <p class="text-xs text-slate-400">Update your "Current Stop" as the trade moves in your favor. This automatically updates your "Open Heat" metric on the calculator dashboard.</p>
+                        </div>
+
+                        <div>
+                            <strong class="text-white block mb-1">Partial Exits</strong>
+                            <p class="text-xs text-slate-400">Record partial sells by specifying Price, Quantity, and Date/Time. The system calculates the realized P&L for that specific chunk and reduces your <strong>NER (Net Exposure Risk)</strong>. You can Edit or Delete exits if mistakes are made.</p>
+                        </div>
+
+                        <div>
+                            <strong class="text-white block mb-1">Chart Gallery</strong>
+                            <p class="text-xs text-slate-400">Stores all images associated with the trade (Entry Chart, Exit Chart, and any Journal updates). Tap any image to view it full screen.</p>
+                        </div>
+                    </div>
+                </details>
+
+                <details class="group bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+                    <summary class="flex items-center justify-between p-4 cursor-pointer list-none bg-slate-800 hover:bg-slate-700/50 transition-colors">
+                        <h3 class="text-cyan-400 font-bold uppercase text-xs tracking-widest flex items-center gap-2">
+                            <i data-lucide="bar-chart-2" class="w-4 h-4"></i> Stats & Insights
+                        </h3>
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 transition-transform group-open:rotate-180"></i>
+                    </summary>
+                    <div class="p-4 pt-0 text-sm text-slate-300 leading-relaxed border-t border-slate-700/50 mt-2 space-y-4">
+                        
+                        <div>
+                            <strong class="text-white block mb-1">Trading Insights</strong>
+                            <p class="text-xs text-slate-400">An automated engine that highlights patterns in your data (e.g., "Best Strategy", "Negative Skew", "High Scratch Rate").</p>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3 text-xs">
+                            <div>
+                                <strong class="text-white block">Financial Health</strong>
+                                <span class="text-slate-500">Win Rate, Profit Factor, Expectancy.</span>
+                            </div>
+                            <div>
+                                <strong class="text-white block">Strategy Edge</strong>
+                                <span class="text-slate-500">Performance breakdown by Strategy tag.</span>
+                            </div>
+                            <div>
+                                <strong class="text-white block">Risk & Behavior</strong>
+                                <span class="text-slate-500">Avg Win vs Avg Loss size (R). Consistency Heatmap.</span>
+                            </div>
+                            <div>
+                                <strong class="text-white block">Account Growth</strong>
+                                <span class="text-slate-500">Equity curve visualization.</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <strong class="text-white block mb-1">Filters & Partials Icon</strong>
+                            <p class="text-xs text-slate-400">Use the dropdowns to filter by Strategy or Timeframe (Last 20 vs All Time). The <i data-lucide="split" class="w-3 h-3 inline text-blue-400"></i> icon in headers indicates that "Include Partials" mode is active.</p>
+                        </div>
+                    </div>
+                </details>
+
+                <details class="group bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+                    <summary class="flex items-center justify-between p-4 cursor-pointer list-none bg-slate-800 hover:bg-slate-700/50 transition-colors">
+                        <h3 class="text-pink-400 font-bold uppercase text-xs tracking-widest flex items-center gap-2">
+                            <i data-lucide="book-open" class="w-4 h-4"></i> The Journal
+                        </h3>
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 transition-transform group-open:rotate-180"></i>
+                    </summary>
+                    <div class="p-4 pt-0 text-sm text-slate-300 leading-relaxed border-t border-slate-700/50 mt-2 space-y-4">
+                        
+                        <div>
+                            <strong class="text-white block mb-1">Rules & Philosophy</strong>
+                            <p class="text-xs text-slate-400">Define your "Golden Rules" and overall philosophy in the Journal settings tab. These persist and serve as your daily checklist.</p>
+                        </div>
+
+                        <div>
+                            <strong class="text-white block mb-1">Daily Log & Market Activity</strong>
+                            <p class="text-xs text-slate-400">The Journal automatically pulls in every trade, partial exit, and P&L event for the selected date, giving you an instant summary of your session.</p>
+                        </div>
+
+                        <div class="bg-slate-900/50 p-3 rounded border border-slate-600">
+                            <strong class="text-white block mb-2 text-xs uppercase">Discipline Tracking</strong>
+                            <p class="text-xs text-slate-400">You must answer: <strong>"Did you follow your rules today?"</strong></p>
+                            <ul class="list-disc ml-4 text-xs text-slate-400 mt-2 space-y-1">
+                                <li><strong>YES:</strong> Marks the day Green on the heatmap.</li>
+                                <li><strong>NO:</strong> Marks the day Red. A checklist of your defined rules appears, allowing you to select exactly <em>which</em> rules you broke. This helps track behavioral leaks over time.</li>
+                            </ul>
+                        </div>
+
+                        <div>
+                            <strong class="text-white block mb-1">Review</strong>
+                            <p class="text-xs text-slate-400">Tag your Emotions (Anxious, Bored, Focused), write daily notes, and paste chart images directly into the entry.</p>
+                        </div>
+                    </div>
+                </details>
+
+                <details class="group bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+                    <summary class="flex items-center justify-between p-4 cursor-pointer list-none bg-slate-800 hover:bg-slate-700/50 transition-colors">
+                        <h3 class="text-slate-400 font-bold uppercase text-xs tracking-widest flex items-center gap-2">
+                            <i data-lucide="shield" class="w-4 h-4"></i> Privacy & Sharing
+                        </h3>
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 transition-transform group-open:rotate-180"></i>
+                    </summary>
+                    <div class="p-4 pt-0 text-sm text-slate-300 leading-relaxed border-t border-slate-700/50 mt-2 space-y-3">
+                         <div class="flex gap-3">
+                            <i data-lucide="eye" class="w-5 h-5 text-slate-500 shrink-0"></i>
+                            <div>
+                                <strong class="text-white text-xs block">Privacy Mode</strong>
+                                <span class="text-xs text-slate-400">Tap the Eye icon in the top header. This blurs all dollar/currency values across the Logs, Stats, and Journal. Ideal for working in public or sharing screens.</span>
+                            </div>
+                        </div>
+                        <div class="flex gap-3">
+                            <i data-lucide="share-2" class="w-5 h-5 text-slate-500 shrink-0"></i>
+                            <div>
+                                <strong class="text-white text-xs block">Social Sharing</strong>
+                                <span class="text-xs text-slate-400">Tap the Camera icon on any Log row, Stats card, or Journal page to generate a clean, branded image formatted for X (Twitter) and Discord.  Combine with privacy mode to avoid sharing account profit and loss values.</span>
+                            </div>
+                        </div>
+                    </div>
+                </details>
+
+                <div class="p-4 text-[10px] text-slate-500 text-center leading-relaxed opacity-75 border-t border-slate-800 mt-4">
+                    <p><strong>Local Data Only:</strong> RiskDesk is Offline-First. Data is stored in your browser. Clearing cache deletes your data. Back up regularly.</p>
+                    <p class="mt-2"><strong>Disclaimer:</strong> This tool is for educational and journaling purposes only. It is not financial advice. Trading involves risk.</p>
                 </div>
-            </details>
-			
-			<details class="group bg-slate-900/50 rounded-xl border border-red-900/30 overflow-hidden open:ring-1 open:ring-red-500/50 mt-4">
-                <summary class="flex justify-between items-center p-4 cursor-pointer select-none hover:bg-slate-800 transition-colors">
-                    <h3 class="font-bold text-slate-400 flex items-center gap-2 text-xs uppercase tracking-wider">
-                        <i data-lucide="alert-triangle" class="w-4 h-4 text-red-500"></i> Disclaimer
-                    </h3>
-                    <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 transition-transform group-open:rotate-180"></i>
-                </summary>
-                <div class="p-4 pt-0 text-[10px] text-slate-500 space-y-2 border-t border-slate-800 mt-2 leading-relaxed text-justify">
-                    <p><strong>For Educational & Informational Purposes Only:</strong> RiskDesk is a software tool designed to assist with mathematical calculations and record-keeping. It does not constitute financial, investment, or trading advice.</p>
-                    
-                    <p><strong>High Risk Warning:</strong> Trading can carry a high level of risk and may not be suitable for all investors. Before deciding to trade, you should carefully consider your investment objectives, level of experience, and risk appetite.</p>
-                    
-                    <p><strong>No Liability:</strong> The calculations provided by this tool are based on user inputs. The developers and distributors of RiskDesk accept no liability for any loss or damage, including without limitation to, any loss of profit, which may arise directly or indirectly from use of or reliance on such information.</p>
-                    
-                    <p><strong>Software "As Is":</strong> This software is provided "as is" without warranty of any kind. You are responsible for verifying all position sizes and calculations before executing live trades with a broker.</p>
-                </div>
-            </details>
+                
+                <div class="h-10"></div>
+
+            </div>
         </div>
-        <div class="h-24"></div>
-    </div>
 
 
     <div id="view-logs" class="hidden p-4 max-w-4xl mx-auto h-full flex flex-col">
@@ -631,13 +743,29 @@
             </button>
         </div>
 
-        <div id="logsTableWrapper" class="bg-slate-900 rounded-xl border border-slate-800 flex-1 overflow-hidden flex flex-col">
-            <div class="grid grid-cols-10 gap-2 p-3 bg-slate-800 text-xs font-bold text-slate-400 border-b border-slate-700">
+       <div id="logsTableWrapper" class="bg-slate-900 rounded-xl border border-slate-800 flex-1 overflow-hidden flex flex-col justify-start">
+            
+            <div class="shrink-0 log-grid-layout grid grid-cols-10 md:grid-cols-16 gap-2 p-3 bg-slate-800 text-xs font-bold text-slate-400 border-b border-slate-700">
                 <div class="col-span-2">DATE</div>
                 <div class="col-span-2">TICKER</div>
-                <div class="col-span-2 text-left">RISK / R</div>
-                <div class="col-span-4 text-right">STATUS / P&L</div>
+                
+                <div class="landscape-data hidden col-span-2 text-center text-slate-500">QTY (Org/Cur)</div>
+                <div class="landscape-data hidden col-span-1 text-center text-slate-500">STOP</div>
+                <div class="landscape-data hidden col-span-1 text-center text-slate-500">RISK</div>
+                <div class="landscape-data hidden col-span-2 text-center text-slate-500">PERF (EC/%)</div>
+                
+                <div class="portrait-only col-span-2 text-left">RISK / R</div>
+                
+                <div class="landscape-data hidden col-span-2 text-right">R / P&L</div>
+                
+                <div class="col-span-4 md:col-span-3 text-right md:text-center">
+                    <span class="md:hidden">P&L / STATUS</span>
+                    <span class="hidden md:inline">STATUS</span>
+                </div>
+                
+                <div class="hidden md:block md:col-span-1 text-center"></div>
             </div>
+
             <div id="logsContainer" class="overflow-y-auto flex-1 p-2 space-y-1">
                 </div>
         </div>
@@ -1553,15 +1681,11 @@ const app = {
     },
 
     // --- VIEW MANAGEMENT ---
-    // --- VIEW MANAGEMENT ---
     switchView(viewName) {
-        // 1. Hide all views
-        // ADDED 'journal' to this list so it gets hidden correctly
+        // ... existing hiding logic ...
         ['calculator', 'logs', 'stats', 'journal', 'manage', 'settings', 'help'].forEach(v => {
             const el = document.getElementById(`view-${v}`);
             if(el) el.classList.add('hidden');
-            
-            // Deactivate Nav Icon
             const nav = document.getElementById(`nav-${v}`);
             if(nav) {
                 nav.classList.remove('text-blue-500');
@@ -1569,16 +1693,23 @@ const app = {
             }
         });
 
-        // 2. Show requested view
+        // ... existing show target logic ...
         const target = document.getElementById(`view-${viewName}`);
         if (target) target.classList.remove('hidden');
         
-        // 3. Activate Nav Icon
         const activeNav = document.getElementById(`nav-${viewName}`);
         if(activeNav) {
             activeNav.classList.add('text-blue-500');
             activeNav.classList.remove('text-slate-500');
         }
+
+        // --- NEW: Toggle Top Nav Rotate Hint ---
+        const rotHint = document.getElementById('topNavRotateHint');
+        if(rotHint) {
+            if(viewName === 'logs') rotHint.classList.remove('hidden');
+            else rotHint.classList.add('hidden');
+        }
+        // ---------------------------------------
 
         // 4. View-Specific Triggers
         if (viewName === 'logs') this.renderLogs();
@@ -3981,21 +4112,25 @@ const app = {
     },
 
     renderLogs(limit = 50) {
-        // 1. INJECT UI
+        // 1. ROTATE HINT (Only on Portrait Mobile)
         const header = document.querySelector('#view-logs .flex.gap-2.mb-4');
-        if (header && !document.getElementById('logStatusFilter')) {
-            const select = document.createElement('select');
-            select.id = 'logStatusFilter';
-            select.className = 'bg-slate-800 border-none rounded-lg py-2 px-3 text-xs font-bold focus:ring-2 focus:ring-blue-500 text-slate-300 outline-none cursor-pointer hover:text-white transition-colors';
-            select.innerHTML = `<option value="ALL">All Status</option><option value="OPEN">Open (Active)</option><option value="CLOSED">Closed Only</option><option value="WIN">Wins Only</option><option value="LOSS">Losses Only</option>`;
-            select.onchange = () => app.renderLogs();
-            header.insertBefore(select, header.firstChild);
+        if (header && !document.getElementById('rotateHintBtn')) {
+            // Check if controls exist first, if not inject them
+            if (!document.getElementById('logStatusFilter')) {
+                 const select = document.createElement('select');
+                 select.id = 'logStatusFilter';
+                 select.className = 'bg-slate-800 border-none rounded-lg py-2 px-3 text-xs font-bold focus:ring-2 focus:ring-blue-500 text-slate-300 outline-none cursor-pointer hover:text-white transition-colors';
+                 select.innerHTML = `<option value="ALL">All Status</option><option value="OPEN">Open (Active)</option><option value="CLOSED">Closed Only</option><option value="WIN">Wins Only</option><option value="LOSS">Losses Only</option>`;
+                 select.onchange = () => app.renderLogs();
+                 header.insertBefore(select, header.firstChild);
+            }
+            
         }
         this.updatePrivacyIcons();
 
-        // 2. DATA PREP
+        // 2. DATA PREP (Filter Logic)
         const statusFilter = document.getElementById('logStatusFilter') ? document.getElementById('logStatusFilter').value : 'ALL';
-        const searchVal = document.getElementById('logSearch').value.toUpperCase();
+        const searchVal = document.getElementById('logSearch') ? document.getElementById('logSearch').value.toUpperCase() : '';
         const container = document.getElementById('logsContainer');
         if (!container) return;
 
@@ -4009,7 +4144,7 @@ const app = {
             if(statusFilter === 'ALL') return true;
             if(statusFilter === 'OPEN') return !isClosed;
             if(statusFilter === 'CLOSED') return isClosed;
-
+            
             let netR = 0;
             const riskPerShare = Math.abs(l.entry - l.stop);
             if(l.exits && l.exits.length > 0) {
@@ -4027,55 +4162,68 @@ const app = {
         allMatches.sort((a,b) => new Date(b.date) - new Date(a.date));
         const visibleLogs = allMatches.slice(0, limit);
         
-        // 3. RENDER ROWS (2-2-2-4 LAYOUT)
+        // 3. MASTER ACCOUNT (For EC%)
+        const masterAcc = this.data.accounts.find(a => a.isMaster);
+        const masterSize = masterAcc ? masterAcc.size : 10000;
+
+        // 4. RENDER ROWS
         const htmlRows = visibleLogs.map(log => {
+            // A. Base Data
             let totalSold = log.exits ? log.exits.reduce((acc, ex) => acc + ex.qty, 0) : 0;
+            let currentQty = (log.initialQty || 0) - totalSold;
             let isOpen = log.outcome === 'open';
             let realizedR = 0;
             let totalRealizedPnl = 0;
+            let totalExitProceeds = 0;
             const riskPerShare = Math.abs(log.entry - log.stop);
             
-            // Date
+            // B. Date
             let dateDisplay = log.date.substring(5, 10);
-            let timeDisplay = "";
-            if (log.date.includes('T')) {
-                const d = new Date(log.date);
-                dateDisplay = `${d.getDate()}/${d.getMonth()+1}`;
-                timeDisplay = `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
-            }
+            let timeDisplay = log.date.includes('T') ? new Date(log.date).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : "";
 
-            // Calcs
-            let realizedPnLValue = 0; 
+            // C. P&L / Stats
             if (log.exits && log.exits.length > 0) {
                 log.exits.forEach(ex => {
                     const pnlObj = this.getPnl(log, ex.price, ex.qty);
                     totalRealizedPnl += pnlObj.val;
-                    realizedPnLValue += (log.direction === 'SHORT' ? (log.entry - ex.price) : (ex.price - log.entry)) * ex.qty;
+                    totalExitProceeds += (ex.price * ex.qty);
                 });
                 const totalRiskAmount = log.initialQty * riskPerShare;
-                if (totalRiskAmount > 0) realizedR = realizedPnLValue / totalRiskAmount;
+                if (totalRiskAmount > 0) realizedR = totalRealizedPnl / (totalRiskAmount / (log.exchangeRate||1)); 
             } else if (!log.initialQty && log.exitPrice) {
                 const diff = log.direction === 'SHORT' ? (log.entry - log.exitPrice) : (log.exitPrice - log.entry);
                 realizedR = diff / riskPerShare;
                 isOpen = false;
             }
 
-            // Badges
-            let nerBadge = '';
-            if (isOpen) {
-                const remaining = (log.initialQty || 0) - totalSold;
-                if (remaining > 0) {
-                    const activeStop = (typeof log.currentStop === 'number') ? log.currentStop : log.stop;
-                    const dist = log.direction==='LONG' ? Math.max(0, log.entry-activeStop) : Math.max(0, activeStop-log.entry);
-                    if ((remaining * dist) - realizedPnLValue > 0) nerBadge = `<span class="bg-amber-500 text-slate-900 text-[9px] px-1 rounded font-bold tracking-tighter mb-0.5" title="Net Equity Risk">NER</span>`;
-                }
+            // --- LANDSCAPE METRICS ---
+            const ecPct = (totalRealizedPnl / masterSize) * 100;
+            const ecClass = ecPct > 0 ? 'text-emerald-400' : (ecPct < 0 ? 'text-red-400' : 'text-slate-500');
+            const ecDisplay = `<span class="${ecClass} font-bold">${ecPct > 0 ? '+':''}${ecPct.toFixed(2)}%</span>`;
+
+            let gainPctDisplay = '<span class="text-slate-600">-</span>';
+            if (totalSold > 0) {
+                const avgExit = totalExitProceeds / totalSold;
+                const gainPct = log.direction === 'LONG' 
+                    ? ((avgExit - log.entry) / log.entry) * 100
+                    : ((log.entry - avgExit) / log.entry) * 100;
+                const gainClass = gainPct >= 0 ? 'text-emerald-400' : 'text-red-400';
+                gainPctDisplay = `<span class="${gainClass}">${gainPct > 0 ? '+':''}${gainPct.toFixed(2)}%</span>`;
             }
 
+            let activeStop = (typeof log.currentStop === 'number') ? log.currentStop : log.stop;
+
+            // D. Badges
+            let nerBadge = '';
+            if (isOpen) {
+                const dist = log.direction==='LONG' ? Math.max(0, log.entry-activeStop) : Math.max(0, activeStop-log.entry);
+                if ((currentQty * dist) - (totalRealizedPnl*(log.exchangeRate||1)) > 0) nerBadge = `<span class="bg-amber-500 text-slate-900 text-[9px] px-1 rounded font-bold tracking-tighter mb-0.5" title="Net Equity Risk">NER</span>`;
+            }
             let statusBadge = isOpen 
                 ? (totalSold > 0 ? `<span class="text-blue-400 font-bold text-[10px]">OPEN(${Math.round((totalSold/log.initialQty)*100)}%)</span>` : `<span class="text-blue-400 font-bold text-[10px]">OPEN</span>`)
                 : (realizedR > 0.1 ? `<span class="text-emerald-400 font-bold text-[10px]">WIN</span>` : (realizedR < -0.1 ? `<span class="text-red-400 font-bold text-[10px]">LOSS</span>` : `<span class="text-slate-400 font-bold text-[10px]">SCRATCH</span>`));
 
-            // Privacy & Pnl
+            // E. Privacy & PnL Formatting
             const sym = this.getSymbol ? this.getSymbol(this.data.settings.baseCurrency) : "";
             let pnlString = '<span class="text-slate-600 text-[10px]">-</span>';
             if (totalRealizedPnl !== 0) {
@@ -4083,18 +4231,18 @@ const app = {
                     const color = totalRealizedPnl >= 0 ? 'text-emerald-500' : 'text-red-500';
                     pnlString = `<div class="text-[10px] ${color} font-bold opacity-50 select-none">****</div>`;
                 } else {
-                    const sign = totalRealizedPnl < 0 ? '-' : ''; // No '+' for positive
                     const color = totalRealizedPnl >= 0 ? 'text-emerald-500' : 'text-red-500';
-                    pnlString = `<div class="text-[10px] ${color} font-bold">${sign}${sym}${Math.abs(totalRealizedPnl).toFixed(2)}</div>`;
+                    pnlString = `<div class="text-[10px] ${color} font-bold">${totalRealizedPnl<0?'-':''}${sym}${Math.abs(totalRealizedPnl).toFixed(2)}</div>`;
                 }
             }
-
+            
             let rDisplay = (!isOpen || (log.exits && log.exits.length > 0)) ? `${realizedR>0?'+':''}${realizedR.toFixed(2)}R` : '-';
             let rClass = realizedR > 0 ? 'text-emerald-400 font-bold' : (realizedR < 0 ? 'text-red-400 font-bold' : 'text-slate-500');
 
-            // RENDER: 2-2-2-4
+            // F. HTML CONSTRUCTION (Responsive Grid)
+            // BUG FIX 1: Added 'log-row' class back so Share function can find the row
             return `
-            <div onclick="app.openManageView(${log.id})" class="log-row grid grid-cols-10 gap-2 p-3 bg-slate-800/50 border-b border-slate-700 items-center hover:bg-slate-800 transition-colors cursor-pointer active:bg-slate-700">
+            <div onclick="app.openManageView(${log.id})" class="log-row log-grid-layout grid grid-cols-10 md:grid-cols-16 gap-2 p-3 bg-slate-800/50 border-b border-slate-700 items-center hover:bg-slate-800 transition-colors cursor-pointer active:bg-slate-700">
                 
                 <div class="col-span-2">
                     <div class="text-xs text-slate-300 font-bold">${dateDisplay}</div>
@@ -4106,22 +4254,49 @@ const app = {
                     <div class="text-[10px] text-slate-400 font-mono">@ ${log.entry}</div>
                 </div>
                 
-                <div class="col-span-2 text-left">
+                <div class="landscape-data hidden col-span-2 text-center">
+                    <div class="text-xs font-mono text-white">${log.initialQty} <span class="text-slate-500">→</span> ${currentQty}</div>
+                </div>
+
+                <div class="landscape-data hidden col-span-1 text-center">
+                    <div class="text-xs font-mono text-red-400">${activeStop.toFixed(2)}</div>
+                </div>
+
+                <div class="landscape-data hidden col-span-1 text-center">
+                    <div class="text-xs text-slate-400">${log.riskVal}${log.riskMode === 'equity' ? '%' : 'sz'}</div>
+                </div>
+
+                <div class="landscape-data hidden col-span-2 text-center">
+                    <div class="flex flex-col text-[10px] font-mono">
+                        <div class="flex justify-between w-full px-1"><span>EC:</span> ${ecDisplay}</div>
+                        <div class="flex justify-between w-full px-1"><span>Px:</span> ${gainPctDisplay}</div>
+                    </div>
+                </div>
+
+                <div class="portrait-only col-span-2 text-left">
                     <div class="text-[9px] text-slate-500">${log.riskVal}${log.riskMode === 'equity' ? '%' : 'sz'}</div>
                     <div class="text-xs font-mono ${rClass}">${rDisplay}</div>
                 </div>
                 
-                <div class="col-span-4 flex justify-between items-center pl-1">
+                <div class="portrait-only col-span-4 flex justify-between items-center pl-1">
                     <div class="flex-1 flex flex-col items-end gap-0.5 mr-2">
                          ${pnlString}
                          <div class="flex items-center gap-1 justify-end">${nerBadge}${statusBadge}</div>
                     </div>
-                    
-                    <div class="flex gap-1 action-buttons">
-                        <button onclick="event.stopPropagation(); app.shareLogImage(this)" class="text-slate-400 hover:text-white bg-slate-700/50 p-2 rounded-lg" title="Share">
-                            <i data-lucide="share-2" class="w-4 h-4"></i>
-                        </button>
-                    </div>
+                    <button onclick="event.stopPropagation(); app.shareLogImage(this)" class="text-slate-400 hover:text-white bg-slate-700/50 p-2 rounded-lg action-buttons"><i data-lucide="share-2" class="w-4 h-4"></i></button>
+                </div>
+
+                <div class="landscape-data hidden col-span-2 text-right">
+                    <div class="text-xs font-mono ${rClass}">${rDisplay}</div>
+                    ${pnlString}
+                </div>
+
+                <div class="landscape-data hidden col-span-3 flex flex-col items-center justify-center gap-0.5">
+                     ${nerBadge}${statusBadge}
+                </div>
+
+                <div class="landscape-data hidden col-span-1 text-center">
+                     <button onclick="event.stopPropagation(); app.shareLogImage(this)" class="text-slate-400 hover:text-white bg-slate-700/50 p-2 rounded-lg action-buttons"><i data-lucide="share-2" class="w-4 h-4"></i></button>
                 </div>
 
             </div>`;
@@ -4707,53 +4882,176 @@ const app = {
         }
     },
 
-   // 1. Share Single Row (Mobile First)
+	// FINAL EXACT-MATCH SNAPSHOT FUNCTION
     async shareLogImage(btn, id) {
         const row = btn.closest('.log-row');
         if (!row) return;
 
+        // Visual Feedback
         const originalIcon = btn.innerHTML;
-        btn.innerHTML = `<i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i>`;
+        btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin text-blue-400"></i>`;
         lucide.createIcons();
 
         try {
-            const canvas = await html2canvas(row, { backgroundColor: '#1e293b', scale: 2 });
+            // 1. CAPTURE EXACT SCREEN DIMENSIONS
+            // We use the exact width of the row as seen on screen.
+            // This ensures the spacing (Date to Ticker) is identical.
+            const currentWidth = row.getBoundingClientRect().width;
+            
+            // Detect Grid Mode based on visibility of landscape elements
+            // (More reliable than screen width checks for layout matching)
+            const isLandscape = window.innerWidth >= 768 || (window.orientation && Math.abs(window.orientation) === 90);
+            const colCount = isLandscape ? 16 : 10;
+
+            // Visibility Maps (same as before)
+            const mapLandscape = [true, true, true, true, true, true, false, false, true, true, true];
+            const mapPortrait  = [true, true, false, false, false, false, true, true, false, false, false];
+            const activeMap = isLandscape ? mapLandscape : mapPortrait;
+
+            // --- HELPER: ENFORCE EXACT LAYOUT ---
+            const enforceLayout = (element, isHeader) => {
+                element.style.display = 'grid';
+                element.style.gridTemplateColumns = `repeat(${colCount}, minmax(0, 1fr))`;
+                element.style.gap = '0.5rem'; // Matches 'gap-2'
+                element.style.alignItems = 'center';
+                element.style.boxSizing = 'border-box';
+                element.style.width = '100%'; 
+                element.style.padding = '0.75rem'; // Matches 'p-3'
+                if(isHeader) element.style.textAlign = 'left'; 
+
+                const children = Array.from(element.children);
+                children.forEach((child, idx) => {
+                    child.style.boxSizing = 'border-box';
+                    
+                    if (idx < activeMap.length) {
+                        // A. Visibility
+                        if (!activeMap[idx]) {
+                            child.style.display = 'none';
+                            return;
+                        }
+
+                        // B. Force Display
+                        child.classList.remove('hidden', 'md:hidden', 'md:block');
+                        if(child.classList.contains('flex') || child.classList.contains('flex-col')) {
+                             child.style.display = 'flex';
+                        } else {
+                             child.style.display = 'block';
+                        }
+
+                        // C. FORCE ROW 1 (Prevent wrapping)
+                        child.style.gridRow = '1 / 1';
+
+                        // D. Force Column Span
+                        let span = 1;
+                        if (child.classList.contains('col-span-2')) span = 2;
+                        else if (child.classList.contains('col-span-3')) span = 3;
+                        else if (child.classList.contains('col-span-4')) span = 4;
+                        
+                        child.style.gridColumn = `span ${span} / span ${span}`;
+                    }
+                });
+            };
+
+            // 2. CREATE CONTAINER
+            const container = document.createElement('div');
+            container.style.position = 'absolute';
+            container.style.left = '-9999px';
+            
+            // CRITICAL FIX: Match the width exactly
+            container.style.width = `${currentWidth}px`;
+            
+            container.style.background = '#0f172a'; // Slate 900
+            container.style.borderRadius = '12px';
+            container.style.overflow = 'hidden'; 
+            container.style.fontFamily = 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif';
+            container.style.boxSizing = 'border-box';
+
+            // 3. CLONE HEADER
+            const logsContainer = document.getElementById('logsContainer');
+            if (logsContainer && logsContainer.previousElementSibling) {
+                const headerClone = logsContainer.previousElementSibling.cloneNode(true);
+                headerClone.style.backgroundColor = '#1e293b'; 
+                headerClone.style.borderBottom = '1px solid #334155';
+                headerClone.style.color = '#94a3b8'; 
+                headerClone.style.fontSize = '0.75rem';
+                headerClone.style.fontWeight = 'bold';
+                
+                enforceLayout(headerClone, true);
+                container.appendChild(headerClone);
+            }
+
+            // 4. CLONE ROW
+            const rowClone = row.cloneNode(true);
+            rowClone.style.backgroundColor = '#0f172a'; 
+            rowClone.style.color = '#e2e8f0';
+            rowClone.classList.remove('hover:bg-slate-800'); 
+            
+            enforceLayout(rowClone, false);
+
+            // Hide buttons
+            const buttons = rowClone.querySelectorAll('button, .action-buttons');
+            buttons.forEach(b => b.style.visibility = 'hidden');
+
+            container.appendChild(rowClone);
+
+            // 5. FOOTER
+            const footer = document.createElement('div');
+            footer.style.display = 'flex';
+            footer.style.justifyContent = 'space-between';
+            footer.style.alignItems = 'center';
+            footer.style.padding = '0.75rem 1rem';
+            footer.style.backgroundColor = '#020617'; 
+            footer.style.borderTop = '1px solid #1e293b';
+            footer.style.boxSizing = 'border-box';
+            
+            footer.innerHTML = `
+                <div style="display:flex; align-items:center; gap:0.5rem;">
+                    <div style="width:16px; height:16px; border-radius:4px; background: linear-gradient(to bottom right, #3b82f6, #34d399);"></div>
+                    <span style="font-size:0.75rem; font-weight:700; color:#cbd5e1; letter-spacing:0.025em;">RiskDesk</span>
+                </div>
+                <div style="font-size:0.65rem; font-family:monospace; color:#475569;">www.riskdesk.io</div>
+            `;
+            container.appendChild(footer);
+
+            // 6. CAPTURE
+            document.body.appendChild(container);
+            
+            // High Res Scale (Since width is small, we boost scale for sharpness)
+            const scale = 3; 
+
+            const canvas = await html2canvas(container, {
+                backgroundColor: '#0f172a',
+                scale: scale,
+                logging: false,
+                useCORS: true
+            });
+
+            document.body.removeChild(container);
+
+            // 7. SHARE
             canvas.toBlob(async (blob) => {
                 const file = new File([blob], `Trade_${id}.png`, { type: 'image/png' });
-
-                // STRATEGY A: Native Mobile Share Sheet (Best for iPhone)
                 if (navigator.canShare && navigator.canShare({ files: [file] })) {
                     try {
-                        await navigator.share({
-                            files: [file],
-                            title: 'Trade Log',
-                            text: `Trade: ${id}`
-                        });
-                        btn.innerHTML = originalIcon; // Reset icon immediately
+                        await navigator.share({ files: [file], title: 'Trade Log' });
+                        btn.innerHTML = originalIcon;
                         lucide.createIcons();
-                        return; // Success, stop here
-                    } catch (err) {
-                        console.log("Share Sheet cancelled or failed", err);
-                    }
+                        return;
+                    } catch (err) { console.log(err); }
                 }
-
-                // STRATEGY B: Clipboard (Desktop)
                 try {
                     await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-                    alert("Trade Copied to Clipboard!");
+                    alert("Snapshot copied to clipboard!");
                 } catch (err) {
-                    // STRATEGY C: Visual Fallback
-                    const url = URL.createObjectURL(blob);
-                    app.showImg(url);
-                    // alert("Long-press the image to save.");
+                    app.showImg(URL.createObjectURL(blob));
                 }
-                
                 btn.innerHTML = originalIcon;
                 lucide.createIcons();
             });
-        } catch (e) {
+
+        } catch(e) {
             console.error(e);
-            alert("Error creating image");
+            alert("Error creating snapshot");
             btn.innerHTML = originalIcon;
             lucide.createIcons();
         }
