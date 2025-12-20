@@ -6,7 +6,6 @@
     <title>RiskDesk - Professional Trade Risk Management</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    
     <script src="https://gumroad.com/js/gumroad.js"></script>
 
     <style>
@@ -23,6 +22,7 @@
         .glow-effect {
             box-shadow: 0 0 40px -10px rgba(59, 130, 246, 0.3);
         }
+        html { scroll-behavior: smooth; }
     </style>
 </head>
 <body class="antialiased selection:bg-blue-500 selection:text-white">
@@ -48,13 +48,13 @@
         </div>
     </nav>
 
-    <section class="pt-32 pb-20 px-6 text-center max-w-4xl mx-auto">
+    <section class="pt-32 pb-12 px-6 text-center max-w-4xl mx-auto">
         <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-xs font-medium text-emerald-400 mb-6">
             <span class="relative flex h-2 w-2">
               <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
-            v10 Now Available
+            Now Available
         </div>
         
         <h1 class="text-5xl md:text-6xl font-extrabold mb-6 leading-tight tracking-tight">
@@ -62,19 +62,66 @@
             <span class="gradient-text">Start Trading.</span>
         </h1>
         
-        <p class="text-lg text-slate-400 mb-10 max-w-2xl mx-auto">
-            The professional risk calculator, trade journal, and performance analyzer that runs directly in your browser. No monthly fees. No cloud servers. Total privacy.
-        </p>
-        
-        <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <a href="https://gum.co/pnvhue" target="_blank" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-8 rounded-xl shadow-lg shadow-blue-500/20 transition-transform hover:scale-105 flex items-center justify-center gap-2">
-                Download Now
-                <i data-lucide="download" class="w-5 h-5"></i>
-            </a>
-            <a href="#demo" class="w-full sm:w-auto bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-semibold py-4 px-8 rounded-xl transition-colors flex items-center justify-center gap-2">
-                <i data-lucide="play-circle" class="w-5 h-5 text-slate-400"></i>
-                Watch Demo
-            </a>
+        <div class="max-w-3xl mx-auto text-center space-y-8 mb-12">
+            
+            <div class="space-y-4">
+                <h2 class="text-3xl md:text-4xl font-black text-white tracking-tight">
+                    Not Just a Calculator. <span class="text-blue-500">A Discipline Engine.</span>
+                </h2>
+                <p class="text-lg text-slate-400 leading-relaxed max-w-2xl mx-auto">
+                    Built on the premise that <strong>Capital Preservation</strong> is the primary job of a trader. A <strong>mobile-first</strong> experience combining professional risk management with comprehensive analysis and journaling.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-left bg-slate-800/50 p-6 rounded-2xl border border-slate-700/50">
+                
+                <div class="flex items-start gap-3">
+                    <div class="mt-1 p-1 bg-emerald-500/10 rounded-full"><i data-lucide="check" class="w-4 h-4 text-emerald-400"></i></div>
+                    <span class="text-slate-300 text-sm">Dynamic multi-account position sizing</span>
+                </div>
+                
+                <div class="flex items-start gap-3">
+                    <div class="mt-1 p-1 bg-emerald-500/10 rounded-full"><i data-lucide="check" class="w-4 h-4 text-emerald-400"></i></div>
+                    <span class="text-slate-300 text-sm">Automated FX conversion & Live Rates</span>
+                </div>
+
+                <div class="flex items-start gap-3">
+                    <div class="mt-1 p-1 bg-emerald-500/10 rounded-full"><i data-lucide="check" class="w-4 h-4 text-emerald-400"></i></div>
+                    <span class="text-slate-300 text-sm">Seamless trade logging & outcome recording</span>
+                </div>
+
+                <div class="flex items-start gap-3">
+                    <div class="mt-1 p-1 bg-emerald-500/10 rounded-full"><i data-lucide="check" class="w-4 h-4 text-emerald-400"></i></div>
+                    <span class="text-slate-300 text-sm">Comprehensive trading insight & analysis</span>
+                </div>
+
+                <div class="flex items-start gap-3">
+                    <div class="mt-1 p-1 bg-emerald-500/10 rounded-full"><i data-lucide="check" class="w-4 h-4 text-emerald-400"></i></div>
+                    <span class="text-slate-300 text-sm">Journaling with pre-populated activity streams</span>
+                </div>
+
+                <div class="flex items-start gap-3">
+                    <div class="mt-1 p-1 bg-emerald-500/10 rounded-full"><i data-lucide="check" class="w-4 h-4 text-emerald-400"></i></div>
+                    <span class="text-slate-300 text-sm">Trade rule capture for discipline tracking</span>
+                </div>
+
+            </div>
+
+            <p class="text-lg font-medium text-white">
+                The professional risk calculator, trade log, and performance analyzer. 
+                <span class="block text-sm font-normal text-slate-500 mt-1">With no monthly fees.</span>
+            </p>
+            
+            <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                <a href="https://gum.co/pnvhue" target="_blank" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-8 rounded-xl shadow-lg shadow-blue-500/20 transition-transform hover:scale-105 flex items-center justify-center gap-2">
+                    Access Now
+                    <i data-lucide="download" class="w-5 h-5"></i>
+                </a>
+                <a href="#demo" class="w-full sm:w-auto bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-semibold py-4 px-8 rounded-xl transition-colors flex items-center justify-center gap-2">
+                    <i data-lucide="play-circle" class="w-5 h-5 text-slate-400"></i>
+                    Watch Demo
+                </a>
+            </div>
         </div>
     </section>
 
@@ -93,23 +140,19 @@
         </div>
     </section>
 
-    <section class="py-24 bg-slate-900 relative overflow-hidden">
+    <section class="py-12 bg-slate-900 relative overflow-hidden">
         <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-blue-900/10 rounded-full blur-[100px] pointer-events-none"></div>
 
         <div class="max-w-6xl mx-auto px-6 relative z-10">
-            <div class="text-center mb-16">
-                <h2 class="text-3xl font-bold mb-4">Everything you need to scale</h2>
-                <p class="text-slate-400">Replaces 3 different subscriptions with one simple file.</p>
-            </div>
-
             <div class="grid md:grid-cols-3 gap-8">
+                
                 <div class="bg-slate-800/50 border border-slate-700 p-8 rounded-2xl hover:border-blue-500/50 transition-colors">
                     <div class="w-12 h-12 bg-blue-900/30 rounded-lg flex items-center justify-center mb-6 text-blue-400">
                         <i data-lucide="calculator" class="w-6 h-6"></i>
                     </div>
                     <h3 class="text-xl font-bold mb-3">Instant Risk Calc</h3>
                     <p class="text-slate-400 text-sm leading-relaxed">
-                        Never calculate lot size manually again. Input entry and stop, get exact share count based on your risk model (Equity % or Position Size).
+                        Never calculate position size manually again. Input entry and stop, get exact share count based on your risk model (Equity % or Position Size).
                     </p>
                 </div>
 
@@ -119,30 +162,33 @@
                     </div>
                     <h3 class="text-xl font-bold mb-3">Professional Analytics</h3>
                     <p class="text-slate-400 text-sm leading-relaxed">
-                        Visualize your edge with R-Multiple distribution, duration analysis, hourly heatmaps, and drawdown curves.
+                        Visualize your edge with R-Multiple distribution, duration analysis, consistency heatmaps, drawdown curves and more.
                     </p>
                 </div>
 
                 <div class="bg-slate-800/50 border border-slate-700 p-8 rounded-2xl hover:border-amber-500/50 transition-colors">
                     <div class="w-12 h-12 bg-amber-900/30 rounded-lg flex items-center justify-center mb-6 text-amber-400">
-                        <i data-lucide="shield-check" class="w-6 h-6"></i>
+                        <i data-lucide="book-open" class="w-6 h-6"></i>
                     </div>
-                    <h3 class="text-xl font-bold mb-3">100% Private Data</h3>
+                    <h3 class="text-xl font-bold mb-3">Journal & Discipline</h3>
                     <p class="text-slate-400 text-sm leading-relaxed">
-                        Your trading data lives on <strong>your device</strong>. No cloud servers, no monthly fees, no risk of data leaks. You own your journal.
+                        Seamlessly log trades, define your <strong>Golden Rules</strong> and journal. Features pre-populated activity streams and daily discipline tracking to ensure you trade with precision.
                     </p>
                 </div>
+
             </div>
         </div>
     </section>
 
-    <section id="pricing" class="py-20 px-6">
+    <section id="pricing" class="py-12 px-6">
         <div class="max-w-3xl mx-auto bg-gradient-to-b from-slate-800 to-slate-900 border border-slate-700 rounded-3xl p-8 md:p-12 text-center shadow-2xl relative overflow-hidden">
             <div class="absolute top-0 right-0 p-4 opacity-10">
                 <svg width="200" height="200" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zm0 9l2.5-1.25L12 8.5l-2.5 1.25L12 11zm0 2.5l-5-2.5-5 2.5L12 22l10-8.5-5-2.5-5 2.5z"/></svg>
             </div>
 
             <h2 class="text-3xl font-bold mb-4 text-white">Get Lifetime Access</h2>
+            <p class="text-slate-400 text-sm mb-6">Includes all future feature updates</p>
+            
             <div class="flex justify-center items-baseline gap-2 mb-6">
                 <span class="text-5xl font-extrabold text-white">$29</span>
                 <span class="text-slate-500 font-medium">/ once</span>
@@ -168,10 +214,9 @@
             </ul>
 
             <a href="https://gum.co/pnvhue" target="_blank" class="block w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl shadow-lg transition-transform hover:scale-[1.02]">
-                Buy RiskDesk v10
+                Buy RiskDesk
             </a>
             
-            <p class="text-[10px] text-slate-500 mt-4">30-day money back guarantee. No questions asked.</p>
         </div>
     </section>
 
@@ -184,8 +229,7 @@
             <span class="font-bold text-slate-500">RISKDESK</span>
         </div>
         <p class="text-slate-600 text-xs">
-            &copy; 2025 RiskDesk. All rights reserved. <br>
-            <a href="#" class="hover:text-slate-400 transition-colors">Privacy Policy</a> • <a href="#" class="hover:text-slate-400 transition-colors">Terms</a>
+            &copy; 2025 RiskDesk. All rights reserved.
         </p>
     </footer>
 
