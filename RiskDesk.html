@@ -152,6 +152,13 @@
     @media (orientation: landscape) {
         #topNavRotateHint { display: none !important; }
     }
+	/* FIX: Enable Long Press Menu on Snapshots */
+    #imgModal img {
+        -webkit-touch-callout: default !important; /* Allow iOS Menu */
+        -webkit-user-select: auto !important;      /* Allow Selection */
+        user-select: auto !important;
+        pointer-events: auto !important;           /* Ensure touches register */
+    }
   </style>
 </head>
 
@@ -287,24 +294,48 @@
       <div class="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
          <div class="flex justify-between items-center mb-2">
             <label class="text-xs text-slate-500 uppercase font-bold">Risk Model</label>
-            <div class="flex gap-4 text-sm">
-                <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="riskMode" value="equity" checked onchange="app.toggleRiskMode()" class="accent-blue-500">
-                    <span>Equity %</span>
+            <div class="flex gap-2 text-sm">
+                <label class="flex items-center gap-1 cursor-pointer">
+                    <input type="radio" name="riskMode" value="equity" onchange="app.toggleRiskMode()" class="accent-blue-500">
+                    <span class="text-[10px]">Eq %</span>
                 </label>
-                <label class="flex items-center gap-2 cursor-pointer">
+                <label class="flex items-center gap-1 cursor-pointer">
                     <input type="radio" name="riskMode" value="position" onchange="app.toggleRiskMode()" class="accent-blue-500">
-                    <span>Size %</span>
+                    <span class="text-[10px]">Size %</span>
+                </label>
+                <label class="flex items-center gap-1 cursor-pointer">
+                    <input type="radio" name="riskMode" value="cash" onchange="app.toggleRiskMode()" class="accent-emerald-500">
+                    <span class="text-[10px]">Cash <span id="riskModeSym" class="text-emerald-400 font-bold">$</span></span>
                 </label>
             </div>
          </div>
 
-         <div class="mt-4">
-             <div class="flex justify-between text-sm mb-2 font-mono">
-                 <span id="riskLabel">Risk 0.25%</span>
-                 <span id="riskAmountDisplay" class="text-blue-400"></span>
+         <div id="cashRiskToggleContainer" class="hidden mb-3 bg-slate-900/50 p-2 rounded border border-slate-700/50 flex justify-between items-center animate-in slide-in-from-top-1">
+             <span class="text-[9px] text-slate-400 leading-tight mr-2">Adjust risk across accounts?<br>(Maintain consistent EC%)</span>
+             <div class="flex bg-slate-800 rounded p-0.5 border border-slate-600">
+                 <button onclick="app.setCashAdjust(false)" id="btn-cash-fixed" class="px-2 py-1 text-[9px] font-bold rounded bg-slate-600 text-white transition-colors">NO</button>
+                 <button onclick="app.setCashAdjust(true)" id="btn-cash-auto" class="px-2 py-1 text-[9px] font-bold rounded text-slate-400 hover:text-white transition-colors">YES</button>
              </div>
-             <input type="range" id="riskSlider" min="0.1" max="1.5" step="0.025" value="0.25" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+         </div>
+
+         <div class="mt-2">
+             <div class="flex justify-between items-center mb-2">
+                 
+                 <div class="flex items-center gap-2">
+                     <span id="riskLabel" class="text-xs font-mono text-slate-300 font-bold">Risk 1.0%</span>
+                     
+                     <div id="riskInputContainer" class="hidden">
+                        <input type="number" id="riskInputDisplay" class="bg-slate-900 border border-slate-700 rounded w-24 text-center text-sm font-bold text-white outline-none focus:border-blue-500 p-1" 
+                            onchange="app.manualRiskInput(this.value)">
+                     </div>
+                 </div>
+
+                 <span id="riskAmountDisplay" class="text-blue-400 text-xs font-mono"></span>
+             </div>
+             
+             <div id="riskSliderContainer">
+                <input type="range" id="riskSlider" min="0.1" max="2.0" step="0.05" value="0.25" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+             </div>
          </div>
       </div>
 
@@ -422,6 +453,28 @@
                 </button>
             </div>
         </div>
+		<div class="bg-slate-800/50 rounded-xl p-4 border border-slate-700 mt-4">
+			<div class="flex justify-between items-center mb-2">
+				<label class="text-xs text-slate-500 uppercase font-bold">Reporting Period</label>
+				<button onclick="app.resetStatsDate()" class="text-[10px] text-blue-400 hover:text-white underline">
+					Reset to Today
+				</button>
+			</div>
+			<div class="flex gap-2 items-center">
+				<div class="relative flex-1">
+					<input type="date" id="statsStartDate" onchange="app.saveStatsDate()" 
+						class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-xs text-white focus:border-blue-500 outline-none">
+					<span class="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-slate-500 pointer-events-none">Start Date</span>
+				</div>
+				<button onclick="app.clearStatsDate()" class="bg-slate-700 hover:bg-slate-600 text-slate-300 p-2 rounded border border-slate-600" title="Show All History">
+					<i data-lucide="history" class="w-4 h-4"></i>
+				</button>
+			</div>
+			<p class="text-[9px] text-slate-500 mt-2">
+			Sets the starting point for Win Rate, Profit Factor, and Growth Charts. 
+			Open trades from before this date are still tracked for Risk, but their results will count towards the new period when closed.
+			</p>
+		</div>
         <div class="bg-red-900/10 rounded-xl p-4 border border-red-900/50 mt-8">
             <h2 class="text-xs font-bold text-red-400 mb-3 uppercase">Danger Zone</h2>
             <button onclick="app.wipeAllData()" class="w-full mt-3 bg-red-900 hover:bg-red-800 text-white py-3 rounded-lg text-sm font-bold shadow-lg">
@@ -1172,7 +1225,72 @@
         Long-press image to Save/Share
     </p>
 </div>
+<div id="fundsModal" class="hidden fixed inset-0 z-[70] bg-slate-900/90 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-800 rounded-2xl border border-slate-700 w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in-95">
+        
+        <div class="bg-slate-900/50 p-4 border-b border-slate-700 flex justify-between items-center">
+            <div>
+                <h3 class="font-bold text-white flex items-center gap-2">
+                    <i data-lucide="wallet" class="w-4 h-4 text-emerald-400"></i> Fund Manager
+                </h3>
+                <span id="fundsModalTitle" class="text-xs text-slate-500 font-bold uppercase">Main Account</span>
+            </div>
+            <button onclick="document.getElementById('fundsModal').classList.add('hidden')" class="text-slate-500 hover:text-white">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
 
+        <div class="p-4 space-y-6">
+            
+            <div>
+                <label class="text-[10px] text-slate-500 font-bold uppercase block mb-2">One-Off Transaction</label>
+                <div class="flex gap-2 mb-2">
+                    <span class="bg-slate-700 text-slate-400 p-2 rounded-l-lg font-mono border border-r-0 border-slate-600 text-sm flex items-center justify-center min-w-[40px]" id="fundCcySym">$</span>
+                    <input type="number" id="fundAmount" placeholder="0.00" class="flex-1 bg-slate-900 border border-slate-600 rounded-r-lg p-2 text-white font-mono focus:border-blue-500 outline-none text-right">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="app.processFundTransaction('deposit')" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-lg text-xs shadow-lg transition-colors flex justify-center items-center gap-2">
+                        <i data-lucide="arrow-down-to-line" class="w-4 h-4"></i> Deposit
+                    </button>
+                    <button onclick="app.processFundTransaction('withdraw')" class="bg-red-600 hover:bg-red-500 text-white font-bold py-2.5 rounded-lg text-xs shadow-lg transition-colors flex justify-center items-center gap-2">
+                        <i data-lucide="arrow-up-from-line" class="w-4 h-4"></i> Withdraw
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-slate-900/50 rounded-xl p-3 border border-slate-700">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-xs font-bold text-slate-300">Monthly Auto-Deposit</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="recurActive" class="sr-only peer" onchange="app.toggleRecurringUI()">
+                        <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                    </label>
+                </div>
+                
+                <div id="recurSettings" class="grid grid-cols-2 gap-3 opacity-50 pointer-events-none transition-opacity">
+                    <div>
+                        <label class="text-[9px] text-slate-500 uppercase font-bold">Amount</label>
+                        <input type="number" id="recurAmount" class="w-full bg-slate-800 border border-slate-600 rounded p-1.5 text-sm text-white focus:border-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="text-[9px] text-slate-500 uppercase font-bold">Day of Month</label>
+                        <select id="recurDay" class="w-full bg-slate-800 border border-slate-600 rounded p-1.5 text-sm text-white focus:border-blue-500 outline-none">
+                            </select>
+                    </div>
+                </div>
+                <button onclick="app.saveRecurringSettings()" id="recurSaveBtn" class="hidden w-full mt-3 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-bold py-2 rounded transition-colors">
+                    Save Schedule
+                </button>
+            </div>
+
+            <div>
+                <label class="text-[10px] text-slate-500 font-bold uppercase block mb-1">Transaction Log</label>
+                <div id="fundHistoryList" class="space-y-1 max-h-32 overflow-y-auto pr-1 bg-slate-900/30 p-2 rounded-lg border border-slate-700/30"></div>
+            </div>
+
+        </div>
+    </div>
+</div>
 
 <script>
 // --- LICENSE SERVICE ---
@@ -1324,6 +1442,13 @@ const app = {
                 if(!l.exits) l.exits = [];
                 if(!l.direction) l.direction = 'LONG';
                 if(!l.initialQty && l.outcome !== 'open') l.initialQty = 0; 
+                
+                // --- NEW: BACKFILL INITIAL STOP ---
+                // If initialStop is missing, lock it to the current stop value
+                if (typeof l.initialStop === 'undefined' || l.initialStop === null) {
+                    l.initialStop = l.stop;
+                }
+                // ----------------------------------
             });
         }
         
@@ -1369,6 +1494,7 @@ const app = {
         this.toggleRiskMode();
         this.setDirection('LONG');
 		this.populateStrategySelect();
+		this.checkRecurringContributions();
     },
     
     // --- PATCH 4B: IMAGE HELPERS ---
@@ -1412,14 +1538,17 @@ const app = {
     },
 
     setupListeners() {
-        document.querySelectorAll('textarea, #ticker, #purchasePrice, #stopLoss').forEach(el => {
-            el.addEventListener('change', () => this.saveFormData());
-        });
         document.getElementById('riskSlider').addEventListener('input', (e) => {
             const val = e.target.value;
-            document.getElementById('riskLabel').textContent = 
-                this.data.settings.riskMode === 'equity' ? `Risk ${val}%` : `Pos Size ${val}%`;
             this.data.settings.riskValue = parseFloat(val);
+            
+            // Only update label text if in Equity or Position mode
+            if(this.data.settings.riskMode === 'equity') {
+                document.getElementById('riskLabel').textContent = `Risk ${val}%`;
+            } else if (this.data.settings.riskMode === 'position') {
+                document.getElementById('riskLabel').textContent = `Size ${val}%`;
+            }
+            
             this.saveSettings();
             this.updateHeatWidget(); 
         });
@@ -1435,16 +1564,38 @@ const app = {
         document.getElementById('dispBaseCcy').textContent = this.data.settings.baseCurrency;
     },
 
-    // --- PATCH C: FIXED INSIGHTS ENGINE ---
     generateInsights(logs) {
+        // --- 1. NEW: APPLY STATS DATE FILTER ---
+        const startDateStr = this.data.settings.statsStartDate;
+        let reportingLogs = logs; // Default to using all logs
+
+        if (startDateStr) {
+            const startDate = new Date(startDateStr);
+            
+            // FILTER LOGIC:
+            // 1. Keep ALL Open trades (we need them for Heat/Risk widgets)
+            // 2. Keep Closed trades ONLY if they closed AFTER the start date
+            reportingLogs = logs.filter(l => {
+                if (l.outcome === 'open') return true; 
+                return new Date(l.date) >= startDate;
+            });
+        }
+        // ---------------------------------------
+
+        // 2. UPDATE CHART (With the filtered logs)
+        if (this.updateEquityChart) this.updateEquityChart(reportingLogs);
+
         const container = document.getElementById('smartInsightsList');
         if(!container) return; 
 
-        const filter = document.getElementById('statsFilter').value;
-        const recency = document.getElementById('statsRecency').value; 
+        // Safe checks for elements
+        const filterEl = document.getElementById('statsFilter');
+        const recencyEl = document.getElementById('statsRecency');
+        const filter = filterEl ? filterEl.value : 'ALL';
+        const recency = recencyEl ? recencyEl.value : 'ALL';
 
-        // 1. Calculate Stats on the provided (Filtered) logs
-        const stats = this.calculateBatchStats(logs); 
+        // 3. CRITICAL CHANGE: Calculate Stats on 'reportingLogs' (not 'logs')
+        const stats = this.calculateBatchStats(reportingLogs); 
         
         // Lowered Threshold: Need at least 2 trades
         if(!stats || stats.count < 2) {
@@ -1717,9 +1868,7 @@ const app = {
         if (viewName === 'journal') this.switchJournalTab('log'); // Default to Log tab
         
         if (viewName === 'settings') {
-            this.renderSettingsAccounts(); 
-            this.renderSettingsStrategies();
-            this.renderSettingsPreferences();
+            this.renderSettings();
         }
 
         if (viewName === 'calculator') {
@@ -1758,6 +1907,10 @@ const app = {
 
     renderSettingsAccounts() {
         const list = document.getElementById('settingsAccountsList');
+        // Ensure symbol logic exists
+        const getSym = (this.getSymbol) ? ((c) => this.getSymbol(c)) : ((c) => c === 'USD' ? '$' : '£'); 
+        const sym = getSym(this.data.settings.baseCurrency);
+
         list.innerHTML = this.data.accounts.map((acc, idx) => `
             <div class="bg-slate-900 p-3 rounded border ${acc.isMaster ? 'border-amber-500/50' : 'border-slate-700'} flex items-center gap-3">
                 <input type="radio" name="masterAcc" ${acc.isMaster ? 'checked' : ''} 
@@ -1765,12 +1918,19 @@ const app = {
                 
                 <div class="flex-1 space-y-1">
                     <input type="text" value="${acc.name}" onchange="app.updateAccountData(${idx}, 'name', this.value)" 
-                        class="w-full bg-transparent text-sm font-bold text-white outline-none border-b border-transparent focus:border-blue-500 placeholder-slate-600" placeholder="Account Name">
-                    <input type="number" value="${acc.size}" onchange="app.updateAccountData(${idx}, 'size', this.value)" 
-                        class="w-full bg-transparent text-xs font-mono text-slate-400 outline-none border-b border-transparent focus:border-blue-500" placeholder="Current Equity" title="Manually update this when you deposit funds or realize P&L">
+                        class="w-full bg-transparent text-sm font-bold text-white outline-none border-b border-transparent focus:border-blue-500 placeholder-slate-600">
+                    
+                    <div class="text-xs font-mono text-slate-400 flex items-center gap-2">
+                        <span>${sym}${acc.size.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                        ${acc.recurring && acc.recurring.active ? '<span class="text-[9px] text-emerald-500 bg-emerald-900/20 px-1 rounded">Auto</span>' : ''}
+                    </div>
                 </div>
                 
-                <button onclick="app.removeAccount(${idx})" class="text-slate-600 hover:text-red-500">
+                <button onclick="app.openFundsModal(${idx})" class="bg-slate-800 hover:bg-slate-700 text-emerald-400 p-2 rounded transition-colors" title="Manage Funds">
+                    <i data-lucide="wallet" class="w-4 h-4"></i>
+                </button>
+
+                <button onclick="app.removeAccount(${idx})" class="text-slate-600 hover:text-red-500 p-2">
                     <i data-lucide="trash-2" class="w-4 h-4"></i>
                 </button>
             </div>
@@ -1993,22 +2153,61 @@ const app = {
         modes.forEach(m => { if(m.checked) selected = m.value; });
         this.data.settings.riskMode = selected;
         
+        const sliderContainer = document.getElementById('riskSliderContainer');
+        const inputContainer = document.getElementById('riskInputContainer');
+        const input = document.getElementById('riskInputDisplay');
         const slider = document.getElementById('riskSlider');
         const label = document.getElementById('riskLabel');
+        const toggleContainer = document.getElementById('cashRiskToggleContainer');
+        const sym = document.getElementById('riskModeSym');
         
-        // Reset implied calculation
+        // Update Symbol
+        const baseSym = this.getSymbol ? this.getSymbol(this.data.settings.baseCurrency) : '$';
+        if(sym) sym.textContent = baseSym;
+
+        // Reset
         this.data.tempCalculation.impliedRiskPct = null;
         
         if (selected === 'equity') {
-            slider.min = "0.1"; slider.max = "1.5"; slider.step = "0.025";
-            if(slider.value > 1.5) slider.value = 0.25; 
-            label.textContent = `Risk ${slider.value}%`;
-        } else {
-            slider.min = "3"; slider.max = "40"; slider.step = "0.5";
-            if(slider.value < 3 || slider.value > 40) slider.value = 10;
-            label.textContent = `Pos Size ${slider.value}%`;
+            // MODE: EQUITY %
+            sliderContainer.classList.remove('hidden'); // Show Slider
+            inputContainer.classList.add('hidden');     // Hide Input Box
+            toggleContainer.classList.add('hidden');    // Hide Cash Toggle
+            
+            slider.min = "0.1"; slider.max = "2.0"; slider.step = "0.05";
+            if(slider.value > 2.0) slider.value = 0.5; 
+            label.textContent = `Risk ${slider.value}%`; // Label shows value
+            
+            this.data.settings.riskValue = parseFloat(slider.value);
+        } 
+        else if (selected === 'position') {
+            // MODE: SIZE %
+            sliderContainer.classList.remove('hidden'); // Show Slider
+            inputContainer.classList.add('hidden');     // Hide Input Box
+            toggleContainer.classList.add('hidden');    // Hide Cash Toggle
+
+            slider.min = "2"; slider.max = "50"; slider.step = "1";
+            if(slider.value < 2 || slider.value > 50) slider.value = 10;
+            label.textContent = `Size ${slider.value}%`; // Label shows value
+            
+            this.data.settings.riskValue = parseFloat(slider.value);
+        } 
+        else { 
+            // MODE: CASH $
+            sliderContainer.classList.add('hidden');    // Hide Slider
+            inputContainer.classList.remove('hidden');  // Show Input Box
+            
+            // Show Multi-Account Toggle if > 1 account exists
+            if(this.data.accounts.length > 1) toggleContainer.classList.remove('hidden');
+            else toggleContainer.classList.add('hidden');
+            
+            // Set Default Cash if near zero (switch from %)
+            if(this.data.settings.riskValue < 5) this.data.settings.riskValue = 100;
+            
+            label.textContent = `Risk ${baseSym}`;      // Label is just symbol
+            input.value = this.data.settings.riskValue; // Value goes in box
         }
-        this.data.settings.riskValue = parseFloat(slider.value);
+        
         this.updateHeatWidget();
     },
 
@@ -2100,33 +2299,73 @@ const app = {
             
             let shares, posSize, riskAmt, posSizePct, eqRiskPct;
 
+            // --- A. EQUITY % MODE ---
             if(this.data.settings.riskMode === 'equity') {
                 const riskPct = this.data.settings.riskValue / 100;
                 riskAmt = acc.size * riskPct; 
                 const riskAmtTradeCcy = riskAmt * rate; 
                 shares = Math.floor(riskAmtTradeCcy / riskPerShare);
+                
                 const totalPosValueTradeCcy = shares * entry;
                 const totalPosValueBaseCcy = totalPosValueTradeCcy / rate;
                 posSizePct = (totalPosValueBaseCcy / acc.size) * 100;
+                
                 eqRiskPct = this.data.settings.riskValue; 
                 impliedRiskPct = eqRiskPct; 
-            } else {
-                // Position Size Mode
+            } 
+            
+            // --- B. POSITION SIZE % MODE (Explicit Check Added) ---
+            else if (this.data.settings.riskMode === 'position') {
                 const posPct = this.data.settings.riskValue / 100;
                 posSizePct = this.data.settings.riskValue;
+                
                 posSize = acc.size * posPct * rate; 
                 shares = Math.floor(posSize / entry);
                 
                 const totalRiskInTradeCcy = shares * riskPerShare;
                 const totalRiskInBaseCcy = totalRiskInTradeCcy / rate;
-                eqRiskPct = (totalRiskInBaseCcy / acc.size) * 100;
-                riskAmt = totalRiskInBaseCcy;
                 
+                riskAmt = totalRiskInBaseCcy;
+                eqRiskPct = (totalRiskInBaseCcy / acc.size) * 100;
                 if(impliedRiskPct === 0) impliedRiskPct = eqRiskPct; 
+            } 
+            
+            // --- C. CASH RISK MODE (The Fix) ---
+            else {
+                let targetCashRisk = this.data.settings.riskValue; // e.g. 100
+
+                // Logic: "Adjust across accounts?"
+                if (this.data.settings.cashRiskAutoAdjust && !acc.isMaster) {
+                    const master = this.data.accounts.find(a => a.isMaster) || this.data.accounts[0];
+                    if (master && master.size > 0) {
+                        // Scale risk relative to account size vs master
+                        const masterRiskPct = targetCashRisk / master.size;
+                        targetCashRisk = acc.size * masterRiskPct;
+                    }
+                }
+
+                riskAmt = targetCashRisk; // e.g. £100
+                
+                // Convert Cash Risk to Trade Currency (e.g. £100 -> $130)
+                const riskAmtTradeCcy = targetCashRisk * rate;
+                // Calculate shares based on that risk amount
+                shares = Math.floor(riskAmtTradeCcy / riskPerShare);
+                
+                // Calculate resulting stats for display
+                const totalPosValueTradeCcy = shares * entry;
+                const totalPosValueBaseCcy = totalPosValueTradeCcy / rate;
+                posSizePct = (totalPosValueBaseCcy / acc.size) * 100;
+                
+                eqRiskPct = (targetCashRisk / acc.size) * 100;
+                if (acc.isMaster) impliedRiskPct = eqRiskPct;
             }
 
-            posSize = shares * entry;
+            // --- Final Common Calculations ---
+            if (!posSize) posSize = shares * entry;
+            
             if (acc.isMaster) masterShares = shares;
+
+            // ... (Rest of your rendering code follows here: const borderClass = ...)
 
             const borderClass = acc.isMaster 
                 ? 'border-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.2)]' 
@@ -2226,13 +2465,14 @@ const app = {
             if (existingIndex !== -1) {
                 const oldLog = this.data.logs[existingIndex];
                 
-                // Update fields but preserve critical history
+                
                 const updatedLog = {
                     ...oldLog,
                     ticker: document.getElementById('ticker').value.toUpperCase(),
                     direction: this.data.settings.direction,
                     entry: entry,
                     stop: stop,
+                    initialStop: oldLog.initialStop || stop, 
                     stopMeta: stopMeta,
                     initialQty: shares, // Updated Share Count
                     riskMode: finalRiskMode, // Normalized
@@ -2264,6 +2504,7 @@ const app = {
                 direction: this.data.settings.direction,
                 entry: entry,
                 stop: stop,
+                initialStop: stop,  
                 stopMeta: stopMeta, 
                 initialQty: shares, 
                 riskMode: finalRiskMode, // Normalized
@@ -2559,14 +2800,21 @@ const app = {
             </div>
             <div class="text-center text-[10px] text-slate-500 mb-2 font-mono italic">Held: ${durationStr}</div>
             
-            <div class="bg-slate-900/50 p-3 rounded-lg mb-4 border border-slate-700/50">
+            <div class="bg-slate-900/50 p-3 rounded-lg mb-4 border border-blue-900/30 shadow-inner">
                 <div class="flex justify-between items-center gap-3">
                     <div class="flex-1">
-                        <label class="text-[10px] text-blue-400 uppercase font-bold block mb-1">Current Stop</label>
+                        <label class="text-[10px] text-blue-400 uppercase font-bold block mb-1 flex items-center gap-1">
+                            <i data-lucide="shield-alert" class="w-3 h-3"></i> Trailing Stop (Updates Heat)
+                        </label>
                         <input type="number" step="any" value="${log.currentStop}" id="manageCurrentStopInput"
-                            class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-sm text-white font-mono focus:border-blue-500 outline-none">
+                            class="w-full bg-slate-800 border border-blue-500/30 rounded p-2 text-sm text-white font-mono focus:border-blue-500 outline-none">
                     </div>
-                    <button onclick="app.updateCurrentStop()" class="self-end mb-1 px-3 py-2 bg-slate-700 hover:bg-blue-600 text-white text-xs rounded transition-colors">Update</button>
+                    <button onclick="app.updateCurrentStop()" class="self-end mb-1 px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded transition-colors shadow-lg shadow-blue-900/20">
+                        Update
+                    </button>
+                </div>
+                <div class="text-[9px] text-slate-500 mt-1 italic">
+                    Updates Open Heat/NER only. Does not affect Initial R stats.
                 </div>
             </div>
 
@@ -2628,7 +2876,9 @@ const app = {
         sortedExits.sort((a,b) => new Date(a.date) - new Date(b.date));
 
         list.innerHTML = sortedExits.map((ex) => {
-            const riskPerShare = Math.abs(log.entry - log.stop);
+            const refStop = (typeof log.initialStop !== 'undefined') ? log.initialStop : log.stop;
+            const riskPerShare = Math.abs(log.entry - refStop);
+            
             const pnlPerShare = log.direction === 'SHORT' ? (log.entry - ex.price) : (ex.price - log.entry);
             const rVal = (riskPerShare > 0) ? (pnlPerShare / riskPerShare).toFixed(2) : "0.00";
             
@@ -2831,7 +3081,10 @@ const app = {
 
         // 4. Calculation Loop (Iterate ALL realized to capture Total Net R)
         realizedLogs.forEach(l => {
-            const riskPerShare = Math.abs(l.entry - l.stop);
+            // USE INITIAL STOP IF AVAILABLE, FALLBACK TO STOP
+            const refStop = (typeof l.initialStop !== 'undefined') ? l.initialStop : l.stop;
+            const riskPerShare = Math.abs(l.entry - refStop);
+
             const rate = l.exchangeRate || 1;
             
             let rTrade = 0;
@@ -2906,12 +3159,14 @@ const app = {
         };
     },
 
-	// --- PATCH 30: CORRECTED STATS RENDER ---
-
 	renderStats() {
         // 1. SETUP & FILTERS
         const strategyFilter = document.getElementById('statsFilter').value;
         const recencyFilter = document.getElementById('statsRecency').value;
+        
+        // --- NEW: RETRIEVE DATE SETTING ---
+        const startDateStr = this.data.settings.statsStartDate;
+        // ----------------------------------
         
         // ICON LOGIC: Check if partials are ON to show the "Split" icon
         const partialsOn = this.data.settings.statsIncludePartials;
@@ -2921,6 +3176,19 @@ const app = {
 
         // 2. DATA PREPARATION
         let baseLogs = [...this.data.logs];
+
+        // --- NEW: APPLY DATE FILTER LOGIC ---
+        if (startDateStr) {
+            const startDate = new Date(startDateStr);
+            baseLogs = baseLogs.filter(l => {
+                // Always keep 'open' trades visible (for Risk/Heat)
+                // Filter 'closed' trades based on the date
+                if (l.outcome === 'open') return true; 
+                return new Date(l.date) >= startDate;
+            });
+        }
+        // ------------------------------------
+
         if(strategyFilter !== 'ALL') {
             baseLogs = baseLogs.filter(l => l.strategy === strategyFilter);
         }
@@ -2990,7 +3258,7 @@ const app = {
         document.getElementById('statTotal').innerHTML = `${current.count} <div class="text-[9px] text-slate-500 mt-1">Trades ${scratchText}</div>`;
         updateHeader('statTotal', 'Trades');
 
-		// 4. RENDER FINANCIAL HEALTH TABLE (Zone 1)
+        // 4. RENDER FINANCIAL HEALTH TABLE (Zone 1)
         const baseSym = this.getSymbol ? this.getSymbol(this.data.settings.baseCurrency) : this.data.settings.baseCurrency;
         const financialTarget = document.getElementById('financialStatsTarget');
         const hidePnL = this.data.settings.hidePnL || false; // Check Privacy
@@ -3049,8 +3317,6 @@ const app = {
                 </div>
             </div>`;
         }
-        
-
 
         // 5. RENDER DIRECTIONAL STATS (Zone 2)
         const longStats = this.calculateBatchStats(recentStatsLogs.filter(l => l.direction === 'LONG'));
@@ -3081,6 +3347,9 @@ const app = {
 
 
         // 6. TRIGGER CHARTS & INSIGHTS
+        // Note: recentStatsLogs is already filtered by Date + Strategy + Recency
+        // baseLogs is filtered by Date + Strategy
+        
         this.drawGrowthChart(recentStatsLogs);
         this.drawWinLossChart(recentStatsLogs);
         this.drawDrawdownChart(recentStatsLogs);
@@ -3091,13 +3360,12 @@ const app = {
         this.drawDurationChart(recentStatsLogs);
         this.drawDistributionChart(recentStatsLogs);
         
-        // Pass the FULL base logs to heatmap to allow it to calculate its own 90-day window
+        // Pass baseLogs to heatmap (it calculates its own 90-day window, but will now exclude pre-reset dates)
         this.drawConsistencyHeatmap(baseLogs); 
         this.generateInsights(recentStatsLogs);
         
-        // Renders the new icons
         lucide.createIcons();
-    },		
+    },
 
     drawDurationChart(logs) {
         const ctx = document.getElementById('chartDuration');
@@ -3908,20 +4176,45 @@ const app = {
     },
     
     resetForm() {
-        if(confirm("Reset all form inputs?")) {
+        if(confirm("Reset inputs and revert to default Risk (0.25% Equity)?")) {
+            // 1. Clear Text Inputs
             document.getElementById('ticker').value = '';
             document.getElementById('purchasePrice').value = '';
             document.getElementById('stopLoss').value = '';
+            
+            // 2. Reset Direction
             this.setDirection('LONG');
+            
+            // 3. Reset Logic State
             this.data.editingId = null;
-            this.data.isEditingParams = false; // Reset edit flag
+            this.data.isEditingParams = false;
             document.getElementById('calculationResults').classList.add('hidden');
             
-            // Reset Button
+            // 4. Reset Button
             const btn = document.getElementById('mainActionBtn');
             btn.textContent = "Calculate";
             btn.classList.add('bg-blue-600');
             btn.classList.remove('bg-amber-600');
+
+            // 5. FORCE DEFAULT RISK (Equity 0.25%)
+            this.data.settings.riskMode = 'equity';
+            this.data.settings.riskValue = 0.25;
+
+            // Sync UI: Check the Equity Radio Button
+            const eqRadio = document.querySelector('input[name="riskMode"][value="equity"]');
+            if(eqRadio) eqRadio.checked = true;
+
+            // Sync UI: Reset Slider & Label
+            const slider = document.getElementById('riskSlider');
+            if(slider) {
+                slider.value = 0.25;
+                const label = document.getElementById('riskLabel');
+                if(label) label.textContent = "Risk 0.25%";
+            }
+
+            // Run Toggle to ensure correct fields (slider vs input) are shown
+            this.toggleRiskMode(); 
+            this.saveSettings();
         }
     },
     
@@ -4068,6 +4361,20 @@ const app = {
         this.renderSettingsPreferences(); // Visual update
     },
 	
+	renderSettings() {
+        // 1. Render Sub-Sections
+        this.renderSettingsAccounts();
+        this.renderSettingsStrategies();
+        this.renderSettingsPreferences();
+
+        // 2. Populate Stats Start Date (The new feature)
+        if (this.data.settings.statsStartDate) {
+            const el = document.getElementById('statsStartDate');
+            if(el) el.value = this.data.settings.statsStartDate;
+        }
+    },
+	
+	
 	// --- PATCH 16: P&L HELPER ---
     
     getPnl(log, exitPrice, qty) {
@@ -4175,7 +4482,10 @@ const app = {
             let realizedR = 0;
             let totalRealizedPnl = 0;
             let totalExitProceeds = 0;
-            const riskPerShare = Math.abs(log.entry - log.stop);
+            
+            // USE INITIAL STOP IF AVAILABLE
+            const refStop = (typeof log.initialStop !== 'undefined') ? log.initialStop : log.stop;
+            const riskPerShare = Math.abs(log.entry - refStop);
             
             // B. Date
             let dateDisplay = log.date.substring(5, 10);
@@ -4882,28 +5192,27 @@ const app = {
         }
     },
 
-	// FINAL EXACT-MATCH SNAPSHOT FUNCTION
-    async shareLogImage(btn, id) {
+	
+	// FIXED SNAPSHOT FUNCTION (Robust Cleanup & iOS Support)
+    async shareLogImage(btn) {
         const row = btn.closest('.log-row');
         if (!row) return;
 
-        // Visual Feedback
+        // 1. Visual Feedback
         const originalIcon = btn.innerHTML;
         btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin text-blue-400"></i>`;
         lucide.createIcons();
 
+        // Define container outside try block so we can remove it in finally
+        let container = null;
+
         try {
-            // 1. CAPTURE EXACT SCREEN DIMENSIONS
-            // We use the exact width of the row as seen on screen.
-            // This ensures the spacing (Date to Ticker) is identical.
+            // 2. CAPTURE EXACT SCREEN DIMENSIONS
             const currentWidth = row.getBoundingClientRect().width;
-            
             // Detect Grid Mode based on visibility of landscape elements
-            // (More reliable than screen width checks for layout matching)
             const isLandscape = window.innerWidth >= 768 || (window.orientation && Math.abs(window.orientation) === 90);
             const colCount = isLandscape ? 16 : 10;
 
-            // Visibility Maps (same as before)
             const mapLandscape = [true, true, true, true, true, true, false, false, true, true, true];
             const mapPortrait  = [true, true, false, false, false, false, true, true, false, false, false];
             const activeMap = isLandscape ? mapLandscape : mapPortrait;
@@ -4912,36 +5221,25 @@ const app = {
             const enforceLayout = (element, isHeader) => {
                 element.style.display = 'grid';
                 element.style.gridTemplateColumns = `repeat(${colCount}, minmax(0, 1fr))`;
-                element.style.gap = '0.5rem'; // Matches 'gap-2'
+                element.style.gap = '0.5rem';
                 element.style.alignItems = 'center';
                 element.style.boxSizing = 'border-box';
                 element.style.width = '100%'; 
-                element.style.padding = '0.75rem'; // Matches 'p-3'
+                element.style.padding = '0.75rem';
                 if(isHeader) element.style.textAlign = 'left'; 
 
                 const children = Array.from(element.children);
                 children.forEach((child, idx) => {
                     child.style.boxSizing = 'border-box';
-                    
                     if (idx < activeMap.length) {
-                        // A. Visibility
                         if (!activeMap[idx]) {
                             child.style.display = 'none';
                             return;
                         }
-
-                        // B. Force Display
                         child.classList.remove('hidden', 'md:hidden', 'md:block');
-                        if(child.classList.contains('flex') || child.classList.contains('flex-col')) {
-                             child.style.display = 'flex';
-                        } else {
-                             child.style.display = 'block';
-                        }
-
-                        // C. FORCE ROW 1 (Prevent wrapping)
+                        child.style.display = (child.classList.contains('flex') || child.classList.contains('flex-col')) ? 'flex' : 'block';
                         child.style.gridRow = '1 / 1';
-
-                        // D. Force Column Span
+                        
                         let span = 1;
                         if (child.classList.contains('col-span-2')) span = 2;
                         else if (child.classList.contains('col-span-3')) span = 3;
@@ -4952,21 +5250,21 @@ const app = {
                 });
             };
 
-            // 2. CREATE CONTAINER
-            const container = document.createElement('div');
+            // 3. CREATE CONTAINER
+            container = document.createElement('div');
             container.style.position = 'absolute';
             container.style.left = '-9999px';
-            
-            // CRITICAL FIX: Match the width exactly
             container.style.width = `${currentWidth}px`;
-            
             container.style.background = '#0f172a'; // Slate 900
             container.style.borderRadius = '12px';
             container.style.overflow = 'hidden'; 
             container.style.fontFamily = 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif';
             container.style.boxSizing = 'border-box';
+            
+            // HIDE VISUALLY (Prevents "Ghost Text" glitch)
+            container.style.visibility = 'hidden';
 
-            // 3. CLONE HEADER
+            // 4. CLONE HEADER
             const logsContainer = document.getElementById('logsContainer');
             if (logsContainer && logsContainer.previousElementSibling) {
                 const headerClone = logsContainer.previousElementSibling.cloneNode(true);
@@ -4980,7 +5278,7 @@ const app = {
                 container.appendChild(headerClone);
             }
 
-            // 4. CLONE ROW
+            // 5. CLONE ROW
             const rowClone = row.cloneNode(true);
             rowClone.style.backgroundColor = '#0f172a'; 
             rowClone.style.color = '#e2e8f0';
@@ -4994,7 +5292,7 @@ const app = {
 
             container.appendChild(rowClone);
 
-            // 5. FOOTER
+            // 6. FOOTER
             const footer = document.createElement('div');
             footer.style.display = 'flex';
             footer.style.justifyContent = 'space-between';
@@ -5013,12 +5311,13 @@ const app = {
             `;
             container.appendChild(footer);
 
-            // 6. CAPTURE
+            // 7. CAPTURE
             document.body.appendChild(container);
             
-            // High Res Scale (Since width is small, we boost scale for sharpness)
-            const scale = 3; 
+            // Temporarily make visible for html2canvas to "see" it, but it's off-screen
+            container.style.visibility = 'visible';
 
+            const scale = 3; 
             const canvas = await html2canvas(container, {
                 backgroundColor: '#0f172a',
                 scale: scale,
@@ -5026,11 +5325,11 @@ const app = {
                 useCORS: true
             });
 
-            document.body.removeChild(container);
-
-            // 7. SHARE
+            // 8. SHARE
             canvas.toBlob(async (blob) => {
-                const file = new File([blob], `Trade_${id}.png`, { type: 'image/png' });
+                const file = new File([blob], `Trade_${new Date().getTime()}.png`, { type: 'image/png' });
+
+                // Try Native Share First (Mobile)
                 if (navigator.canShare && navigator.canShare({ files: [file] })) {
                     try {
                         await navigator.share({ files: [file], title: 'Trade Log' });
@@ -5039,10 +5338,13 @@ const app = {
                         return;
                     } catch (err) { console.log(err); }
                 }
+
+                // Fallback to Clipboard (Desktop)
                 try {
                     await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
                     alert("Snapshot copied to clipboard!");
                 } catch (err) {
+                    // Fallback to Modal (Mobile fail-safe)
                     app.showImg(URL.createObjectURL(blob));
                 }
                 btn.innerHTML = originalIcon;
@@ -5050,10 +5352,15 @@ const app = {
             });
 
         } catch(e) {
-            console.error(e);
-            alert("Error creating snapshot");
+            console.error("Snapshot Error:", e);
+            alert("Error creating snapshot.");
             btn.innerHTML = originalIcon;
             lucide.createIcons();
+        } finally {
+            // CRITICAL: Always remove the ghost container
+            if (container && document.body.contains(container)) {
+                document.body.removeChild(container);
+            }
         }
     },
 
@@ -5395,6 +5702,226 @@ const app = {
 
         this.saveJournal();
         this.renderJournalEntry(); // Re-render to show checkmark
+    },
+	// Helper: Handle typing in the Cash Input Box
+    manualRiskInput(val) {
+        const floatVal = parseFloat(val);
+        if(isNaN(floatVal)) return;
+        this.data.settings.riskValue = floatVal;
+        this.calculateOrUpdate();
+    },
+
+    // Helper: Handle the Cash Adjust Yes/No Toggle
+    setCashAdjust(isAuto) {
+        this.data.settings.cashRiskAutoAdjust = isAuto;
+        const btnFixed = document.getElementById('btn-cash-fixed');
+        const btnAuto = document.getElementById('btn-cash-auto');
+        
+        if(isAuto) {
+            btnAuto.className = 'px-2 py-1 text-[9px] font-bold rounded bg-emerald-600 text-white transition-colors shadow';
+            btnFixed.className = 'px-2 py-1 text-[9px] font-bold rounded text-slate-400 hover:text-white transition-colors';
+        } else {
+            btnFixed.className = 'px-2 py-1 text-[9px] font-bold rounded bg-slate-600 text-white transition-colors shadow';
+            btnAuto.className = 'px-2 py-1 text-[9px] font-bold rounded text-slate-400 hover:text-white transition-colors';
+        }
+        this.calculateOrUpdate(); 
+    },
+	// --- FUND MANAGER LOGIC ---
+
+    openFundsModal(idx) {
+        this.data.editingAccIdx = idx; 
+        const acc = this.data.accounts[idx];
+        
+        // Init Structure
+        if(!acc.contributions) acc.contributions = [];
+        if(!acc.recurring) acc.recurring = { active: false, amount: 0, day: 1, lastCheck: new Date().toISOString() };
+
+        // Populate UI
+        document.getElementById('fundsModalTitle').textContent = acc.name;
+        document.getElementById('fundAmount').value = '';
+        
+        // Set Symbol
+        const sym = this.getSymbol ? this.getSymbol(this.data.settings.baseCurrency) : '$';
+        document.getElementById('fundCcySym').textContent = sym;
+        
+        // Recurring UI
+        document.getElementById('recurActive').checked = acc.recurring.active;
+        document.getElementById('recurAmount').value = acc.recurring.amount || '';
+        
+        const daySel = document.getElementById('recurDay');
+        daySel.innerHTML = Array.from({length: 28}, (_, i) => i + 1)
+            .map(d => `<option value="${d}" ${d == acc.recurring.day ? 'selected' : ''}>${d}${getOrdinal(d)}</option>`).join('');
+            
+        // Helper for 1st, 2nd, 3rd
+        function getOrdinal(n) {
+            const s = ["th", "st", "nd", "rd"];
+            const v = n % 100;
+            return s[(v - 20) % 10] || s[v] || s[0];
+        }
+
+        this.toggleRecurringUI();
+        this.renderFundHistory(acc);
+        document.getElementById('fundsModal').classList.remove('hidden');
+    },
+
+    toggleRecurringUI() {
+        const isActive = document.getElementById('recurActive').checked;
+        const panel = document.getElementById('recurSettings');
+        const btn = document.getElementById('recurSaveBtn');
+        
+        if(isActive) {
+            panel.classList.remove('opacity-50', 'pointer-events-none');
+            btn.classList.remove('hidden');
+        } else {
+            panel.classList.add('opacity-50', 'pointer-events-none');
+            btn.classList.add('hidden');
+            if(this.data.editingAccIdx !== null) this.saveRecurringSettings(false); 
+        }
+    },
+
+    saveRecurringSettings(forceActiveState = null) {
+        const idx = this.data.editingAccIdx;
+        if(idx === null) return;
+        const acc = this.data.accounts[idx];
+        
+        const active = forceActiveState !== null ? forceActiveState : document.getElementById('recurActive').checked;
+        const amt = parseFloat(document.getElementById('recurAmount').value);
+        const day = parseInt(document.getElementById('recurDay').value);
+
+        if(active && (!amt || amt <= 0)) return alert("Please enter a valid monthly amount.");
+
+        acc.recurring.active = active;
+        if(active) {
+            acc.recurring.amount = amt;
+            acc.recurring.day = day;
+            if (!acc.recurring.lastCheck) acc.recurring.lastCheck = new Date().toISOString();
+        }
+        
+        this.saveSettings();
+        this.renderSettingsAccounts(); 
+        if(forceActiveState === null) alert("Auto-Deposit Schedule Saved");
+    },
+
+    processFundTransaction(type) {
+        const idx = this.data.editingAccIdx;
+        if(idx === null) return;
+        const acc = this.data.accounts[idx];
+        
+        let amt = parseFloat(document.getElementById('fundAmount').value);
+        if(!amt || amt <= 0) return alert("Please enter a positive amount.");
+
+        // Apply Direction (Negative for Withdraw)
+        if (type === 'withdraw') amt = -amt;
+
+        // 1. Update Account Size
+        acc.size += amt;
+        
+        // 2. Log History
+        acc.contributions.unshift({
+            date: new Date().toISOString(),
+            amount: amt,
+            type: 'MANUAL'
+        });
+
+        this.saveSettings();
+        this.renderSettingsAccounts();
+        this.renderFundHistory(acc);
+        document.getElementById('fundAmount').value = '';
+        
+        // Feedback
+        const label = type === 'withdraw' ? "Withdrawal" : "Deposit";
+        alert(`${label} Successful.\nNew Balance: ${acc.size.toFixed(2)}`);
+    },
+
+    renderFundHistory(acc) {
+        const list = document.getElementById('fundHistoryList');
+        if(!acc.contributions || acc.contributions.length === 0) {
+            list.innerHTML = `<div class="text-[9px] text-slate-600 italic text-center py-2">No transaction history.</div>`;
+            return;
+        }
+        
+        // Show last 20
+        list.innerHTML = acc.contributions.slice(0, 20).map(c => {
+            const date = new Date(c.date).toLocaleDateString();
+            const isDep = c.amount > 0;
+            const color = isDep ? 'text-emerald-400' : 'text-red-400';
+            const icon = isDep ? 'arrow-down-to-line' : 'arrow-up-from-line';
+            const label = c.type === 'RECURRING' ? 'Auto-Dep' : (isDep ? 'Deposit' : 'Withdraw');
+            
+            return `
+            <div class="flex justify-between items-center text-[10px] border-b border-slate-700/50 pb-1 last:border-0">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="${icon}" class="w-3 h-3 ${color} opacity-70"></i>
+                    <div>
+                        <span class="text-slate-300 font-bold block">${label}</span>
+                        <span class="text-slate-500 text-[9px]">${date}</span>
+                    </div>
+                </div>
+                <span class="${color} font-mono font-bold">${isDep ? '+' : ''}${c.amount.toFixed(2)}</span>
+            </div>`;
+        }).join('');
+        lucide.createIcons();
+    },
+
+    // --- AUTOMATED CHECKER (Run on Startup) ---
+    checkRecurringContributions() {
+        const now = new Date();
+        let updated = false;
+
+        this.data.accounts.forEach(acc => {
+            if(!acc.contributions) acc.contributions = [];
+            if(acc.recurring && acc.recurring.active && acc.recurring.amount > 0) {
+                
+                let lastCheck = new Date(acc.recurring.lastCheck || new Date().toISOString());
+                // Check from day AFTER last check
+                let pointer = new Date(lastCheck);
+                pointer.setDate(pointer.getDate() + 1);
+                
+                while (pointer <= now) {
+                    if (pointer.getDate() === parseInt(acc.recurring.day)) {
+                        // PAYDAY
+                        const amt = parseFloat(acc.recurring.amount);
+                        acc.size += amt;
+                        acc.contributions.unshift({
+                            date: pointer.toISOString(),
+                            amount: amt,
+                            type: 'RECURRING'
+                        });
+                        updated = true;
+                    }
+                    pointer.setDate(pointer.getDate() + 1);
+                }
+                acc.recurring.lastCheck = now.toISOString();
+            }
+        });
+
+        if(updated) this.saveSettings();
+    },
+	// --- STATS RESET LOGIC ---
+    
+    saveStatsDate() {
+        const dateVal = document.getElementById('statsStartDate').value;
+        this.data.settings.statsStartDate = dateVal; // e.g., "2025-01-01"
+        this.saveSettings();
+        this.generateInsights(this.data.logs); // Re-calc stats immediately
+        this.renderLogs(); // Optional: If you want to visually separate logs
+		this.renderStats();
+    },
+
+    resetStatsDate() {
+        // Set to Today
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('statsStartDate').value = today;
+        this.saveStatsDate();
+        alert("Stats have been reset. Performance is now tracked from today onwards.");
+    },
+
+    clearStatsDate() {
+        this.data.settings.statsStartDate = null;
+        document.getElementById('statsStartDate').value = '';
+        this.saveSettings();
+        this.generateInsights(this.data.logs);
+        alert("Showing All-Time History.");
     },
 }; // <--- This is the end of the app object
 	
