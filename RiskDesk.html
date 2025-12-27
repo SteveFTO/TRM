@@ -1441,7 +1441,7 @@ const app = {
     
     charts: {},
 
-    // --- INITIALIZATION ---
+	// --- INITIALIZATION ---
     async init() { 
         await licenseService.init(); 
         await imgDB.open();
@@ -1526,6 +1526,12 @@ const app = {
         this.setDirection('LONG');
         this.populateStrategySelect();
         this.checkRecurringContributions();
+
+        // 7. Fix Mobile Rotation (Updates Risk Bar on rotate)
+        window.addEventListener('resize', () => {
+            if(this.updateRiskBar) this.updateRiskBar();
+        });
+        
     },
     
     // --- PATCH 4B: IMAGE HELPERS ---
