@@ -15,14 +15,15 @@
         .prose-p { margin-bottom: 1rem; line-height: 1.7; }
         .highlight-box { background: rgba(30, 41, 59, 0.5); border-left: 4px solid #3b82f6; padding: 1.5rem; margin: 1.5rem 0; border-radius: 0 0.5rem 0.5rem 0; }
         .danger-box { background: rgba(127, 29, 29, 0.1); border-left: 4px solid #ef4444; padding: 1.5rem; margin: 1.5rem 0; border-radius: 0 0.5rem 0.5rem 0; }
-        .formula-box { background: #1e293b; padding: 1rem; border-radius: 0.5rem; font-family: monospace; color: #fbbf24; overflow-x: auto; margin: 1rem 0; }
+        .formula-box { background: #1e293b; padding: 1rem; border-radius: 0.5rem; font-family: monospace; color: #fbbf24; overflow-x: auto; margin: 1rem 0; font-size: 0.85rem; }
         .toc-link:hover { color: #60a5fa; padding-left: 4px; }
         .toc-link { transition: all 0.2s; display: block; padding: 4px 0; color: #94a3b8; font-size: 0.9rem; }
         .toc-active { color: #60a5fa; font-weight: bold; border-left: 2px solid #60a5fa; padding-left: 10px; }
         
-        /* Custom Table Styles matching App Help */
-        .guide-table th { text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; padding: 0.75rem; background: #334155; color: #e2e8f0; }
-        .guide-table td { padding: 0.75rem; border-top: 1px solid #334155; font-size: 0.875rem; }
+        /* Custom Table Styles */
+        .guide-table th { text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; padding: 0.75rem; background: #1e293b; color: #e2e8f0; border-bottom: 1px solid #334155; }
+        .guide-table td { padding: 0.75rem; border-bottom: 1px solid #334155; font-size: 0.875rem; vertical-align: top; }
+        .guide-table tr:last-child td { border-bottom: none; }
     </style>
 </head>
 <body class="antialiased">
@@ -31,7 +32,7 @@
         <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
             <a href="index.html" class="flex items-center gap-2 group">
                 <i data-lucide="arrow-left" class="w-5 h-5 text-slate-500 group-hover:text-white transition-colors"></i>
-                <span class="font-bold text-lg tracking-tight">RISK<span class="text-slate-400">DESK</span> <span class="text-xs bg-slate-800 px-2 py-1 rounded text-blue-400 ml-2">DOCS</span></span>
+                <span class="font-bold text-lg tracking-tight">RISK<span class="text-slate-400">DESK</span> <span class="text-xs bg-slate-800 px-2 py-1 rounded text-blue-400 ml-2">GUIDE</span></span>
             </a>
         </div>
     </nav>
@@ -44,13 +45,15 @@
                 <nav class="space-y-1">
                     <a href="#philosophy" class="toc-link">Philosophy</a>
                     <a href="#setup" class="toc-link">1. Initial Setup</a>
-                    <a href="#calculator" class="toc-link">2. The Calculator</a>
-                    <a href="#logs" class="toc-link">3. Logs & Views</a>
-                    <a href="#management" class="toc-link">4. Trade Management</a>
-                    <a href="#statistics" class="toc-link">5. Stats & Insights</a>
-                    <a href="#journal" class="toc-link">6. The Journal</a>
-                    <a href="#privacy" class="toc-link">7. Privacy & Sharing</a>
-                    <a href="#glossary" class="toc-link">Glossary</a>
+                    <a href="#live-data" class="toc-link">2. Live Data & Prices</a>
+                    <a href="#calculator" class="toc-link">3. The Calculator</a>
+                    <a href="#metrics" class="toc-link">4. Risk Metrics</a>
+                    <a href="#logs" class="toc-link">5. Logs & Views</a>
+                    <a href="#management" class="toc-link">6. Trade Management</a>
+                    <a href="#statistics" class="toc-link">7. Stats & Insights</a>
+                    <a href="#journal" class="toc-link">8. The Journal</a>
+                    <a href="#privacy" class="toc-link">9. Privacy & Sharing</a>
+                    <a href="#glossary" class="toc-link">Glossary & Disclaimer</a>
                 </nav>
             </div>
         </aside>
@@ -58,8 +61,8 @@
         <main class="flex-1 max-w-3xl">
             
             <section id="header" class="mb-16">
-                <h1 class="text-4xl font-extrabold text-white mb-4">The Complete Guide</h1>
-                <p class="text-lg text-slate-400">Master your risk, manage your psychology, and understand the mathematics behind RiskDesk.</p>
+                <h1 class="text-4xl font-extrabold text-white mb-4">The Professional Guide</h1>
+                <p class="text-lg text-slate-400">Master your risk, manage your psychology, and understand the mathematics behind RiskDesk v10.</p>
             </section>
 
             <section id="philosophy" class="mb-20">
@@ -69,7 +72,7 @@
                 </div>
                 <div class="prose-slate">
                     <p class="prose-p">RiskDesk is not just a calculator; it is a discipline engine. It is built on the premise that <strong>Capital Preservation</strong> is the primary job of a trader.</p>
-                    <p class="prose-p">RiskDesk delivers <strong>dynamic, risk-first, multi-account position sizing with fx conversion support</strong> paired with seamless trade logging, sharing, and outcome recording. It combines <strong>comprehensive trading insight and statistical analysis</strong> with a powerful journaling engine—featuring <strong>trade rule capture and pre-populated activity streams</strong>—to help you trade with precision and discipline.</p>
+                    <p class="prose-p">RiskDesk delivers <strong>dynamic, risk-first, multi-account position sizing</strong> paired with seamless trade logging. It combines <strong>comprehensive statistical analysis</strong> with a powerful journaling engine to help you trade with precision.</p>
                 </div>
             </section>
 
@@ -81,18 +84,27 @@
                 <div class="prose-slate">
                     <h3 class="prose-h3">Account Configuration</h3>
                     <p class="prose-p">Go to <strong>Settings</strong> to define your trading environment. You can add multiple accounts (e.g., "Main Swing", "Day Trading").</p>
-                    <ul class="list-disc pl-5 space-y-2 mb-4">
-                        <li><strong>Master Account:</strong> You must select one account as "Master" using the radio button. This account's size is used as the denominator for "Equity Contribution (EC%)" calculations, allowing you to track how individual trades impact your total net worth.</li>
+                    <ul class="list-disc pl-5 space-y-2 mb-4 text-sm">
+                        <li><strong>Master Account:</strong> You must select one account as "Master" using the radio button. This account's size is used as the denominator for "Equity Contribution (EC%)" calculations.</li>
+                        <li><strong>Base Currency:</strong> Set your Global Base Currency (e.g., GBP). All portfolio stats will be normalized to this currency via the built-in FX API.</li>
                     </ul>
 
-                    <h3 class="prose-h3">Currency & FX API</h3>
-                    <p class="prose-p">Set your Global Base Currency (e.g., GBP). If you trade US stocks using a non-USD account, enable the <strong>FX API</strong>. RiskDesk will automatically fetch real-time rates (e.g., GBP/USD) to ensure your position sizing is accurate based on your base currency risk. You can also manually override this rate.</p>
+                    <h3 class="prose-h3">The Fund Manager</h3>
+                    <p class="prose-p">Tap the <i data-lucide="wallet" class="w-3 h-3 inline text-emerald-400"></i> <strong>Wallet Icon</strong> on any account in the Settings or Calculator view to open the Fund Manager.</p>
+                    <ul class="list-disc pl-5 space-y-2 mb-4 text-sm">
+                        <li><strong>Deposits & Withdrawals:</strong> Log capital injections or withdrawals. These are tracked separately from trading P&L so they don't skew your performance stats.</li>
+                        <li><strong>Monthly Auto-Deposit:</strong> Configure a recurring contribution (e.g., $500 on the 1st of every month). The app will automatically add this to your balance when you open it, allowing you to simulate salary injections and track realistic account growth.</li>
+                    </ul>
 
-                    <h3 class="prose-h3">Strategy Manager</h3>
-                    <p class="prose-p">Create custom tags for your setups (e.g., "Gap & Go", "Reversal", "Breakout"). These tags are used throughout the app to filter Logs and analyze performance in the Stats section.</p>
+                    <h3 class="prose-h3">Data Management</h3>
+                    <p class="prose-p">RiskDesk is <strong>Offline-First</strong>. Your data lives in your browser cache.</p>
+                    <ul class="list-disc pl-5 space-y-2 mb-4 text-sm">
+                        <li><strong>Backup & Restore:</strong> Regularly download your full history as a JSON file using the buttons in Settings. This is your only insurance against clearing browser cache.</li>
+                        <li><strong>Factory Reset:</strong> Located in the "Danger Zone". This wipes all data permanently.</li>
+                    </ul>
 
                     <h3 class="prose-h3">Stats Configuration: Partials Impact</h3>
-                    <p class="prose-p">Found in Settings, this toggle controls how your statistics are calculated. It determines whether you view your data based on "Banked Cash" or "Current Performance".</p>
+                    <p class="prose-p">Found in Settings, this toggle controls how your statistics are calculated.</p>
                     
                     <div class="overflow-hidden rounded-lg border border-slate-700 my-4">
                         <table class="w-full text-left guide-table">
@@ -105,68 +117,144 @@
                             </thead>
                             <tbody class="bg-slate-800">
                                 <tr>
-                                    <td class="font-bold text-slate-400 border-r border-slate-700">Math</td>
-                                    <td class="border-r border-slate-700">Calculates averages using ONLY fully closed trades.</td>
+                                    <td class="font-bold text-slate-400">Math</td>
+                                    <td>Calculates averages using ONLY fully closed trades.</td>
                                     <td>Includes Realized P&L from active trades (Partials).</td>
                                 </tr>
                                 <tr>
-                                    <td class="font-bold text-slate-400 border-r border-slate-700">Use Case</td>
-                                    <td class="border-r border-slate-700">Conservative. "What is my proven, banked edge?"</td>
+                                    <td class="font-bold text-slate-400">Use Case</td>
+                                    <td>Conservative. "What is my proven, banked edge?"</td>
                                     <td>Cashflow. "How is my account growing right now?"</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
+                </div>
+            </section>
 
-                    <h3 class="prose-h3">Data Management</h3>
-                    <ul class="list-disc pl-5 space-y-2 mb-4">
-                        <li><strong>Backup & Restore:</strong> RiskDesk is Offline-First. Download your entire history as a JSON file regularly using the Backup button.</li>
-                        <li><strong>Danger Zone:</strong> Located at the bottom of Settings. This performs a Factory Reset, deleting all Logs, Accounts, and Journal entries. <span class="text-red-400 font-bold">This cannot be undone.</span></li>
-                    </ul>
+            <section id="live-data" class="mb-20">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="p-2 bg-amber-500/10 rounded-lg"><i data-lucide="zap" class="w-6 h-6 text-amber-400"></i></div>
+                    <h2 class="text-2xl font-bold text-white">2. Live Data & Prices</h2>
+                </div>
+                <div class="prose-slate">
+                    <p class="prose-p">RiskDesk connects to professional APIs to keep your risk data accurate without requiring a monthly subscription.</p>
+
+                    <h3 class="prose-h3">Live Price Integration (Finnhub)</h3>
+                    <p class="prose-p">To enable the <strong class="text-white"><i data-lucide="refresh-cw" class="w-3 h-3 inline"></i> Fetch Prices</strong> button in the top Risk Bar, you need a free API key.</p>
+                    <ol class="list-decimal pl-5 space-y-2 mb-4 text-sm text-slate-300">
+                        <li>Go to <a href="https://finnhub.io" target="_blank" class="text-blue-400 hover:underline">finnhub.io</a> and register for a free account.</li>
+                        <li>Copy your default API Key from their dashboard.</li>
+                        <li>Paste it into <strong>Settings > App Preferences > Finnhub API Key</strong>.</li>
+                    </ol>
+                    <p class="text-xs text-slate-500 border-l-2 border-amber-500 pl-3 py-1">
+                        <strong>Note for UK/Intl Stocks:</strong> The API uses standard exchange suffixes. For London stocks, ensure your tickers end in <code>.L</code> (e.g., <code>VOD.L</code>). For Toronto, use <code>.TO</code>.
+                    </p>
                 </div>
             </section>
 
             <section id="calculator" class="mb-20">
                 <div class="flex items-center gap-3 mb-6">
                     <div class="p-2 bg-emerald-500/10 rounded-lg"><i data-lucide="calculator" class="w-6 h-6 text-emerald-400"></i></div>
-                    <h2 class="text-2xl font-bold text-white">2. The Calculator Engine</h2>
+                    <h2 class="text-2xl font-bold text-white">3. The Calculator Engine</h2>
                 </div>
                 
                 <div class="prose-slate">
-                    <p class="prose-p">The calculator determines your position size based on your risk tolerance. It offers two distinct mathematical models:</p>
+                    <p class="prose-p">The calculator determines your position size based on your risk tolerance. It offers three distinct mathematical models:</p>
 
-                    <div class="grid md:grid-cols-2 gap-6 my-6">
+                    <div class="grid md:grid-cols-3 gap-4 my-6">
                         <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
-                            <h4 class="text-white font-bold mb-2">Model A: Equity Risk %</h4>
-                            <p class="text-sm">"I want to lose exactly 1.0% of my account if I'm wrong."</p>
-                            <div class="mt-3 text-xs font-mono text-emerald-400">Shares = (Account * Risk%) / (Entry - Stop)</div>
+                            <h4 class="text-white font-bold mb-2 text-sm">Equity Risk %</h4>
+                            <p class="text-xs text-slate-400 mb-2">"Lose max 1.0% of account."</p>
+                            <div class="text-[10px] font-mono text-emerald-400">Shares = (Account * Risk%) / (Entry - Stop)</div>
                         </div>
                         <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
-                            <h4 class="text-white font-bold mb-2">Model B: Position Size %</h4>
-                            <p class="text-sm">"I want to put 10% of my capital into this stock."</p>
-                            <div class="mt-3 text-xs font-mono text-blue-400">Shares = (Account * Alloc%) / Entry</div>
+                            <h4 class="text-white font-bold mb-2 text-sm">Position Size %</h4>
+                            <p class="text-xs text-slate-400 mb-2">"Invest 10% of capital."</p>
+                            <div class="text-[10px] font-mono text-blue-400">Shares = (Account * Alloc%) / Entry</div>
+                        </div>
+                        <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                            <h4 class="text-white font-bold mb-2 text-sm">Cash Risk $</h4>
+                            <p class="text-xs text-slate-400 mb-2">"Lose exactly $100."</p>
+                            <div class="text-[10px] font-mono text-amber-400">Shares = CashRisk / (Entry - Stop)</div>
                         </div>
                     </div>
 
                     <h3 class="prose-h3">Key Features</h3>
-                    <ul class="list-disc pl-5 space-y-2 mb-4">
-                        <li><strong>Trade Currency:</strong> Ensure you select the currency of the asset you are trading. If it differs from your Base Currency, the FX API will handle the conversion for accurate sizing.</li>
+                    <ul class="list-disc pl-5 space-y-2 mb-4 text-sm">
+                        <li><strong>Trade Currency:</strong> Ensure you select the currency of the asset you are trading (e.g. USD for Apple). If it differs from your Base Currency (e.g. GBP), the FX API will handle the conversion to ensure your risk sizing is accurate in your home currency.</li>
                         <li><strong>Staggered Stops:</strong> You are not limited to a single stop price. Toggle "Staggered" to set multiple weighted stop levels. The system calculates a weighted average stop to determine true risk per share.</li>
-                        <li><strong>Context & Strategy:</strong> Select a Strategy tag and add context notes (e.g., "Market choppy") before logging. This is crucial for the Insights engine.</li>
                         <li><strong>Chart Capture:</strong> Paste a chart image directly from your clipboard (Ctrl+V) into the "Paste Zone" to save the setup chart permanently with the trade.</li>
                     </ul>
+                </div>
+            </section>
+
+            <section id="metrics" class="mb-20">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="p-2 bg-rose-500/10 rounded-lg"><i data-lucide="activity" class="w-6 h-6 text-rose-400"></i></div>
+                    <h2 class="text-2xl font-bold text-white">4. Risk Metrics</h2>
+                </div>
+                
+                <div class="prose-slate">
+                    <p class="prose-p">The top "Risk Bar" provides a real-time health check of your portfolio. Understanding these acronyms is vital for professional risk management.</p>
+
+                    <dl class="space-y-6 mt-6">
+                        <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                            <dt class="font-bold text-emerald-400 flex justify-between">
+                                <span>NER (New Exposure Risk)</span>
+                                <span class="text-xs opacity-50 font-mono text-white">The "Worst Case"</span>
+                            </dt>
+                            <dd class="text-sm text-slate-300 mt-2">
+                                The amount of open risk that is <strong>NOT</strong> yet financed by realized profits. If every single trade hit its stop loss right now, this is how much your account balance would drop from its starting point.
+                                <div class="formula-box mt-3">NER = (Gross Open Risk - Banked Profits) / Account Size</div>
+                            </dd>
+                        </div>
+
+                        <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                            <dt class="font-bold text-blue-400 flex justify-between">
+                                <span>NEP (New Exposure Profit)</span>
+                                <span class="text-xs opacity-50 font-mono text-white">The "Traction"</span>
+                            </dt>
+                            <dd class="text-sm text-slate-300 mt-2">
+                                Measures the floating profit of your "Fresh" trades (trades where you haven't taken partials yet). Positive NEP means your new ideas are working.
+                                <div class="formula-box mt-3">NEP = (Floating P&L of Fresh Trades) / Account Size</div>
+                            </dd>
+                        </div>
+
+                        <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                            <dt class="font-bold text-blue-400 flex justify-between">
+                                <span>Delta</span>
+                                <span class="text-xs opacity-50 font-mono text-white">Your Net Traction"</span>
+                            </dt>
+                            <dd class="text-sm text-slate-300 mt-2">
+                                The relationship between your Traction (NEP) and your Risk (NER).
+                            </dd>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                                <dt class="font-bold text-white text-sm">Open Heat</dt>
+                                <dd class="text-xs text-slate-400 mt-1">
+                                    The gross sum of risk across all positions. If you have 4 trades, each risking 1% of equity, your Heat is 4%.
+                                </dd>
+                            </div>
+                            <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                                <dt class="font-bold text-white text-sm">Secured</dt>
+                                <dd class="text-xs text-slate-400 mt-1">
+                                    The "Risk Free" profit. This is money banked that exceeds all current open risk. It is yours to keep, no matter what happens next.
+                                </dd>
+                            </div>
+                        </div>
+                    </dl>
                 </div>
             </section>
 
             <section id="logs" class="mb-20">
                 <div class="flex items-center gap-3 mb-6">
                     <div class="p-2 bg-amber-500/10 rounded-lg"><i data-lucide="list" class="w-6 h-6 text-amber-400"></i></div>
-                    <h2 class="text-2xl font-bold text-white">3. Logs & Views</h2>
+                    <h2 class="text-2xl font-bold text-white">5. Logs & Views</h2>
                 </div>
                 <div class="prose-slate">
-                    <h3 class="prose-h3">Manual Logging & Tools</h3>
-                    <p class="prose-p">If you miss a live entry, use the <i data-lucide="plus" class="w-4 h-4 inline"></i> button to manually record past trades. The Logs header also includes Search, Filtering (Wins/Losses/Open), and CSV Export.</p>
-
                     <h3 class="prose-h3">Viewing Modes (Responsive)</h3>
                     <p class="prose-p">RiskDesk changes the data it displays based on your device orientation to prevent information overload.</p>
                     
@@ -183,12 +271,12 @@
                         </div>
                         <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
                             <h4 class="text-white font-bold mb-2 uppercase text-xs border-b border-slate-700 pb-1">Landscape Mode (Pro View)</h4>
-                            <p class="text-xs text-slate-400 mb-2">Rotate your phone to reveal detailed accounting columns.</p>
+                            <p class="text-xs text-slate-400 mb-2">Rotate your phone to reveal the professional data tape.</p>
                             <ul class="text-xs text-slate-500 list-disc pl-4 space-y-1">
-                                <li><strong class="text-slate-400">Qty:</strong> Original vs Current shares</li>
-                                <li><strong class="text-slate-400">Stop:</strong> Weighted active stop</li>
-                                <li><strong class="text-slate-400">EC%:</strong> Equity Contribution % (Impact on Net Worth)</li>
-                                <li><strong class="text-slate-400">Gain%:</strong> Raw Price movement captured</li>
+                                <li><strong>Position Size:</strong> Total value of the position in trade currency.</li>
+                                <li><strong>Live Price:</strong> Real-time current price (if enabled).</li>
+                                <li><strong>Qty:</strong> Original vs Current shares held.</li>
+                                <li><strong>EC%:</strong> Equity Contribution % (Impact on Net Worth).</li>
                             </ul>
                         </div>
                     </div>
@@ -198,18 +286,18 @@
             <section id="management" class="mb-20">
                 <div class="flex items-center gap-3 mb-6">
                     <div class="p-2 bg-rose-500/10 rounded-lg"><i data-lucide="layers" class="w-6 h-6 text-rose-400"></i></div>
-                    <h2 class="text-2xl font-bold text-white">4. Trade Management</h2>
+                    <h2 class="text-2xl font-bold text-white">6. Trade Management</h2>
                 </div>
                 
                 <div class="prose-slate">
-                    <p class="prose-p">Tap any log entry to open the Management Console. This is where you manage the lifecycle of the trade.</p>
+                    <p class="prose-p">Tap any log entry to open the Management Console.</p>
 
                     <ul class="space-y-4 mb-6">
                         <li>
                             <strong class="text-white">Stop Adjustments:</strong> Update your "Current Stop" as the trade moves in your favor. This automatically updates your <strong>Open Heat</strong> metric on the dashboard.
                         </li>
                         <li>
-                            <strong class="text-white">Partial Exits:</strong> Record partial sells by specifying Price, Quantity, and Date. The system calculates the realized P&L for that specific chunk and reduces your NER (Net Exposure Risk). You can also Edit or Undo exits here.
+                            <strong class="text-white">Partial Exits:</strong> Record partial sells by specifying Price, Quantity, and Date. The system calculates the realized P&L for that specific chunk and reduces your NER.
                         </li>
                         <li>
                             <strong class="text-white">Chart Gallery:</strong> Stores all images associated with the trade (Entry Chart, Exit Chart, and any Journal updates). Tap any image to view it full screen.
@@ -228,12 +316,19 @@
             <section id="statistics" class="mb-20">
                 <div class="flex items-center gap-3 mb-6">
                     <div class="p-2 bg-cyan-500/10 rounded-lg"><i data-lucide="bar-chart-2" class="w-6 h-6 text-cyan-400"></i></div>
-                    <h2 class="text-2xl font-bold text-white">5. Stats & Insights</h2>
+                    <h2 class="text-2xl font-bold text-white">7. Stats & Insights</h2>
                 </div>
 
                 <div class="prose-slate">
-                    <h3 class="prose-h3">Trading Insights</h3>
-                    <p class="prose-p">An automated engine scans your data for patterns. It highlights strengths (e.g., "MVP Strategy", "High Efficiency") and flags risks (e.g., "Negative Skew" where losses exceed wins, or "System Leak" where Profit Factor drops).</p>
+                    <h3 class="prose-h3">Smart Filters (Time Slicing)</h3>
+                    <p class="prose-p">The Stats engine now supports powerful time-slicing. You can filter your entire dashboard by:</p>
+                    <ul class="flex flex-wrap gap-2 text-xs font-mono text-slate-300 mb-6">
+                        <li class="bg-slate-800 px-2 py-1 rounded border border-slate-700">Last 20 Trades</li>
+                        <li class="bg-slate-800 px-2 py-1 rounded border border-slate-700">This Week</li>
+                        <li class="bg-slate-800 px-2 py-1 rounded border border-slate-700">This Month</li>
+                        <li class="bg-slate-800 px-2 py-1 rounded border border-slate-700">YTD</li>
+                        <li class="bg-slate-800 px-2 py-1 rounded border border-slate-700">Custom Range</li>
+                    </ul>
 
                     <h3 class="prose-h3">Core Metrics</h3>
                     <div class="grid md:grid-cols-2 gap-4 mb-6">
@@ -245,75 +340,25 @@
                             <strong class="text-white block text-sm">Strategy Edge</strong>
                             <p class="text-xs text-slate-400">Performance breakdown by Strategy tag.</p>
                         </div>
-                        <div class="bg-slate-800 p-3 rounded border border-slate-700">
-                            <strong class="text-white block text-sm">Risk & Behavior</strong>
-                            <p class="text-xs text-slate-400">Avg Win vs Avg Loss size (R). Consistency Heatmap.</p>
-                        </div>
-                        <div class="bg-slate-800 p-3 rounded border border-slate-700">
-                            <strong class="text-white block text-sm">Account Growth</strong>
-                            <p class="text-xs text-slate-400">Equity curve visualization.</p>
-                        </div>
                     </div>
 
-                    <h3 class="prose-h3">Filters</h3>
-                    <p class="prose-p">Use the dropdowns to filter by Strategy or Timeframe (For example - Last 20 Trades vs All Time). The <i data-lucide="split" class="w-4 h-4 inline text-blue-400"></i> icon indicates that "Include Partials" mode is active.</p>
-                </div>
-				<div class="prose-slate">
-                    <h3 class="prose-h3">Strict vs. Dynamic Mode</h3>
-                    <p class="prose-p">In Settings, you can toggle "Include Partials in Averages." This fundamentally changes how your performance is viewed:</p>
-                    <table class="w-full text-sm text-left border-collapse border border-slate-700 rounded-lg overflow-hidden my-4">
-                        <thead class="bg-slate-800 text-slate-200">
-                            <tr>
-                                <th class="p-3 border-b border-slate-700">Metric</th>
-                                <th class="p-3 border-b border-slate-700 text-emerald-400">Strict Mode (Default)</th>
-                                <th class="p-3 border-b border-slate-700 text-blue-400">Dynamic Mode</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-700">
-                            <tr>
-                                <td class="p-3 font-bold text-slate-300">Win Rate</td>
-                                <td class="p-3">Only fully closed trades count.</td>
-                                <td class="p-3">Includes active trades with partials. (Volatile)</td>
-                            </tr>
-                            <tr>
-                                <td class="p-3 font-bold text-slate-300">Avg Win</td>
-                                <td class="p-3">Clean average of completed outcomes.</td>
-                                <td class="p-3">Lower. Dragged down by small partials.</td>
-                            </tr>
-                            <tr>
-                                <td class="p-3 font-bold text-slate-300">Net R</td>
-                                <td class="p-3"><strong>Always</strong> sums all realized cash.</td>
-                                <td class="p-3"><strong>Always</strong> sums all realized cash.</td>
-                            </tr>
-                        </tbody>
-                    </table>
-
                     <h3 class="prose-h3">Consistency Heatmap</h3>
-                    <p class="prose-p">This grid visualizes your "Origination Quality." You can configure how you want the Consistency grid to plot your trades.
-					<p class="prose-p">Plot trades based on their <strong>Entry Date</strong>. If a trade entered on Monday turns green, Monday lights up green. It answers: <em>"How good were my entry decisions on that day?"</em></p>
-					<p class="prose-p">Plot trades based on their <strong>Exit Date</strong>.  If a partial on a profitable partial or overall trade is closed Monday then Monday turns green. It can help show: <em>"How effective are my exits? Am I securing profits to help finance new risk? Should I be sizing up or down?</em></p>
-                    <p class="prose-p">Plot trades based on your <strong>Discipline.</strong>  Have you adhered to <strong>Your Rules?</strong>. If Yes the day is marked Green, if No the day is marked Red.  Use in conjunction with the other Consistency Heatmap settings to see <em>"How discipline impacts my trading outcomes?"</em></p>
-					
+                    <p class="prose-p">This GitHub-style grid visualizes your trading frequency and quality. Use the toggle buttons to switch modes:</p>
+                    <ul class="list-disc pl-5 space-y-2 mb-4 text-sm">
+                        <li><strong>By Entry:</strong> Highlights days where you <em>initiated</em> winning trades. Measures Origination Quality.</li>
+                        <li><strong>By Exit:</strong> Highlights days where you <em>banked</em> profit. Measures Cashflow.</li>
+                        <li><strong>By Discipline:</strong> Green = Rules Followed. Red = Rules Broken. Measures Behavioral Consistency.</li>
+                    </ul>
+
                     <h3 class="prose-h3">Key Formulas</h3>
-                    
                     <div class="space-y-4">
                         <div>
-                            <strong class="text-slate-200 block">R-Multiple</strong>
-                            <p class="text-sm mb-1">Standardizes profit/loss relative to initial risk.</p>
-                            <div class="formula-box">R = (ExitPrice - EntryPrice) / (EntryPrice - StopPrice)</div>
-                        </div>
-
-                        <div>
                             <strong class="text-slate-200 block">Expectancy</strong>
-                            <p class="text-sm mb-1">The average R-value you can expect per trade over time.</p>
                             <div class="formula-box">Expectancy = (Win% × AvgWinR) - (Loss% × AvgLossR)</div>
                         </div>
-
                         <div>
                             <strong class="text-slate-200 block">Profit Factor</strong>
-                            <p class="text-sm mb-1">A measure of system sustainability.</p>
                             <div class="formula-box">PF = (Gross Profit $) / (Gross Loss $)</div>
-                            <p class="text-xs">PF > 2.0 is excellent. PF < 1.0 means you are losing money.</p>
                         </div>
                     </div>
                 </div>
@@ -322,23 +367,21 @@
             <section id="journal" class="mb-20">
                 <div class="flex items-center gap-3 mb-6">
                     <div class="p-2 bg-pink-500/10 rounded-lg"><i data-lucide="book-open" class="w-6 h-6 text-pink-400"></i></div>
-                    <h2 class="text-2xl font-bold text-white">6. The Journal</h2>
+                    <h2 class="text-2xl font-bold text-white">8. The Journal</h2>
                 </div>
                 
                 <div class="prose-slate">
-                    <p class="prose-p">The Journal tab is designed for daily review and behavioral tracking.</p>
+                    <p class="prose-p">The Journal tab is your daily accountability partner.</p>
                     
-                    <h3 class="prose-h3">Features</h3>
                     <ul class="list-disc pl-5 space-y-3">
-                        <li><strong>Rules & Philosophy:</strong> Define your "Golden Rules" in the settings tab. These persist and serve as your daily checklist.</li>
-                        <li><strong>Automated Daily Log:</strong> The Journal automatically pulls in every trade, partial exit, and P&L event for the selected date.</li>
+                        <li><strong>Golden Rules:</strong> Define your rules in the "Philosophy" tab. They persist daily.</li>
+                        <li><strong>Automated Feed:</strong> The Journal automatically pulls in every trade entry and exit for the selected date, creating an instant timeline of your day.</li>
                         <li><strong>Discipline Tracking:</strong> You must answer: <em>"Did you follow your rules today?"</em>
                             <ul class="list-disc pl-5 mt-2 text-sm text-slate-400">
-                                <li><strong>YES:</strong> Marks the day Green on the consistency heatmap.</li>
-                                <li><strong>NO:</strong> Marks the day Red. A checklist of your defined rules appears, allowing you to specify exactly <em>which</em> rules you broke. This tracks behavioral leaks over time.</li>
+                                <li><strong>YES:</strong> Marks the heatmap Green.</li>
+                                <li><strong>NO:</strong> Marks the heatmap Red. A checklist of your rules appears, forcing you to check off exactly <em>which</em> rules you broke.</li>
                             </ul>
                         </li>
-                        <li><strong>Review:</strong> Tag your Emotions (Anxious, Bored, Focused), write notes, and paste chart images.</li>
                     </ul>
                 </div>
             </section>
@@ -346,7 +389,7 @@
             <section id="privacy" class="mb-20">
                 <div class="flex items-center gap-3 mb-6">
                     <div class="p-2 bg-slate-700/50 rounded-lg"><i data-lucide="shield" class="w-6 h-6 text-slate-300"></i></div>
-                    <h2 class="text-2xl font-bold text-white">7. Privacy & Sharing</h2>
+                    <h2 class="text-2xl font-bold text-white">9. Privacy & Sharing</h2>
                 </div>
                 
                 <div class="prose-slate">
@@ -370,28 +413,11 @@
             </section>
 
             <section id="glossary" class="mb-24 pt-10 border-t border-slate-800">
-                <h2 class="text-2xl font-bold text-white mb-6">Glossary</h2>
-                <dl class="space-y-6">
-                    <div class="grid md:grid-cols-4 gap-4">
-                        <dt class="font-bold text-blue-400 md:col-span-1">R-Multiple</dt>
-                        <dd class="text-slate-400 text-sm md:col-span-3">A unit of risk. 1R represents your intended risk amount on a trade. If you risk $100 and make $300, that is a +3R trade.</dd>
-                    </div>
-                    <div class="grid md:grid-cols-4 gap-4">
-                        <dt class="font-bold text-blue-400 md:col-span-1">Scratch</dt>
-                        <dd class="text-slate-400 text-sm md:col-span-3">A trade that results in a near-breakeven outcome (between -0.1R and +0.1R). RiskDesk filters these out of "Win/Loss" magnitude averages to prevent data noise.</dd>
-                    </div>
-                    <div class="grid md:grid-cols-4 gap-4">
-                        <dt class="font-bold text-blue-400 md:col-span-1">NER</dt>
-                        <dd class="text-slate-400 text-sm md:col-span-3">Net Exposure Risk. The amount of open risk that is NOT yet financed by realized profits. It is the true measure of your portfolio's vulnerability.</dd>
-                    </div>
-                    <div class="grid md:grid-cols-4 gap-4">
-                        <dt class="font-bold text-blue-400 md:col-span-1">Heat</dt>
-                        <dd class="text-slate-400 text-sm md:col-span-3">Open Heat. The gross sum of risk across all open positions. If you have 4 trades open, each risking 1% of equity, your Heat is 4%.</dd>
-                    </div>
-                </dl>
+                
                 
                 <div class="danger-box mt-10 text-center text-xs text-red-300">
-                    <p><strong>Disclaimer:</strong> This tool is for educational and journaling purposes only. It is not financial advice. Trading involves significant risk.</p>
+                    <p class="mb-2"><strong>Disclaimer:</strong> This tool is for educational and journaling purposes only. It is not financial advice. Trading involves significant risk.</p>
+                    <p><strong>Data Warning:</strong> Live prices are provided by third-party services (e.g., Finnhub) and may be delayed or inaccurate. Never execute trades based solely on these prices; always verify with your broker.</p>
                 </div>
             </section>
 
@@ -407,5 +433,3 @@
     </script>
 </body>
 </html>
-
-
