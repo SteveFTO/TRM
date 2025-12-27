@@ -1949,24 +1949,20 @@ const app = {
         const openTrades = this.data.logs.filter(l => l.outcome === 'open');
         const masterAcc = this.data.accounts.find(a => a.isMaster);
         const accountSize = masterAcc ? masterAcc.size : 10000;
-        
+
         let metrics = {
-            ner: 0,           // Net Equity Risk ($)
-            nep: 0,           // Net Equity Profit ($)
-            openProfit: 0,    // Total Open P&L ($)
-            openHeat: 0,      // Total Distance from Stop ($)
-            secured: 0,       // Secured Profit ($)
-            grossRisk: 0      // Total Gross Risk ($)
+            ner: 0,           // Net Exposure Risk 
+            nep: 0,           // New Exposure Profit (Traction)
+            delta: 0,         // NEP - NER
+            openProfit: 0,    // Total Portfolio P&L
+            openHeat: 0,      // Total Portfolio Heat
+            secured: 0        // Banked (Worst Case)
         };
 
         openTrades.forEach(log => {
             const rate = log.exchangeRate || 1;
             
-            // 1. Calculate Quantities
-            const totalSold = log.exits ? log.exits.reduce((a,b) => a + b.qty, 0) : 0;
-            const currentQty = (log.initialQty || 0) - totalSold;
-            
-            // 2. Calculate Banked Profit (Realized)
+            // 1. BANKED (Realized)
             let bankedPnl = 0;
             if(log.exits) {
                 log.exits.forEach(ex => {
@@ -1974,12 +1970,13 @@ const app = {
                      bankedPnl += pnl;
                 });
             }
-            // Convert Banked to Base Currency
             const bankedBase = bankedPnl / rate;
 
-            // 3. Calculate Floating P&L (Unrealized)
+            // 2. FLOATING (Unrealized)
+            const totalSold = log.exits ? log.exits.reduce((a,b) => a + b.qty, 0) : 0;
+            const currentQty = (log.initialQty || 0) - totalSold;
             let floatingPnl = 0;
-            let currentPrice = log.currentPrice || log.entry; // Fallback if no fetch
+            let currentPrice = log.currentPrice || log.entry;
             
             if(currentQty > 0) {
                 const diff = (log.direction === 'SHORT' ? log.entry - currentPrice : currentPrice - log.entry);
@@ -1987,57 +1984,50 @@ const app = {
             }
             const floatingBase = floatingPnl / rate;
 
-            // 4. Calculate Risk Metrics
-            // Gross Risk: Amount lost if stop hit NOW
+            // 3. GROSS RISK (The Fix)
             const activeStop = (typeof log.currentStop === 'number') ? log.currentStop : log.stop;
-            const riskDist = Math.abs(log.entry - activeStop);
-            const grossRiskTrade = riskDist * currentQty;
-            const grossRiskBase = grossRiskTrade / rate;
+            
+            // --- FIX START: Directional Risk Logic ---
+            let riskPerShare = 0;
+            if (log.direction === 'SHORT') {
+                // For Short: Risk is (Stop - Entry). If Stop < Entry, Risk is 0.
+                riskPerShare = Math.max(0, activeStop - log.entry);
+            } else {
+                // For Long: Risk is (Entry - Stop). If Stop > Entry, Risk is 0.
+                riskPerShare = Math.max(0, log.entry - activeStop);
+            }
+            // --- FIX END ---
 
-            // Net Risk: Gross Risk minus what we've already banked
-            // If Banked > Risk, Net Risk is 0 (Risk Free)
-            const netRiskBase = Math.max(0, grossRiskBase - bankedBase);
-
-            // Heat: Distance relative to Stop (Negative = Safe/Above Stop)
-            // Long: Stop - Current. Short: Current - Stop.
-            let heatTrade = 0;
-            if(log.direction === 'SHORT') heatTrade = (currentPrice - activeStop) * currentQty;
-            else heatTrade = (activeStop - currentPrice) * currentQty; 
-            const heatBase = heatTrade / rate;
+            const grossRiskBase = (riskPerShare * currentQty) / rate;
 
 
-            // --- AGGREGATE METRICS ---
+            // 4. PRIMETRADING LOGIC (Unfinanced Filter)
+            const remainingRisk = grossRiskBase - bankedBase;
 
-            // A. NER (Net Equity Risk)
-            // Only add if there is actual risk remaining
-            if(netRiskBase > 0) {
-                metrics.ner += netRiskBase; 
-                metrics.grossRisk += grossRiskBase;
+            if (remainingRisk > 0) {
+                // Trade is UNFINANCED (Risky)
+                metrics.ner += remainingRisk; 
+                metrics.nep += floatingBase;   // Add Traction
+            } else {
+                // Trade is FINANCED (Free Roll)
+                // We do NOT add to NEP/NER.
+                // We add the "Overflow Safety" to Secured.
+                // Secured = Banked - Risk. Since Risk is 0 (or covered), Secured = The Profit we keep.
+                metrics.secured += Math.abs(remainingRisk); 
             }
 
-            // B. NEP (Net Equity Profit)
-            // Only for "Fresh" trades (No partials taken yet)
-            if(totalSold === 0) {
-                metrics.nep += floatingBase;
-            }
-
-            // C. Open Profit (Total P&L of position)
             metrics.openProfit += (bankedBase + floatingBase);
-
-            // D. Open Heat
-            metrics.openHeat += heatBase;
-
-            // E. Secured Profits (Banked - Risk)
-            // Example: Banked 100, Risk 50 -> Secured = +50
-            // Example: Banked 50, Risk 100 -> Secured = -50
-            metrics.secured += (bankedBase - grossRiskBase);
+            metrics.openHeat += grossRiskBase;
         });
 
-        // Return percentages and raw values
+        // Delta
+        metrics.delta = metrics.nep - metrics.ner;
+
         return {
-            nerPct: -(metrics.ner / accountSize) * 100, // Display as negative drag
+            nerPct: -(metrics.ner / accountSize) * 100,
             nepPct: (metrics.nep / accountSize) * 100,
-            delta: ((metrics.nep - metrics.ner) / accountSize) * 100, // NEP - NER (Runway)
+            delta: (metrics.delta / accountSize) * 100,
+            
             profitVal: metrics.openProfit,
             heatVal: metrics.openHeat,
             securedVal: metrics.secured
