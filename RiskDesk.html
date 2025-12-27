@@ -660,21 +660,24 @@
                         
                         <div class="bg-slate-900/50 p-3 rounded border border-slate-600">
                             <strong class="text-white block mb-2 text-xs uppercase text-blue-400">Live Risk Monitor (Top Bar)</strong>
+                            <p class="text-[10px] text-slate-400 mb-2 italic">Based on the PrimeTrading "Progressive Exposure" Model.</p>
                             <ul class="list-disc ml-4 text-[10px] text-slate-400 space-y-3">
                                 <li>
-                                    <strong class="text-slate-200">NER (New Exposure Risk):</strong> "The Worst Case."<br>
-                                    Shows the risk remaining after netting out banked profits.<br>
-                                    <span class="font-mono text-xs text-slate-500">Formula: (Open Heat - Realized Profit) / Equity</span>
+                                    <strong class="text-slate-200">NER (Net Exposure Risk):</strong> "Naked Risk."<br>
+                                    The % of account at risk from <strong>unfinanced</strong> positions only.<br>
+                                    <span class="font-mono text-xs text-slate-500">Formula: (Open Heat - Banked Profit)</span><br>
+                                    <span class="text-slate-500 italic">*If Banked Profit > Open Heat, the trade is "Financed" and removed from NER.</span>
                                 </li>
                                 <li>
-                                    <strong class="text-slate-200">NEP (Net Equity Profit):</strong> "Guaranteed Green."<br>
-                                    Shows the guaranteed daily profit even if all stops hit immediately.<br>
-                                    <span class="font-mono text-xs text-slate-500">Formula: (Realized Profit - Open Heat) / Equity</span>
+                                    <strong class="text-slate-200">NEP (New Exposure Profit):</strong> "Traction."<br>
+                                    The <strong>Unrealized (Paper) Profit</strong> of your unfinanced positions.<br>
+                                    <span class="text-slate-500">If Positive: Your new, trades are working immediately. Safer to add exposure.</span><br>
+                                    <span class="text-slate-500">If Negative: Your new trades are not working. Reduce exposure.</span>
                                 </li>
                                 <li>
-                                    <strong class="text-slate-200">Secured:</strong> "Locked In."<br>
-                                    The absolute dollar amount of profit that is yours to keep, covering all open risk.<br>
-                                    <span class="font-mono text-xs text-slate-500">Formula: Realized Profit - Open Heat</span>
+                                    <strong class="text-slate-200">Delta:</strong> "Net Traction."<br>
+                                    The relationship between your Traction (NEP) and your Risk (NER).<br>
+                                    <span class="font-mono text-xs text-slate-500">Formula: NEP - NER</span>
                                 </li>
                             </ul>
                         </div>
