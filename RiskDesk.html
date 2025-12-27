@@ -1507,6 +1507,31 @@ const app = {
         // Fix: Call the new Risk Bar immediately
         if(this.updateRiskBar) this.updateRiskBar(); 
         
+		// --- PATCH: iOS KEYBOARD FIX ---
+        // Forces the window to snap back to the top when the keyboard closes
+        const scrollReset = () => {
+            window.scrollTo(0, 0);
+            document.body.scrollTop = 0;
+        };
+
+        // Attach to all current and future inputs
+        document.addEventListener('focusout', (e) => {
+            if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) {
+                // Small delay to allow the keyboard animation to start
+                setTimeout(scrollReset, 100); 
+            }
+        });
+        
+        // Extra safety: Watch for visual viewport resizing (keyboard slide down)
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', () => {
+                // If the viewport is nearly full height (keyboard closed)
+                if (window.visualViewport.height >= window.innerHeight - 50) {
+                    scrollReset();
+                }
+            });
+        }
+		
         // 5. UI Init
         document.getElementById('settingsBaseCurrency').value = this.data.settings.baseCurrency;
         
