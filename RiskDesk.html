@@ -1977,7 +1977,7 @@ const app = {
     },
 
     // --- RESPONSIVE RISK BAR ENGINE ---
-    updateRiskBar() {
+	updateRiskBar() {
         const container = document.getElementById('riskBarContainer');
         const drawer = document.getElementById('riskDrawer');
         const drawerContent = document.getElementById('riskDrawerContent');
@@ -2041,12 +2041,14 @@ const app = {
             const delta = data.nepPct + data.nerPct;
             const deltaColor = delta > 0 ? 'text-blue-400' : 'text-slate-400';
             
-            // Define the slides for the carousel
+            // FIX: Added Heat and Secured to this list
             const slides = [
                 { label: 'Delta', val: fmtPct(delta), col: deltaColor },
                 { label: 'NER', val: data.nerPct.toFixed(2)+'%', col: data.nerPct < -0.5 ? 'text-red-400' : 'text-slate-300' },
                 { label: 'NEP', val: fmtPct(data.nepPct), col: color(data.nepPct) },
-                { label: 'Open P&L', val: fmtMoney(data.profitVal), col: color(data.profitVal) }
+                { label: 'Open P&L', val: fmtMoney(data.profitVal), col: color(data.profitVal) },
+                { label: 'Heat', val: fmtMoney(data.heatVal), col: data.heatVal > 0 ? 'text-red-400' : 'text-emerald-400' },
+                { label: 'Secured', val: fmtMoney(data.securedVal), col: color(data.securedVal) }
             ];
 
             // Generate Slide HTML
