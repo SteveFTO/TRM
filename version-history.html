@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Version History - RiskDesk</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            background-color: #0f172a; /* Slate 900 */
+            color: #e2e8f0; /* Slate 200 */
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        .gradient-text {
+            background: linear-gradient(to right, #60a5fa, #34d399);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+</head>
+<body class="antialiased selection:bg-blue-500 selection:text-white">
+
+    <nav class="fixed w-full z-50 bg-slate-900/80 backdrop-blur border-b border-slate-800">
+        <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+            <a href="index.html" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-blue-500">
+                    <path d="M3 3v18h18"/>
+                    <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/>
+                </svg>
+                <span class="font-bold text-lg tracking-tight">RISK<span class="text-slate-400">DESK</span></span>
+            </a>
+            
+            <a href="index.html" class="text-slate-400 hover:text-white text-sm font-medium transition-colors flex items-center gap-2">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                Back to Home
+            </a>
+        </div>
+    </nav>
+
+    <section class="pt-32 pb-12 px-6 text-center max-w-4xl mx-auto">
+        <h1 class="text-4xl md:text-5xl font-extrabold mb-4">
+            <span class="gradient-text">Evolution Log</span>
+        </h1>
+        <p class="text-lg text-slate-400 max-w-2xl mx-auto">
+            From a simple calculator to a professional workstation. Track our journey and latest updates here.
+        </p>
+    </section>
+
+    <section class="pb-24 px-6">
+        <div class="max-w-3xl mx-auto space-y-12 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-800 before:to-transparent">
+
+            <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                <div class="flex items-center justify-center w-10 h-10 rounded-full border border-emerald-500/50 bg-slate-900 group-[.is-active]:bg-emerald-500/20 text-emerald-400 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10">
+                    <i data-lucide="zap" class="w-5 h-5"></i>
+                </div>
+                <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-slate-800/50 p-6 rounded-2xl border border-emerald-500/30 shadow-lg glow-effect">
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-bold text-xl text-white">v10.0: The Professional</h3>
+                        <span class="text-[10px] font-bold bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-full border border-emerald-500/20">CURRENT</span>
+                    </div>
+                    <p class="text-slate-400 text-sm mb-4">Bridging the gap between journaling and live trading with real-time data.</p>
+                    <ul class="space-y-2 text-sm text-slate-300">
+                        <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0"></i> <span><strong>Live Finnhub Prices:</strong> One-click updates for Open P&L.</span></li>
+                        <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0"></i> <span><strong>Pro Landscape Mode:</strong> "Data Tape" view for advanced metrics.</span></li>
+                        <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0"></i> <span><strong>Visual Analytics:</strong> Account Growth curves & Heatmaps.</span></li>
+                        <li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0"></i> <span><strong>Cloud Sync (BYOS):</strong> Native backup to Google Drive/iCloud.</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group">
+                <div class="flex items-center justify-center w-10 h-10 rounded-full border border-slate-700 bg-slate-900 text-slate-500 shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10">
+                    <i data-lucide="shield" class="w-5 h-5"></i>
+                </div>
+                <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-slate-800/30 p-6 rounded-2xl border border-slate-700">
+                    <h3 class="font-bold text-lg text-white mb-2">v9.0: The Risk Manager</h3>
+                    <p class="text-slate-400 text-sm mb-4">Focus shifted from entry to active management and securing profits.</p>
+                    <ul class="space-y-2 text-sm text-slate-400">
+                        <li class="flex items-start gap-2"><i data-lucide="minus" class="w-4 h-4 text-slate-600 mt-0.5 shrink-0"></i> <span><strong>De-Risking Engine:</strong> Auto-calculation of risk-free trim points.</span></li>
+                        <li class="flex items-start gap-2"><i data-lucide="minus" class="w-4 h-4 text-slate-600 mt-0.5 shrink-0"></i> <span><strong>Partial Exits:</strong> Scale out logic with blended averages.</span></li>
+                        <li class="flex items-start gap-2"><i data-lucide="minus" class="w-4 h-4 text-slate-600 mt-0.5 shrink-0"></i> <span><strong>Secured P&L:</strong> Track "Banked" vs "Open" risk.</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group">
+                <div class="flex items-center justify-center w-10 h-10 rounded-full border border-slate-700 bg-slate-900 text-slate-500 shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10">
+                    <i data-lucide="brain-circuit" class="w-5 h-5"></i>
+                </div>
+                <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-slate-800/30 p-6 rounded-2xl border border-slate-700">
+                    <h3 class="font-bold text-lg text-white mb-2">v8.0: The Insight Engine</h3>
+                    <p class="text-slate-400 text-sm mb-4">Automated coaching algorithms to find your edge.</p>
+                    <ul class="space-y-2 text-sm text-slate-400">
+                        <li class="flex items-start gap-2"><i data-lucide="minus" class="w-4 h-4 text-slate-600 mt-0.5 shrink-0"></i> <span><strong>Smart Insights:</strong> Textual analysis of trading habits.</span></li>
+                        <li class="flex items-start gap-2"><i data-lucide="minus" class="w-4 h-4 text-slate-600 mt-0.5 shrink-0"></i> <span><strong>Efficiency Metrics:</strong> Profit Factor & Expectancy.</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group">
+                <div class="flex items-center justify-center w-10 h-10 rounded-full border border-slate-700 bg-slate-900 text-slate-600 shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10">
+                    <i data-lucide="history" class="w-5 h-5"></i>
+                </div>
+                <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-slate-900 p-6 rounded-2xl border border-slate-800">
+                    <h3 class="font-bold text-lg text-slate-300 mb-4">Previous Milestones</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <strong class="text-blue-400 text-xs uppercase tracking-wider">v7.0 Visual Stats</strong>
+                            <p class="text-slate-500 text-sm">Interactive Chart.js integration for P&L distribution and Time Analysis.</p>
+                        </div>
+                        <div>
+                            <strong class="text-blue-400 text-xs uppercase tracking-wider">v6.0 Mobile First</strong>
+                            <p class="text-slate-500 text-sm">Complete responsive overhaul with native app-like navigation.</p>
+                        </div>
+                        <div>
+                            <strong class="text-blue-400 text-xs uppercase tracking-wider">v5.0 Visual Journal</strong>
+                            <p class="text-slate-500 text-sm">Paste-to-Save image database for chart screenshots.</p>
+                        </div>
+                        <div>
+                            <strong class="text-blue-400 text-xs uppercase tracking-wider">v4.0 The Psychologist</strong>
+                            <p class="text-slate-500 text-sm">Discipline tracking (Yes/No) and Emotion tagging.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group">
+                <div class="flex items-center justify-center w-10 h-10 rounded-full border border-slate-700 bg-slate-900 text-slate-700 shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10">
+                    <i data-lucide="package-open" class="w-5 h-5"></i>
+                </div>
+                <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 text-right md:group-even:text-left md:group-odd:text-right">
+                    <h3 class="font-bold text-sm text-slate-500 uppercase tracking-widest mb-1">The Foundations</h3>
+                    <p class="text-slate-600 text-xs">
