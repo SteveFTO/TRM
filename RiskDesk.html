@@ -482,18 +482,28 @@
                     <div class="p-4 pt-0 text-sm text-slate-300 leading-relaxed border-t border-slate-700/50 mt-2 space-y-4">
                         
                         <div>
-                            <strong class="text-white block mb-1">Accounts & Master Account</strong>
-                            <p class="text-xs text-slate-400">Define your trading accounts in Settings. You must select one as the <strong>Master Account</strong> using the radio button. This account's size is used as the denominator for "Equity Contribution (EC%)" calculations, allowing you to track how individual trades impact your total net worth across all platforms.</p>
+                            <strong class="text-white block mb-1">Accounts & Fund Manager</strong>
+                            <p class="text-xs text-slate-400 mb-2">Define your trading accounts in Settings. You must select one as the <strong>Master Account</strong>.</p>
+                            <p class="text-xs text-slate-400">
+                                <span class="text-white font-bold">New:</span> Tap the <i data-lucide="wallet" class="w-3 h-3 inline text-emerald-400"></i> **Wallet Icon** on any account to open the **Fund Manager**. Here you can log Deposits/Withdrawals or configure a recurring **Monthly Auto-Contribution** (e.g., salary injection) to automate your growth tracking.
+                            </p>
                         </div>
 
                         <div>
-                            <strong class="text-white block mb-1">Currency & FX API</strong>
-                            <p class="text-xs text-slate-400">Set your Global Base Currency (e.g., GBP, USD). If you regularly trade US stocks you can set that as your trade default, the app uses a live <strong>FX API</strong> to fetch real-time rates (e.g., GBP/USD) for accurate position sizing. </p>
+                            <strong class="text-white block mb-1">Currency & Live Prices</strong>
+                            <p class="text-xs text-slate-400 mb-2">Set your Global Base Currency (e.g., GBP, USD). The app uses a live FX API to normalize risk across different trade currencies.</p>
+                            <div class="bg-blue-900/20 p-2 rounded border border-blue-500/30">
+                                <strong class="text-blue-300 text-[10px] uppercase block mb-1">Live Price Integration</strong>
+                                <p class="text-[10px] text-slate-400">
+                                    Get a free API Key from <a href="https://finnhub.io" target="_blank" class="text-blue-400 hover:underline">finnhub.io</a> and enter it in **Settings > App Preferences**. 
+                                    This enables the <i data-lucide="refresh-cw" class="w-3 h-3 inline"></i> **Fetch Prices** button in the top Risk Bar, automatically updating your Open P&L and Heat.
+                                </p>
+                            </div>
                         </div>
 
                         <div>
                             <strong class="text-white block mb-1">Strategy Manager</strong>
-                            <p class="text-xs text-slate-400">Create custom tags for your setups (e.g., "Gap & Go", "Reversal", "Breakout"). These tags are used throughout the app to filter Logs and analyze performance in Stats.</p>
+                            <p class="text-xs text-slate-400">Create custom tags for your setups (e.g., "Gap & Go", "Reversal"). These tags are used to filter Logs and analyze performance.</p>
                         </div>
 
                         <div class="bg-slate-900/50 p-3 rounded border border-slate-600">
@@ -529,7 +539,7 @@
                             <strong class="text-white block mb-1">Data Management</strong>
                             <ul class="list-disc ml-4 text-xs text-slate-400 space-y-1">
                                 <li><strong>Backup & Restore:</strong> Download your entire history as a JSON file. Do this regularly.</li>
-                                <li><strong>Danger Zone:</strong> Located at the bottom of Settings. This performs a Factory Reset, deleting all Logs, Accounts, and Journal entries. <span class="text-red-400">This cannot be undone.</span></li>
+                                <li><strong>Factory Reset:</strong> Located in Settings. <span class="text-red-400">Deletes all data permanently.</span></li>
                             </ul>
                         </div>
                     </div>
@@ -546,22 +556,22 @@
                         
                         <div>
                             <strong class="text-white block mb-1">Defining Risk</strong>
-                            <p class="text-xs text-slate-400 mb-2">RiskDesk calculates position size based on the distance between your Entry and Stop Loss. You can choose between two models:</p>
+                            <p class="text-xs text-slate-400 mb-2">RiskDesk calculates position size based on the distance between your Entry and Stop Loss.</p>
                             <ul class="list-disc ml-4 text-xs text-slate-400 space-y-1">
                                 <li><strong>Equity Risk %:</strong> "I want to risk 1.0% of my account." The app adjusts share size so that if you hit your stop, you lose exactly that amount.</li>
                                 <li><strong>Position Size %:</strong> "I want to invest 10% of my cash." The app fixes the share count, and your Risk % fluctuates based on the stop width.</li>
-								<li><strong>Trade Currency:</strong> Change your default Trade currency if necessary.  The app will call an API to get the FX rate between your account currency and chosen Trade currency to ensure accurate position sizing based your defined risk.</li>
+                                <li><strong>Trade Currency:</strong> Change your default Trade currency if necessary. The app handles FX conversion automatically.</li>
                             </ul>
                         </div>
 
                         <div>
                             <strong class="text-white block mb-1">Context & Logging</strong>
-                            <p class="text-xs text-slate-400">Select a <strong>Strategy</strong> tag and add context notes (e.g., "Market choppy, taking smaller size") before logging. This data is crucial for the "Stats & Insights" engine later.</p>
+                            <p class="text-xs text-slate-400">Select a <strong>Strategy</strong> tag and add context notes (e.g., "Market choppy") before logging. This data feeds the Insights engine.</p>
                         </div>
 
                         <div>
                             <strong class="text-white block mb-1">Chart Capture</strong>
-                            <p class="text-xs text-slate-400">You can paste a chart image directly from your clipboard (Ctrl+V or long-press) into the "Paste Zone" on the calculator. This saves the setup chart permanently with the trade record.</p>
+                            <p class="text-xs text-slate-400">Paste a chart image from your clipboard directly into the "Paste Zone" to save it with the trade.</p>
                         </div>
                     </div>
                 </details>
@@ -577,34 +587,28 @@
                         
                         <div>
                             <strong class="text-white block mb-1">Manual Log & Tools</strong>
-                            <p class="text-xs text-slate-400 mb-2">Use the <i data-lucide="plus" class="w-3 h-3 inline"></i> button to manually record past trades. The header also contains:</p>
-                            <ul class="list-disc ml-4 text-xs text-slate-400 grid grid-cols-2 gap-1">
-                                <li><strong>Search:</strong> Ticker or Strategy.</li>
-                                <li><strong>Filter:</strong> Open, Closed, Wins, Losses.</li>
-                                <li><strong>CSV:</strong> Export data for Excel.</li>
-                                <li><strong>Camera:</strong> Share a branded image.</li>
-                            </ul>
+                            <p class="text-xs text-slate-400 mb-2">Use the <i data-lucide="plus" class="w-3 h-3 inline"></i> button to manually record past trades. The header also contains Search, Filters, CSV Export, and Sharing tools.</p>
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div class="bg-slate-900 p-3 rounded border border-slate-600">
                                 <strong class="text-white block mb-1 text-xs uppercase border-b border-slate-700 pb-1">Portrait Mode (Mobile)</strong>
-                                <p class="text-[10px] text-slate-400 mb-2">Optimized for quick scanning on small screens.</p>
+                                <p class="text-[10px] text-slate-400 mb-2">Optimized for quick scanning.</p>
                                 <ul class="text-[10px] text-slate-500 list-disc ml-3 space-y-0.5">
-                                    <li>Date & Time</li>
-                                    <li>Ticker & Direction</li>
-                                    <li>Risk % & R-Multiple</li>
-                                    <li>P&L / Status Badge</li>
+                                    <li>Date, Ticker & Direction</li>
+                                    <li>Risk % & R-Multiple outcome</li>
+                                    <li><strong>Current Price</strong> (Live/Manual)</li>
+                                    <li>P&L Status Badge</li>
                                 </ul>
                             </div>
                             <div class="bg-slate-900 p-3 rounded border border-slate-600">
                                 <strong class="text-white block mb-1 text-xs uppercase border-b border-slate-700 pb-1">Landscape Mode (Pro View)</strong>
-                                <p class="text-[10px] text-slate-400 mb-2">Rotate your phone to reveal detailed accounting columns.</p>
+                                <p class="text-[10px] text-slate-400 mb-2">Rotate your phone to reveal the full data tape.</p>
                                 <ul class="text-[10px] text-slate-500 list-disc ml-3 space-y-0.5">
-                                    <li><strong class="text-slate-300">Qty:</strong> Original vs Current shares.</li>
+                                    <li><strong class="text-slate-300">Position Size:</strong> Total value exposed.</li>
+                                    <li><strong class="text-slate-300">Entry vs Current:</strong> Exact price levels.</li>
                                     <li><strong class="text-slate-300">Stop:</strong> Weighted avg active stop.</li>
                                     <li><strong class="text-slate-300">EC%:</strong> Equity Contribution % (Impact).</li>
-                                    <li><strong class="text-slate-300">Gain%:</strong> Price movement captured.</li>
                                 </ul>
                             </div>
                         </div>
@@ -622,18 +626,18 @@
                         <p class="text-xs text-slate-400">Tap any Log entry to open the Management View.</p>
 
                         <div>
+                            <strong class="text-white block mb-1">Manual Price Override</strong>
+                            <p class="text-xs text-slate-400">If the Live API price is incorrect (or for illiquid assets), you can manually type a price into the blue "Manual Live Price" box to instantly update your Position Value and P&L.</p>
+                        </div>
+
+                        <div>
                             <strong class="text-white block mb-1">Stop Adjustments</strong>
-                            <p class="text-xs text-slate-400">Update your "Current Stop" as the trade moves in your favor. This automatically updates your "Open Heat" metric on the calculator dashboard.</p>
+                            <p class="text-xs text-slate-400">Update your "Current Stop" as the trade moves in your favor. This automatically updates your "Open Heat" and "NER" metrics.</p>
                         </div>
 
                         <div>
                             <strong class="text-white block mb-1">Partial Exits</strong>
-                            <p class="text-xs text-slate-400">Record partial sells by specifying Price, Quantity, and Date/Time. The system calculates the realized P&L for that specific chunk and reduces your <strong>NER (Net Exposure Risk)</strong>. You can Edit or Delete exits if mistakes are made.</p>
-                        </div>
-
-                        <div>
-                            <strong class="text-white block mb-1">Chart Gallery</strong>
-                            <p class="text-xs text-slate-400">Stores all images associated with the trade (Entry Chart, Exit Chart, and any Journal updates). Tap any image to view it full screen.</p>
+                            <p class="text-xs text-slate-400">Record partial sells by specifying Price and Quantity. The system calculates Realized P&L for that chunk and reduces your exposure. You can view the full history of exits at the bottom of the page.</p>
                         </div>
                     </div>
                 </details>
@@ -647,33 +651,72 @@
                     </summary>
                     <div class="p-4 pt-0 text-sm text-slate-300 leading-relaxed border-t border-slate-700/50 mt-2 space-y-4">
                         
+                        <div class="bg-slate-900/50 p-3 rounded border border-slate-600">
+                            <strong class="text-white block mb-2 text-xs uppercase text-blue-400">Live Risk Monitor (Top Bar)</strong>
+                            <ul class="list-disc ml-4 text-[10px] text-slate-400 space-y-3">
+                                <li>
+                                    <strong class="text-slate-200">NER (New Exposure Risk):</strong> "The Worst Case."<br>
+                                    Shows the risk remaining after netting out banked profits.<br>
+                                    <span class="font-mono text-xs text-slate-500">Formula: (Open Heat - Realized Profit) / Equity</span>
+                                </li>
+                                <li>
+                                    <strong class="text-slate-200">NEP (Net Equity Profit):</strong> "Guaranteed Green."<br>
+                                    Shows the guaranteed daily profit even if all stops hit immediately.<br>
+                                    <span class="font-mono text-xs text-slate-500">Formula: (Realized Profit - Open Heat) / Equity</span>
+                                </li>
+                                <li>
+                                    <strong class="text-slate-200">Secured:</strong> "Locked In."<br>
+                                    The absolute dollar amount of profit that is yours to keep, covering all open risk.<br>
+                                    <span class="font-mono text-xs text-slate-500">Formula: Realized Profit - Open Heat</span>
+                                </li>
+                            </ul>
+                        </div>
+
                         <div>
                             <strong class="text-white block mb-1">Trading Insights</strong>
-                            <p class="text-xs text-slate-400">An automated engine that highlights patterns in your data (e.g., "Best Strategy", "Negative Skew", "High Scratch Rate").</p>
+                            <p class="text-xs text-slate-400">An automated engine that highlights patterns (e.g., "Best Strategy", "Negative Skew") based on your data.</p>
                         </div>
 
                         <div class="grid grid-cols-2 gap-3 text-xs">
                             <div>
                                 <strong class="text-white block">Financial Health</strong>
-                                <span class="text-slate-500">Win Rate, Profit Factor, Expectancy.</span>
+                                <span class="text-slate-500">Avg Win vs Avg Loss ($). Largest wins/losses.</span>
                             </div>
                             <div>
-                                <strong class="text-white block">Strategy Edge</strong>
-                                <span class="text-slate-500">Performance breakdown by Strategy tag.</span>
-                            </div>
-                            <div>
-                                <strong class="text-white block">Risk & Behavior</strong>
-                                <span class="text-slate-500">Avg Win vs Avg Loss size (R). Consistency Heatmap.</span>
-                            </div>
-                            <div>
-                                <strong class="text-white block">Account Growth</strong>
-                                <span class="text-slate-500">Equity curve visualization.</span>
+                                <strong class="text-white block">Edge & Efficiency</strong>
+                                <span class="text-slate-500">Performance in R-Multiples. Risk/Reward Ratio.</span>
                             </div>
                         </div>
 
                         <div>
-                            <strong class="text-white block mb-1">Filters & Partials Icon</strong>
-                            <p class="text-xs text-slate-400">Use the dropdowns to filter by Strategy or Timeframe (Last 20 vs All Time). The <i data-lucide="split" class="w-3 h-3 inline text-blue-400"></i> icon in headers indicates that "Include Partials" mode is active.</p>
+                            <strong class="text-white block mb-2 text-xs uppercase text-purple-400">Visual Analytics (Charts)</strong>
+                            <div class="grid grid-cols-2 gap-2 text-[10px] text-slate-400">
+                                <div class="bg-slate-900/50 p-2 rounded border border-slate-700">
+                                    <strong class="text-slate-200 block">Account Growth</strong>
+                                    Equity curve visualizing your total capital growth over time.
+                                </div>
+                                <div class="bg-slate-900/50 p-2 rounded border border-slate-700">
+                                    <strong class="text-slate-200 block">Drawdown Depth</strong>
+                                    Visualizes the cumulative pain/depth of losing streaks.
+                                </div>
+                                <div class="bg-slate-900/50 p-2 rounded border border-slate-700">
+                                    <strong class="text-slate-200 block">Strategy Performance</strong>
+                                    Compares Win Rate and P&L across your different setups.
+                                </div>
+                                <div class="bg-slate-900/50 p-2 rounded border border-slate-700">
+                                    <strong class="text-slate-200 block">Time Analysis</strong>
+                                    Breakdowns by Day of Week and Time of Day to find your "Zone".
+                                </div>
+                                <div class="bg-slate-900/50 p-2 rounded border border-slate-700 col-span-2">
+                                    <strong class="text-slate-200 block">Consistency Heatmap</strong>
+                                    A GitHub-style calendar view showing your daily trading frequency and results.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <strong class="text-white block mb-1">Smart Filters</strong>
+                            <p class="text-xs text-slate-400">Slice your data by Strategy, Recency (e.g., Last 50 trades), or Timeframe (e.g., **This Month, YTD, or Custom Dates**). The stats update instantly.</p>
                         </div>
                     </div>
                 </details>
@@ -689,12 +732,12 @@
                         
                         <div>
                             <strong class="text-white block mb-1">Rules & Philosophy</strong>
-                            <p class="text-xs text-slate-400">Define your "Golden Rules" and overall philosophy in the Journal settings tab. These persist and serve as your daily checklist.</p>
+                            <p class="text-xs text-slate-400">Define your "Golden Rules" in the Journal settings. These persist and serve as your daily checklist.</p>
                         </div>
 
                         <div>
-                            <strong class="text-white block mb-1">Daily Log & Market Activity</strong>
-                            <p class="text-xs text-slate-400">The Journal automatically pulls in every trade, partial exit, and P&L event for the selected date, giving you an instant summary of your session.</p>
+                            <strong class="text-white block mb-1">Daily Log</strong>
+                            <p class="text-xs text-slate-400">The Journal automatically pulls in every trade and P&L event for the selected date.</p>
                         </div>
 
                         <div class="bg-slate-900/50 p-3 rounded border border-slate-600">
@@ -702,13 +745,8 @@
                             <p class="text-xs text-slate-400">You must answer: <strong>"Did you follow your rules today?"</strong></p>
                             <ul class="list-disc ml-4 text-xs text-slate-400 mt-2 space-y-1">
                                 <li><strong>YES:</strong> Marks the day Green on the heatmap.</li>
-                                <li><strong>NO:</strong> Marks the day Red. A checklist of your defined rules appears, allowing you to select exactly <em>which</em> rules you broke. This helps track behavioral leaks over time.</li>
+                                <li><strong>NO:</strong> Marks the day Red. A checklist appears to track exactly <em>which</em> rules were broken.</li>
                             </ul>
-                        </div>
-
-                        <div>
-                            <strong class="text-white block mb-1">Review</strong>
-                            <p class="text-xs text-slate-400">Tag your Emotions (Anxious, Bored, Focused), write daily notes, and paste chart images directly into the entry.</p>
                         </div>
                     </div>
                 </details>
@@ -725,14 +763,14 @@
                             <i data-lucide="eye" class="w-5 h-5 text-slate-500 shrink-0"></i>
                             <div>
                                 <strong class="text-white text-xs block">Privacy Mode</strong>
-                                <span class="text-xs text-slate-400">Tap the Eye icon in the top header. This blurs all dollar/currency values across the Logs, Stats, and Journal. Ideal for working in public or sharing screens.</span>
+                                <span class="text-xs text-slate-400">Tap the Eye icon to blur all dollar/currency values. Ideal for working in public.</span>
                             </div>
                         </div>
                         <div class="flex gap-3">
                             <i data-lucide="share-2" class="w-5 h-5 text-slate-500 shrink-0"></i>
                             <div>
                                 <strong class="text-white text-xs block">Social Sharing</strong>
-                                <span class="text-xs text-slate-400">Tap the Camera icon on any Log row, Stats card, or Journal page to generate a clean, branded image formatted for X (Twitter) and Discord.  Combine with privacy mode to avoid sharing account profit and loss values.</span>
+                                <span class="text-xs text-slate-400">Tap the Camera icon to generate a clean, branded image of your trades or stats, formatted for X/Discord.</span>
                             </div>
                         </div>
                     </div>
@@ -740,7 +778,11 @@
 
                 <div class="p-4 text-[10px] text-slate-500 text-center leading-relaxed opacity-75 border-t border-slate-800 mt-4">
                     <p><strong>Local Data Only:</strong> RiskDesk is Offline-First. Data is stored in your browser. Clearing cache deletes your data. Back up regularly.</p>
-                    <p class="mt-2"><strong>Disclaimer:</strong> This tool is for educational and journaling purposes only. It is not financial advice. Trading involves risk.</p>
+                    <p class="mt-2">
+                        <strong>Disclaimer:</strong> This tool is for educational and journaling purposes only and does not constitute financial advice. 
+                        <strong>Market Data:</strong> Live prices are provided by third-party services, may be delayed, and should be used for estimation purposes only. 
+                        The developers are not responsible for data accuracy. Always verify real-time prices with your broker before executing trades.
+                    </p>
                 </div>
                 
                 <div class="h-10"></div>
