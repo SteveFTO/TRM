@@ -3615,18 +3615,17 @@ const app = {
     },
 
 	renderStats() {
-        // 1. DUPLICATE KILLER (Fixes the "Two Instances" issue)
-        // This finds any statsFilter dropdown that isn't inside our new control bar and removes it
+        // 1. DUPLICATE KILLER
         const oldFilters = document.querySelectorAll('#statsFilter, #statsRecency');
         oldFilters.forEach(el => {
             if (!el.closest('#statsControls')) {
-                const parentGrid = el.closest('.grid'); // Matches the grid-cols-2 container
+                const parentGrid = el.closest('.grid'); 
                 if (parentGrid) parentGrid.remove();
                 else el.remove();
             }
         });
 
-        // 2. SAFE CAPTURE: Get current values
+        // 2. SAFE CAPTURE
         const ctrlContainer = document.getElementById('statsControls');
         const strategyFilter = ctrlContainer ? (document.getElementById('statsFilter')?.value || 'ALL') : 'ALL';
         const recencyFilter = ctrlContainer ? (document.getElementById('statsRecency')?.value || 'ALL') : 'ALL';
@@ -3635,7 +3634,7 @@ const app = {
         const view = document.getElementById('view-stats');
         if (!view) return;
 
-        // 3. SETUP CONTROLS (If missing)
+        // 3. SETUP CONTROLS
         let controlsDiv = document.getElementById('statsControls');
         if (!controlsDiv) {
             controlsDiv = document.createElement('div');
@@ -3655,11 +3654,10 @@ const app = {
             }
         }
 
-        // 4. RENDER CONTROLS HTML (Gap-1, No "FILTERS:" Label)
+        // 4. RENDER CONTROLS
         if (document.activeElement.tagName !== 'INPUT') {
             controlsDiv.innerHTML = `
             <div class="flex flex-wrap gap-1 items-center bg-slate-900/50 p-2 rounded-xl border border-slate-800">
-                
                 <select id="statsFilter" onchange="app.renderStats()" class="bg-slate-800 border border-slate-700 rounded py-1.5 px-2 text-xs text-white outline-none focus:border-blue-500 transition-all cursor-pointer hover:bg-slate-700 max-w-[120px]">
                     <option value="ALL">All Strategies</option>
                     ${this.data.settings.strategies.map(s => `<option value="${s}" ${s === strategyFilter ? 'selected' : ''}>${s}</option>`).join('')}
@@ -3734,44 +3732,11 @@ const app = {
         const baseline = this.calculateBatchStats(this.data.logs);
         const current = this.calculateBatchStats(reportingLogs);
 
-        // --- SPECIFIC R-MULTIPLE CALCULATIONS ---
-        let sumWinR = 0, countWinR = 0;
-        let sumLossR = 0, countLossR = 0;
-        let totalNetR = 0;
-        
-        reportingLogs.forEach(l => {
-            if(l.outcome === 'win' || l.outcome === 'loss' || l.outcome === 'scratch') {
-                const riskDist = Math.abs(l.entry - (l.initialStop || l.stop));
-                let pnlBase = 0;
-                
-                // Get Realized PnL (Trade Currency)
-                if(l.exits && l.exits.length > 0) {
-                     l.exits.forEach(ex => {
-                        const p = (l.direction === 'SHORT' ? l.entry - ex.price : ex.price - l.entry);
-                        pnlBase += (p * ex.qty);
-                     });
-                } else if(l.exitPrice) {
-                    const p = (l.direction === 'SHORT' ? l.entry - l.exitPrice : l.exitPrice - l.entry);
-                    pnlBase = p * l.initialQty;
-                }
-                
-                // Calculate R for this trade
-                if (riskDist > 0 && l.initialQty > 0) {
-                    const riskAmt = riskDist * l.initialQty;
-                    const rValue = pnlBase / riskAmt;
-                    
-                    totalNetR += rValue; // Accumulate Net R
-
-                    if (rValue > 0) { sumWinR += rValue; countWinR++; }
-                    else if (rValue < 0) { sumLossR += rValue; countLossR++; }
-                }
-            }
-        });
-        
-        const avgWinR = countWinR > 0 ? (sumWinR / countWinR) : 0;
-        const avgLossR = countLossR > 0 ? (sumLossR / countLossR) : 0;
-        current.totalNetR = totalNetR; 
-        // ---------------------------------------------------------
+        // --- BUG FIX: Removed faulty "Specific R-Multiple Calculations" block ---
+        // We now rely purely on the robust calculateBatchStats result
+        const avgWinR = current.avgWinR;
+        const avgLossR = current.avgLossR;
+        // ------------------------------------------------------------------------
 
         // 7. HEADER STATS
         const partialsOn = this.data.settings.statsIncludePartials;
@@ -5266,10 +5231,19 @@ const app = {
             const sym = this.getSymbol ? this.getSymbol(this.data.settings.baseCurrency) : "";
             const fmt = (val, isPaper = false) => {
                 if (this.data.settings.hidePnL) return `<span class="opacity-50 select-none blur-[2px]">****</span>`;
-                const sign = val < 0 ? '-' : (isPaper ? '+' : '');
-                const color = isPaper ? 'text-purple-400 italic' : (val >= 0 ? 'text-emerald-500' : 'text-red-500');
-                const prefix = isPaper ? '' : '';
-                return `<div class="text-[10px] ${color} font-bold leading-tight">${prefix}${val<0?'-':''}${sym}${Math.abs(val).toFixed(2)}</div>`;
+                
+                // 1. Determine Color based on Value (Positive/Negative)
+                let colorBase = val >= 0 ? 'text-emerald-400' : 'text-red-400';
+                
+                // 2. Determine Style based on State (Paper vs Banked)
+                // Paper: Italic + Slightly softer color (opacity-90)
+                // Banked: Normal font (or bold)
+                let styleClass = isPaper ? `italic ${colorBase} opacity-90` : `font-bold ${val >= 0 ? 'text-emerald-500' : 'text-red-500'}`;
+
+                const prefix = isPaper ? '' : ''; // Optional prefix logic if you want 'est.'
+                
+                // 3. Render
+                return `<div class="text-[10px] ${styleClass} leading-tight">${prefix}${val<0?'-':''}${sym}${Math.abs(val).toFixed(2)}</div>`;
             };
 
             let pnlStack = '';
