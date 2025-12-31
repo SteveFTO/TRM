@@ -15,6 +15,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   
   <style>
+	/* FORCE HIDE: Ensures views don't stack */
+	.hidden { display: none !important; }
     /* Custom Dark Theme Tweaks */
     body {
       background-color: #0f172a; /* Slate 900 */
@@ -169,7 +171,7 @@
   </style>
 </head>
 
-<body class="flex flex-col h-screen h-[100dvh] overflow-hidden text-slate-200 overscroll-none">
+<body class="bg-slate-900 text-slate-200 min-h-screen pb-safe overscroll-y-none selection:bg-blue-500 selection:text-white">
 
 <!-- LICENSE GATE OVERLAY -->
   <div id="licenseGate" class="fixed inset-0 z-[100] bg-slate-900 flex flex-col items-center justify-center p-6 hidden">
@@ -236,7 +238,7 @@
     </div>
 </div>
 
-  <main class="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar pb-24 relative" id="mainContainer">
+  <main class="w-full overflow-x-hidden pb-32 relative" id="mainContainer">
     
     <div id="view-calculator" class="p-4 space-y-6 max-w-lg mx-auto transition-opacity duration-300">
          
@@ -2189,11 +2191,17 @@ const app = {
 
     // --- VIEW MANAGEMENT ---
 	// --- VIEW MANAGEMENT ---
-    switchView(viewName) {
+	switchView(viewName) {
         // 1. Hide all views & Nav Highlights
         ['calculator', 'logs', 'stats', 'journal', 'manage', 'settings', 'help'].forEach(v => {
             const el = document.getElementById(`view-${v}`);
-            if(el) el.classList.add('hidden');
+            if(el) {
+                el.classList.add('hidden'); // Force hide using our new !important CSS
+                // Clean up animation classes so they replay nicely next time
+                el.classList.remove('animate-in', 'fade-in', 'slide-in-from-bottom-4');
+            }
+            
+            // Handle Nav State
             const nav = document.getElementById(`nav-${v}`);
             if(nav) {
                 nav.classList.remove('text-blue-500');
@@ -2211,8 +2219,10 @@ const app = {
         if(target) {
             target.classList.remove('hidden');
             target.classList.add('animate-in', 'fade-in', 'slide-in-from-bottom-4');
+            // CRITICAL: Scroll to top so the user doesn't feel lost
+            window.scrollTo(0,0); 
         }
-        
+
         // 4. Highlight Nav
         const activeNav = document.getElementById(`nav-${viewName}`);
         if(activeNav) {
@@ -2220,23 +2230,18 @@ const app = {
             activeNav.classList.add('text-blue-500');
         }
 
-        // 5. Trigger View Logic
+        // 5. Trigger View-Specific Logic
         if(viewName === 'logs') this.renderLogs();
         if(viewName === 'stats') this.renderStats();
-        
-        // --- FIX IS HERE ---
-        if(viewName === 'journal') this.switchJournalTab('log'); 
-        // -------------------
-        
+        if(viewName === 'journal') this.switchJournalTab('log');
         if(viewName === 'settings') this.renderSettings();
-        
         if (viewName === 'calculator') {
             this.renderAccountsReadOnly();
-            this.updateHeatWidget();
+            this.updateRiskBar();
         }
         lucide.createIcons();
     },
-
+   
     closeManageView() {
         this.data.editingId = null;
         this.switchView('logs');
