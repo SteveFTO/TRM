@@ -17,6 +17,10 @@
   <style>
 	/* FORCE HIDE: Ensures views don't stack */
 	.hidden { display: none !important; }
+	/* SAFE AREA UTILITY: Pushes content below the Notch/Dynamic Island */
+    .pt-safe {
+        padding-top: env(safe-area-inset-top);
+    }
     /* Custom Dark Theme Tweaks */
     body {
       background-color: #0f172a; /* Slate 900 */
@@ -195,7 +199,7 @@
       </div>
   </div>
 
-  <div id="appHeader" class="sticky top-0 z-50 bg-slate-900/95 backdrop-blur border-b border-slate-800 transition-all duration-300">
+  <div id="appHeader" class="sticky top-0 z-50 bg-slate-900/95 backdrop-blur border-b border-slate-800 transition-all duration-300 pt-safe">
     <div class="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between relative">
         
         <div class="flex items-center shrink-0 -ml-2">
