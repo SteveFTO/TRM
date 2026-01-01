@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" href="icon.png" />
   <link rel="apple-touch-icon" href="icon.png" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+  <script src="https://unpkg.com/lightweight-charts@4.0.0/dist/lightweight-charts.standalone.production.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://gumroad.com/js/gumroad.js"></script>
@@ -6738,93 +6738,271 @@ const app = {
     
     tvChart: null, // Stores the chart instance
 
-    async openReplay(id) {
+   async openReplay(id) {
         const log = this.data.logs.find(l => l.id === id);
         if(!log) return;
 
-        // 1. Show Modal
+        // 1. Setup UI
         const modal = document.getElementById('tvModal');
         modal.classList.remove('hidden');
         requestAnimationFrame(() => modal.classList.remove('opacity-0'));
+        document.getElementById('tvTitle').innerText = `${log.ticker} (Yahoo Data)`;
+        document.getElementById('tvSubtitle').innerText = "Source: Yahoo Finance • No API Key Needed";
         
-        document.getElementById('tvTitle').innerText = `${log.ticker} Replay`;
-        document.getElementById('tvSubtitle').innerText = `${log.date.substring(0,10)} • ${log.strategy || 'No Strategy'}`;
-        
-        // 2. Reset Container & Show Spinner
         const container = document.getElementById('tvContainer');
         container.innerHTML = '<div id="tvLoading" class="absolute inset-0 flex items-center justify-center pointer-events-none"><div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div></div>';
 
         try {
-            // --- A. KEY CHECK & CLEANING ---
-            let apiKey = this.data.settings.finnhubKey;
-            
-            // Fix: Trim whitespace which causes 403 errors
-            if(apiKey) apiKey = apiKey.trim();
-
-            if (!apiKey || apiKey.length < 5) {
-                throw new Error("Missing API Key. Please enter it in Settings > App Preferences.");
-            }
-
-            // --- B. TICKER CLEANING ---
+            // 2. CLEAN TICKER for Yahoo
+            // Yahoo uses "AAPL", "GBPUSD=X" (Forex), "BTC-USD" (Crypto)
             let symbol = log.ticker.toUpperCase().trim();
-            if (symbol.includes(':')) {
-                const parts = symbol.split(':');
-                if (['US', 'NASDAQ', 'NYSE'].includes(parts[1])) symbol = parts[0];
-                else symbol = `${parts[0]}.${parts[1]}`;
-            }
+            
+            // Common translations
+            if(symbol.includes('/')) symbol = symbol.replace('/', '') + '=X'; // Forex: GBP/USD -> GBPUSD=X
+            if(['BTC','ETH','SOL'].includes(symbol)) symbol = symbol + '-USD'; // Crypto simple
 
-            // --- C. DATE MATH ---
+            // 3. DATE LOGIC (The "Anti-Future" Fix)
+            // Yahoo requires Unix Timestamps
             const tradeDate = new Date(log.date);
             const now = new Date();
             
-            const fromDate = new Date(tradeDate);
-            fromDate.setDate(fromDate.getDate() - 30);
+            // If trade is in the future (e.g. 2026), default to "Last 3 Months" of REAL data
+            let useDefaultDates = (tradeDate > now);
             
-            const targetEndDate = new Date(tradeDate);
-            targetEndDate.setDate(targetEndDate.getDate() + 10);
-            const toDate = targetEndDate > now ? now : targetEndDate;
-
-            const fromUnix = Math.floor(fromDate.getTime() / 1000);
-            const toUnix = Math.floor(toDate.getTime() / 1000);
-
-            // --- D. FETCH ---
-            const url = `https://finnhub.io/api/v1/stock/candle?symbol=${symbol}&resolution=D&from=${fromUnix}&to=${toUnix}&token=${apiKey}`;
+            let from, to;
             
-            console.log("Replay Request:", url); // Keep for debug
-
-            const res = await fetch(url);
-            
-            if (res.status === 403) {
-                throw new Error("Finnhub API Key Invalid (403). Please check Settings for typos or extra spaces.");
-            }
-            if (res.status === 429) {
-                throw new Error("Rate Limit Exceeded. Please wait 1 minute.");
+            if (useDefaultDates) {
+                console.warn("Future date detected. Showing recent real data instead.");
+                to = Math.floor(now.getTime() / 1000);
+                from = to - (90 * 24 * 60 * 60); // 90 days back
+            } else {
+                // Normal Case: Context around the trade
+                const d1 = new Date(tradeDate); d1.setDate(d1.getDate() - 30);
+                const d2 = new Date(tradeDate); d2.setDate(d2.getDate() + 15);
+                // Clamp to 'Now'
+                const safeEnd = d2 > now ? now : d2;
+                
+                from = Math.floor(d1.getTime() / 1000);
+                to = Math.floor(safeEnd.getTime() / 1000);
             }
 
-            const data = await res.json();
+            // 4. FETCH VIA PROXY (Bypasses CORS)
+            // We use 'corsproxy.io' to talk to Yahoo safely
+            const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?symbol=${symbol}&period1=${from}&period2=${to}&interval=1d`;
+            const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(yahooUrl);
 
-            if (data.s === 'no_data') {
-                throw new Error(`Finnhub returned "No Data" for ${symbol}. Market may be closed or ticker format isn't supported.`);
+            console.log("Fetching Yahoo:", yahooUrl);
+
+            const res = await fetch(proxyUrl);
+            if (!res.ok) throw new Error(`Yahoo Error: ${res.status}`);
+            
+            const json = await res.json();
+            const result = json.chart.result?.[0];
+
+            if (!result || !result.timestamp) {
+                throw new Error(`No data found for '${symbol}' on Yahoo Finance.`);
             }
 
-            // --- E. RENDER ---
-            const candles = data.t.map((t, i) => ({
-                time: t, open: data.o[i], high: data.h[i], low: data.l[i], close: data.c[i]
-            }));
+            // 5. CONVERT YAHOO FORMAT TO TRADINGVIEW FORMAT
+            const quotes = result.indicators.quote[0];
+            const timestamps = result.timestamp;
+            
+            const candles = [];
+            for (let i = 0; i < timestamps.length; i++) {
+                // Filter out null/incomplete candles
+                if (quotes.open[i] === null) continue;
+                
+                candles.push({
+                    time: timestamps[i],
+                    open: quotes.open[i],
+                    high: quotes.high[i],
+                    low: quotes.low[i],
+                    close: quotes.close[i]
+                });
+            }
 
+            // 6. RENDER
             this.renderTvChart(candles, log);
 
         } catch (e) {
-            console.error("Replay Error:", e);
-            // Fix: Render error message directly into container instead of trying to hide a missing spinner
-            container.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-slate-500">
-                <i data-lucide="alert-triangle" class="w-12 h-12 mb-4 text-red-400"></i>
-                <p class="text-center px-8 font-mono text-xs">${e.message}</p>
-                <button onclick="app.closeTvModal()" class="mt-6 px-4 py-2 bg-slate-800 rounded hover:bg-slate-700 text-white text-xs">Close</button>
+            console.error(e);
+            container.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-center p-8 text-slate-500">
+                <i data-lucide="cloud-off" class="w-12 h-12 mb-4 opacity-50"></i>
+                <p class="font-bold text-red-400">Chart Failed</p>
+                <p class="text-xs font-mono mt-2 mb-4">${e.message}</p>
+                <button onclick="app.closeTvModal()" class="px-4 py-2 bg-slate-700 rounded text-white text-xs hover:bg-slate-600">Close</button>
             </div>`;
             lucide.createIcons();
         }
     },
+	// --- MISSING RENDERER FUNCTION ---
+    renderTvChart(candles, log) {
+        const container = document.getElementById('tvContainer');
+        // Clear loading spinner
+        container.innerHTML = ''; 
+
+        // 1. Create Chart Instance
+        // We save it to 'this.tvChart' so we can destroy it later if needed
+        this.tvChart = LightweightCharts.createChart(container, {
+            layout: { 
+                background: { color: '#020617' }, 
+                textColor: '#94a3b8', 
+                attributionLogo: false 
+            },
+            grid: { 
+                vertLines: { color: '#1e293b' }, 
+                horzLines: { color: '#1e293b' } 
+            },
+            timeScale: { 
+                timeVisible: true, 
+                secondsVisible: false 
+            },
+            crosshair: {
+                mode: LightweightCharts.CrosshairMode.Normal,
+            },
+        });
+        
+        // 2. Add Candle Series
+        const mainSeries = this.tvChart.addCandlestickSeries({
+            upColor: '#10b981', 
+            downColor: '#ef4444', 
+            borderVisible: false, 
+            wickUpColor: '#10b981', 
+            wickDownColor: '#ef4444',
+        });
+        
+        mainSeries.setData(candles);
+
+        // 3. Add Markers (Entry/Exit Arrows)
+        const markers = [];
+
+        // ENTRY MARKER
+        // We try to match the log date to a candle on the chart
+        const tradeTime = Math.floor(new Date(log.date).getTime() / 1000);
+        
+        // Find closest candle to trade time (simple search)
+        const closest = candles.find(c => Math.abs(c.time - tradeTime) < 86400); // within 24h
+        
+        if (closest) {
+            markers.push({
+                time: closest.time,
+                position: log.direction === 'LONG' ? 'belowBar' : 'aboveBar',
+                color: '#fbbf24', // Amber arrow
+                shape: log.direction === 'LONG' ? 'arrowUp' : 'arrowDown',
+                text: `ENTRY @ ${log.entry || ''}`,
+                size: 2
+            });
+        }
+
+        mainSeries.setMarkers(markers);
+        
+        // 4. Handle Resizing
+        // This ensures the chart fills the modal if the window size changes
+        new ResizeObserver(entries => {
+            if (entries.length === 0 || entries[0].target !== container) return;
+            const newRect = entries[0].contentRect;
+            this.tvChart.applyOptions({ width: newRect.width, height: newRect.height });
+        }).observe(container);
+
+        // 5. Fit Content
+        this.tvChart.timeScale().fitContent();
+    },
+	// 1. FIX THE CLOSE BUTTON
+    closeTvModal() {
+        const modal = document.getElementById('tvModal');
+        modal.classList.add('opacity-0');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            // Cleanup chart to save memory
+            if(this.tvChart) {
+                this.tvChart.remove();
+                this.tvChart = null;
+            }
+            document.getElementById('tvContainer').innerHTML = ''; 
+        }, 300);
+    },
+
+    // 2. FIX THE MARKERS (Improved Date Matching)
+    renderTvChart(candles, log) {
+        const container = document.getElementById('tvContainer');
+        container.innerHTML = ''; 
+
+        // A. Create Chart
+        this.tvChart = LightweightCharts.createChart(container, {
+            layout: { background: { color: '#020617' }, textColor: '#94a3b8' },
+            grid: { vertLines: { color: '#1e293b' }, horzLines: { color: '#1e293b' } },
+            timeScale: { timeVisible: true, secondsVisible: false },
+        });
+        
+        // B. Add Series
+        const mainSeries = this.tvChart.addCandlestickSeries({
+            upColor: '#10b981', downColor: '#ef4444', 
+            borderVisible: false, wickUpColor: '#10b981', wickDownColor: '#ef4444',
+        });
+        mainSeries.setData(candles);
+
+        // C. ROBUST MARKER LOGIC
+        const markers = [];
+        
+        // Helper: Check if two dates are the same YYYY-MM-DD
+        const isSameDay = (unixTime, isoString) => {
+            const d1 = new Date(unixTime * 1000);
+            const d2 = new Date(isoString);
+            return d1.getUTCFullYear() === d2.getUTCFullYear() &&
+                   d1.getUTCMonth() === d2.getUTCMonth() &&
+                   d1.getUTCDate() === d2.getUTCDate();
+        };
+
+        // 1. Find Entry Candle
+        // Loop through candles to find the one matching the Log Date
+        const entryCandle = candles.find(c => isSameDay(c.time, log.date));
+        
+        if (entryCandle) {
+            markers.push({
+                time: entryCandle.time,
+                position: log.direction === 'LONG' ? 'belowBar' : 'aboveBar',
+                color: '#fbbf24', // Amber
+                shape: log.direction === 'LONG' ? 'arrowUp' : 'arrowDown',
+                text: `ENTRY @ ${log.entry}`,
+                size: 2
+            });
+        } else {
+            console.warn("Could not match Entry Date to a Candle:", log.date);
+        }
+
+        // 2. Find Exit Candles (if exits exist)
+        if (log.exits && log.exits.length > 0) {
+            log.exits.forEach(exit => {
+                // If exit has a date, use it. If not, we skip (or guess).
+                // Assuming your exit object has a date field now, or we rely on log.date + 1 day?
+                // For now, let's try to map if exit.date exists:
+                if (exit.date) {
+                     const exitCandle = candles.find(c => isSameDay(c.time, exit.date));
+                     if(exitCandle) {
+                        markers.push({
+                            time: exitCandle.time,
+                            position: log.direction === 'LONG' ? 'aboveBar' : 'belowBar',
+                            color: '#f472b6', // Pink
+                            shape: log.direction === 'LONG' ? 'arrowDown' : 'arrowUp',
+                            text: `EXIT @ ${exit.price}`,
+                            size: 2
+                        });
+                     }
+                }
+            });
+        }
+
+        mainSeries.setMarkers(markers);
+        
+        // D. Resize & Fit
+        new ResizeObserver(entries => {
+            if (entries.length === 0 || entries[0].target !== container) return;
+            const newRect = entries[0].contentRect;
+            this.tvChart.applyOptions({ width: newRect.width, height: newRect.height });
+        }).observe(container);
+
+        this.tvChart.timeScale().fitContent();
+    }
 }; // <--- This is the end of the app object
 	
 
@@ -6971,7 +7149,7 @@ app.drawConsistencyHeatmap = function(logs) {
     </div>
 </div>
 <div id="tvModal" class="fixed inset-0 z-[100] bg-slate-950/90 hidden flex flex-col opacity-0 transition-opacity duration-300">
-    <div class="h-14 border-b border-slate-800 bg-slate-900 flex items-center justify-between px-4 shrink-0">
+    <div class="h-14 border-b border-slate-800 bg-slate-900 flex items-center justify-between px-4 shrink-0 relative z-50">
         <div class="flex items-center gap-3">
             <h3 id="tvTitle" class="font-bold text-white text-lg">Trade Replay</h3>
             <span id="tvSubtitle" class="text-xs text-slate-400 font-mono bg-slate-800 px-2 py-1 rounded"></span>
@@ -6992,7 +7170,7 @@ app.drawConsistencyHeatmap = function(logs) {
             <div class="flex items-center gap-1 text-emerald-400"><div class="w-2 h-2 rounded-full bg-emerald-400"></div> ENTRY</div>
             <div class="flex items-center gap-1 text-red-400"><div class="w-2 h-2 rounded-full bg-red-400"></div> EXIT</div>
         </div>
-        <div class="text-xs text-slate-500">Powered by TradingView & Finnhub</div>
+        <div class="text-xs text-slate-500">Market Data via Yahoo Finance</div>
     </div>
 </div>
 </body>
