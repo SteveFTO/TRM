@@ -867,8 +867,8 @@
                      <i data-lucide="arrow-left" class="w-5 h-5"></i> Back
                  </button>
                  <h2 class="text-xl font-bold text-white">Manage Trade</h2>
-                 <button onclick="app.editTradeParams()" class="text-slate-400 hover:text-blue-400 p-2 bg-slate-800 rounded-lg border border-slate-700">
-                     <i data-lucide="settings-2" class="w-5 h-5"></i>
+                 <button onclick="app.openReplay(app.data.editingId)" class="text-blue-400 hover:text-white p-2 bg-blue-500/10 hover:bg-blue-600 rounded-lg border border-transparent transition-colors" title="Open Chart Replay">
+                     <i data-lucide="line-chart" class="w-5 h-5"></i>
                  </button>
             </div>
 
@@ -6737,8 +6737,8 @@ const app = {
 	// --- TRADINGVIEW REPLAY ENGINE ---
     
     tvChart: null, // Stores the chart instance
-	// --- 1. REPLAY SETUP (Slow Motion Default) ---
-	// --- 1. REPLAY SETUP (With Price Labels) ---
+	// --- REPLAY SETUP (With MFE/MAE Metrics) ---
+    // --- REPLAY SETUP (Position %, Partial/Close Markers) ---
     async openReplay(id) {
         const log = this.data.logs.find(l => l.id === id);
         if(!log) return;
@@ -6748,28 +6748,42 @@ const app = {
         modal.classList.remove('hidden');
         requestAnimationFrame(() => modal.classList.remove('opacity-0'));
         document.getElementById('tvTitle').innerText = log.ticker;
-        document.getElementById('tvSubtitle').innerText = "Loading Market Data...";
+        document.getElementById('tvSubtitle').innerText = "Analyzing Trade Performance...";
         document.getElementById('tvContainer').innerHTML = '<div class="absolute inset-0 flex items-center justify-center"><div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div></div>';
         
+        // Reset Controls
         document.getElementById('btnPlay').classList.remove('hidden');
         document.getElementById('btnPause').classList.add('hidden');
         document.getElementById('btnSpeed').innerText = '1x';
 
         try {
-            // A. FETCH
+            // A. FETCH DATA
             let symbol = log.ticker.toUpperCase().trim();
             if(symbol.includes('/')) symbol = symbol.replace('/', '') + '=X';
             if(['BTC','ETH','SOL'].includes(symbol)) symbol = symbol + '-USD';
 
             const entryDate = new Date(log.date);
-            let lastExitDate = entryDate;
+            
+            // 1. DETERMINE "END OF ANALYSIS" DATE
+            let lastExitDate = entryDate; 
+            
+            // Scan for the LATEST exit date
             if (log.exits && log.exits.length > 0) {
-                log.exits.forEach(e => { if(e.date && new Date(e.date) > lastExitDate) lastExitDate = new Date(e.date); });
+                log.exits.forEach(e => { 
+                    if(e.date && new Date(e.date) > lastExitDate) lastExitDate = new Date(e.date); 
+                });
             }
 
+            // Check if trade is effectively OPEN
+            const isOpen = log.status === 'OPEN' || log.isOpen === true || (log.exits && log.exits.some(e => e.type === 'OPEN'));
+            
+            const analysisEndDate = isOpen ? new Date() : lastExitDate;
+
+            // 2. FETCH RANGE
             const ONE_DAY = 86400 * 1000;
             const fromTime = entryDate.getTime() - (75 * ONE_DAY);
-            let toTime = lastExitDate.getTime() + (60 * ONE_DAY);
+            let toTime = analysisEndDate.getTime() + (60 * ONE_DAY);
+            
             if(toTime > Date.now()) toTime = Date.now();
 
             const from = Math.floor(fromTime / 1000);
@@ -6790,7 +6804,51 @@ const app = {
                 if(quotes.open[i]!==null) candles.push({ time: times[i], open: quotes.open[i], high: quotes.high[i], low: quotes.low[i], close: quotes.close[i] });
             }
 
-            // C. EMA
+            // --- C. METRICS (Position % + MFE + MAE) ---
+            const entryTs = Math.floor(entryDate.getTime() / 1000);
+            const endTs = Math.floor(analysisEndDate.getTime() / 1000);
+            
+            const holdWindow = candles.filter(c => c.time >= entryTs && c.time <= endTs);
+            
+            let mfeStr = "0.00%", maeStr = "0.00%", posStr = "0.00%";
+            let posColor = "text-slate-400"; // Default grey
+            const entryPrice = parseFloat(log.entry);
+
+            if(holdWindow.length > 0 && !isNaN(entryPrice)) {
+                // 1. Calculate Extremes
+                const maxPrice = Math.max(...holdWindow.map(c => c.high));
+                const minPrice = Math.min(...holdWindow.map(c => c.low));
+                const finalPrice = holdWindow[holdWindow.length - 1].close; // Close of last candle in window
+                
+                let mfe, mae, posPct;
+                
+                if(log.direction === 'LONG') {
+                    mfe = ((maxPrice - entryPrice) / entryPrice) * 100;
+                    mae = ((minPrice - entryPrice) / entryPrice) * 100; 
+                    posPct = ((finalPrice - entryPrice) / entryPrice) * 100;
+                } else {
+                    mfe = ((entryPrice - minPrice) / entryPrice) * 100;
+                    mae = ((entryPrice - maxPrice) / entryPrice) * 100; 
+                    posPct = ((entryPrice - finalPrice) / entryPrice) * 100;
+                }
+
+                mfeStr = (mfe > 0 ? "+" : "") + mfe.toFixed(2) + "%";
+                maeStr = (mae > 0 ? "+" : "") + mae.toFixed(2) + "%";
+                posStr = (posPct > 0 ? "+" : "") + posPct.toFixed(2) + "%";
+                posColor = posPct >= 0 ? "text-emerald-400" : "text-red-400";
+            }
+
+            // D. FOOTER STATS (Added Position %)
+            const footerText = document.querySelector('#tvModal .border-t .text-slate-500');
+            if(footerText) {
+                footerText.innerHTML = `
+                    <span class="mr-6" title="Total Gain/Loss">Result: <span class="${posColor} font-mono font-bold text-sm">${posStr}</span></span>
+                    <span class="mr-4 text-xs" title="Max Favorable Excursion">MFE: <span class="text-emerald-400 font-mono font-bold">${mfeStr}</span></span>
+                    <span class="text-xs" title="Max Adverse Excursion">MAE: <span class="text-red-400 font-mono font-bold">${maeStr}</span></span>
+                `;
+            }
+
+            // E. EMA
             const emaData = [];
             const p = 21;
             if(candles.length >= p) {
@@ -6805,7 +6863,7 @@ const app = {
                 }
             }
 
-            // D. MARKERS (Now with Prices!)
+            // F. MARKERS (Partial vs Close Logic)
             let markers = [];
             const findClosest = (dStr) => {
                 if(!dStr) return null;
@@ -6819,29 +6877,33 @@ const app = {
             };
 
             const ent = findClosest(log.date);
-            if(ent) markers.push({ 
-                time: ent.time, 
-                position: log.direction==='LONG'?'belowBar':'aboveBar', 
-                color: '#fbbf24', 
-                shape: log.direction==='LONG'?'arrowUp':'arrowDown', 
-                text: `ENTRY @ ${log.entry}`, // <--- Price Added Here
-                size: 2 
-            });
+            if(ent) markers.push({ time: ent.time, position: log.direction==='LONG'?'belowBar':'aboveBar', color: '#fbbf24', shape: log.direction==='LONG'?'arrowUp':'arrowDown', text: `ENTRY @ ${log.entry}`, size: 2 });
             
-            if(log.exits) log.exits.forEach(ex => {
-                const x = findClosest(ex.date);
-                if(x) markers.push({ 
-                    time: x.time, 
-                    position: log.direction==='LONG'?'aboveBar':'belowBar', 
-                    color: '#f472b6', 
-                    shape: log.direction==='LONG'?'arrowDown':'arrowUp', 
-                    text: `EXIT @ ${ex.price}`, // <--- Price Added Here
-                    size: 2 
+            if(log.exits && log.exits.length > 0) {
+                // Sort exits by date so we know which is last
+                const sortedExits = [...log.exits].sort((a,b) => new Date(a.date) - new Date(b.date));
+                
+                sortedExits.forEach((ex, index) => {
+                    const x = findClosest(ex.date);
+                    if(x) {
+                        // Logic: The LAST exit is "CLOSE" only if the trade is NOT open.
+                        const isLast = index === sortedExits.length - 1;
+                        const label = (isLast && !isOpen) ? "CLOSE" : "PARTIAL";
+                        
+                        markers.push({ 
+                            time: x.time, 
+                            position: log.direction==='LONG'?'aboveBar':'belowBar', 
+                            color: '#f472b6', 
+                            shape: log.direction==='LONG'?'arrowDown':'arrowUp', 
+                            text: `${label} @ ${ex.price}`, 
+                            size: 2 
+                        });
+                    }
                 });
-            });
+            }
             markers.sort((a,b) => a.time - b.time);
 
-            // E. PLAYER STATE (Keep the slow speed!)
+            // G. PLAYER STATE
             let startIndex = 0;
             if (ent) {
                 const idx = candles.findIndex(c => c.time === ent.time);
@@ -6852,7 +6914,7 @@ const app = {
 
             this.player = { 
                 isPlaying: false, 
-                speed: 500, // Default 3x Slower
+                speed: 500, 
                 timer: null, 
                 startIndex: startIndex,
                 currentIndex: candles.length - 1, 
