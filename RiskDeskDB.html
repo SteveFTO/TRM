@@ -6737,272 +6737,252 @@ const app = {
 	// --- TRADINGVIEW REPLAY ENGINE ---
     
     tvChart: null, // Stores the chart instance
-
-   async openReplay(id) {
+	// --- 1. REPLAY SETUP (Slow Motion Default) ---
+	// --- 1. REPLAY SETUP (With Price Labels) ---
+    async openReplay(id) {
         const log = this.data.logs.find(l => l.id === id);
         if(!log) return;
 
-        // 1. Setup UI
+        // UI Reset
         const modal = document.getElementById('tvModal');
         modal.classList.remove('hidden');
         requestAnimationFrame(() => modal.classList.remove('opacity-0'));
-        document.getElementById('tvTitle').innerText = `${log.ticker} (Yahoo Data)`;
-        document.getElementById('tvSubtitle').innerText = "Source: Yahoo Finance • No API Key Needed";
+        document.getElementById('tvTitle').innerText = log.ticker;
+        document.getElementById('tvSubtitle').innerText = "Loading Market Data...";
+        document.getElementById('tvContainer').innerHTML = '<div class="absolute inset-0 flex items-center justify-center"><div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div></div>';
         
-        const container = document.getElementById('tvContainer');
-        container.innerHTML = '<div id="tvLoading" class="absolute inset-0 flex items-center justify-center pointer-events-none"><div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div></div>';
+        document.getElementById('btnPlay').classList.remove('hidden');
+        document.getElementById('btnPause').classList.add('hidden');
+        document.getElementById('btnSpeed').innerText = '1x';
 
         try {
-            // 2. CLEAN TICKER for Yahoo
-            // Yahoo uses "AAPL", "GBPUSD=X" (Forex), "BTC-USD" (Crypto)
+            // A. FETCH
             let symbol = log.ticker.toUpperCase().trim();
-            
-            // Common translations
-            if(symbol.includes('/')) symbol = symbol.replace('/', '') + '=X'; // Forex: GBP/USD -> GBPUSD=X
-            if(['BTC','ETH','SOL'].includes(symbol)) symbol = symbol + '-USD'; // Crypto simple
+            if(symbol.includes('/')) symbol = symbol.replace('/', '') + '=X';
+            if(['BTC','ETH','SOL'].includes(symbol)) symbol = symbol + '-USD';
 
-            // 3. DATE LOGIC (The "Anti-Future" Fix)
-            // Yahoo requires Unix Timestamps
-            const tradeDate = new Date(log.date);
-            const now = new Date();
-            
-            // If trade is in the future (e.g. 2026), default to "Last 3 Months" of REAL data
-            let useDefaultDates = (tradeDate > now);
-            
-            let from, to;
-            
-            if (useDefaultDates) {
-                console.warn("Future date detected. Showing recent real data instead.");
-                to = Math.floor(now.getTime() / 1000);
-                from = to - (90 * 24 * 60 * 60); // 90 days back
-            } else {
-                // Normal Case: Context around the trade
-                const d1 = new Date(tradeDate); d1.setDate(d1.getDate() - 30);
-                const d2 = new Date(tradeDate); d2.setDate(d2.getDate() + 15);
-                // Clamp to 'Now'
-                const safeEnd = d2 > now ? now : d2;
-                
-                from = Math.floor(d1.getTime() / 1000);
-                to = Math.floor(safeEnd.getTime() / 1000);
+            const entryDate = new Date(log.date);
+            let lastExitDate = entryDate;
+            if (log.exits && log.exits.length > 0) {
+                log.exits.forEach(e => { if(e.date && new Date(e.date) > lastExitDate) lastExitDate = new Date(e.date); });
             }
 
-            // 4. FETCH VIA PROXY (Bypasses CORS)
-            // We use 'corsproxy.io' to talk to Yahoo safely
-            const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?symbol=${symbol}&period1=${from}&period2=${to}&interval=1d`;
-            const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(yahooUrl);
+            const ONE_DAY = 86400 * 1000;
+            const fromTime = entryDate.getTime() - (75 * ONE_DAY);
+            let toTime = lastExitDate.getTime() + (60 * ONE_DAY);
+            if(toTime > Date.now()) toTime = Date.now();
 
-            console.log("Fetching Yahoo:", yahooUrl);
+            const from = Math.floor(fromTime / 1000);
+            const to = Math.floor(toTime / 1000);
 
-            const res = await fetch(proxyUrl);
-            if (!res.ok) throw new Error(`Yahoo Error: ${res.status}`);
-            
+            const url = `https://corsproxy.io/?` + encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?symbol=${symbol}&period1=${from}&period2=${to}&interval=1d`);
+            const res = await fetch(url);
+            if(!res.ok) throw new Error("Data fetch failed");
             const json = await res.json();
             const result = json.chart.result?.[0];
+            if(!result) throw new Error("No data found");
 
-            if (!result || !result.timestamp) {
-                throw new Error(`No data found for '${symbol}' on Yahoo Finance.`);
-            }
-
-            // 5. CONVERT YAHOO FORMAT TO TRADINGVIEW FORMAT
+            // B. PROCESS CANDLES
             const quotes = result.indicators.quote[0];
-            const timestamps = result.timestamp;
-            
+            const times = result.timestamp;
             const candles = [];
-            for (let i = 0; i < timestamps.length; i++) {
-                // Filter out null/incomplete candles
-                if (quotes.open[i] === null) continue;
-                
-                candles.push({
-                    time: timestamps[i],
-                    open: quotes.open[i],
-                    high: quotes.high[i],
-                    low: quotes.low[i],
-                    close: quotes.close[i]
+            for(let i=0; i<times.length; i++) {
+                if(quotes.open[i]!==null) candles.push({ time: times[i], open: quotes.open[i], high: quotes.high[i], low: quotes.low[i], close: quotes.close[i] });
+            }
+
+            // C. EMA
+            const emaData = [];
+            const p = 21;
+            if(candles.length >= p) {
+                let sum=0; 
+                for(let i=0; i<p; i++) sum+=candles[i].close;
+                let val = sum/p;
+                emaData.push({ time: candles[p-1].time, value: val });
+                const k = 2/(p+1);
+                for(let i=p; i<candles.length; i++) {
+                    val = (candles[i].close - val)*k + val;
+                    emaData.push({ time: candles[i].time, value: val });
+                }
+            }
+
+            // D. MARKERS (Now with Prices!)
+            let markers = [];
+            const findClosest = (dStr) => {
+                if(!dStr) return null;
+                const t = Math.floor(new Date(dStr).getTime()/1000);
+                let closest = null, minDiff = Infinity;
+                candles.forEach(c => {
+                    const diff = Math.abs(c.time - t);
+                    if(diff < minDiff) { minDiff = diff; closest = c; }
                 });
-            }
+                return closest;
+            };
 
-            // 6. RENDER
-            this.renderTvChart(candles, log);
-
-        } catch (e) {
-            console.error(e);
-            container.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-center p-8 text-slate-500">
-                <i data-lucide="cloud-off" class="w-12 h-12 mb-4 opacity-50"></i>
-                <p class="font-bold text-red-400">Chart Failed</p>
-                <p class="text-xs font-mono mt-2 mb-4">${e.message}</p>
-                <button onclick="app.closeTvModal()" class="px-4 py-2 bg-slate-700 rounded text-white text-xs hover:bg-slate-600">Close</button>
-            </div>`;
-            lucide.createIcons();
-        }
-    },
-	// --- MISSING RENDERER FUNCTION ---
-    renderTvChart(candles, log) {
-        const container = document.getElementById('tvContainer');
-        // Clear loading spinner
-        container.innerHTML = ''; 
-
-        // 1. Create Chart Instance
-        // We save it to 'this.tvChart' so we can destroy it later if needed
-        this.tvChart = LightweightCharts.createChart(container, {
-            layout: { 
-                background: { color: '#020617' }, 
-                textColor: '#94a3b8', 
-                attributionLogo: false 
-            },
-            grid: { 
-                vertLines: { color: '#1e293b' }, 
-                horzLines: { color: '#1e293b' } 
-            },
-            timeScale: { 
-                timeVisible: true, 
-                secondsVisible: false 
-            },
-            crosshair: {
-                mode: LightweightCharts.CrosshairMode.Normal,
-            },
-        });
-        
-        // 2. Add Candle Series
-        const mainSeries = this.tvChart.addCandlestickSeries({
-            upColor: '#10b981', 
-            downColor: '#ef4444', 
-            borderVisible: false, 
-            wickUpColor: '#10b981', 
-            wickDownColor: '#ef4444',
-        });
-        
-        mainSeries.setData(candles);
-
-        // 3. Add Markers (Entry/Exit Arrows)
-        const markers = [];
-
-        // ENTRY MARKER
-        // We try to match the log date to a candle on the chart
-        const tradeTime = Math.floor(new Date(log.date).getTime() / 1000);
-        
-        // Find closest candle to trade time (simple search)
-        const closest = candles.find(c => Math.abs(c.time - tradeTime) < 86400); // within 24h
-        
-        if (closest) {
-            markers.push({
-                time: closest.time,
-                position: log.direction === 'LONG' ? 'belowBar' : 'aboveBar',
-                color: '#fbbf24', // Amber arrow
-                shape: log.direction === 'LONG' ? 'arrowUp' : 'arrowDown',
-                text: `ENTRY @ ${log.entry || ''}`,
-                size: 2
+            const ent = findClosest(log.date);
+            if(ent) markers.push({ 
+                time: ent.time, 
+                position: log.direction==='LONG'?'belowBar':'aboveBar', 
+                color: '#fbbf24', 
+                shape: log.direction==='LONG'?'arrowUp':'arrowDown', 
+                text: `ENTRY @ ${log.entry}`, // <--- Price Added Here
+                size: 2 
             });
-        }
+            
+            if(log.exits) log.exits.forEach(ex => {
+                const x = findClosest(ex.date);
+                if(x) markers.push({ 
+                    time: x.time, 
+                    position: log.direction==='LONG'?'aboveBar':'belowBar', 
+                    color: '#f472b6', 
+                    shape: log.direction==='LONG'?'arrowDown':'arrowUp', 
+                    text: `EXIT @ ${ex.price}`, // <--- Price Added Here
+                    size: 2 
+                });
+            });
+            markers.sort((a,b) => a.time - b.time);
 
-        mainSeries.setMarkers(markers);
-        
-        // 4. Handle Resizing
-        // This ensures the chart fills the modal if the window size changes
-        new ResizeObserver(entries => {
-            if (entries.length === 0 || entries[0].target !== container) return;
-            const newRect = entries[0].contentRect;
-            this.tvChart.applyOptions({ width: newRect.width, height: newRect.height });
-        }).observe(container);
-
-        // 5. Fit Content
-        this.tvChart.timeScale().fitContent();
-    },
-	// 1. FIX THE CLOSE BUTTON
-    closeTvModal() {
-        const modal = document.getElementById('tvModal');
-        modal.classList.add('opacity-0');
-        setTimeout(() => {
-            modal.classList.add('hidden');
-            // Cleanup chart to save memory
-            if(this.tvChart) {
-                this.tvChart.remove();
-                this.tvChart = null;
+            // E. PLAYER STATE (Keep the slow speed!)
+            let startIndex = 0;
+            if (ent) {
+                const idx = candles.findIndex(c => c.time === ent.time);
+                startIndex = Math.max(0, idx - 15);
+            } else {
+                startIndex = Math.max(0, candles.length - 30);
             }
-            document.getElementById('tvContainer').innerHTML = ''; 
-        }, 300);
+
+            this.player = { 
+                isPlaying: false, 
+                speed: 500, // Default 3x Slower
+                timer: null, 
+                startIndex: startIndex,
+                currentIndex: candles.length - 1, 
+                data: { candles, emaData, markers } 
+            };
+
+            document.getElementById('tvSubtitle').innerText = "History Loaded • Click Play";
+            this.renderTvChart(candles, emaData, markers);
+
+        } catch(e) {
+            console.error(e);
+            document.getElementById('tvContainer').innerHTML = `<div class="text-slate-500 text-center flex h-full items-center justify-center flex-col"><p>${e.message}</p><button onclick="app.closeTvModal()" class="mt-4 px-4 py-2 bg-slate-800 rounded text-white">Close</button></div>`;
+        }
     },
 
-    // 2. FIX THE MARKERS (Improved Date Matching)
-    renderTvChart(candles, log) {
+    // --- 2. RENDERER ---
+    renderTvChart(candles, emaData, markers) {
         const container = document.getElementById('tvContainer');
         container.innerHTML = ''; 
 
-        // A. Create Chart
         this.tvChart = LightweightCharts.createChart(container, {
             layout: { background: { color: '#020617' }, textColor: '#94a3b8' },
             grid: { vertLines: { color: '#1e293b' }, horzLines: { color: '#1e293b' } },
             timeScale: { timeVisible: true, secondsVisible: false },
         });
         
-        // B. Add Series
-        const mainSeries = this.tvChart.addCandlestickSeries({
-            upColor: '#10b981', downColor: '#ef4444', 
-            borderVisible: false, wickUpColor: '#10b981', wickDownColor: '#ef4444',
-        });
-        mainSeries.setData(candles);
+        this.mainSeries = this.tvChart.addCandlestickSeries({ upColor: '#10b981', downColor: '#ef4444', borderVisible: false, wickUpColor: '#10b981', wickDownColor: '#ef4444' });
+        this.mainSeries.setData(candles);
+        if(markers && markers.length > 0) this.mainSeries.setMarkers(markers);
 
-        // C. ROBUST MARKER LOGIC
-        const markers = [];
-        
-        // Helper: Check if two dates are the same YYYY-MM-DD
-        const isSameDay = (unixTime, isoString) => {
-            const d1 = new Date(unixTime * 1000);
-            const d2 = new Date(isoString);
-            return d1.getUTCFullYear() === d2.getUTCFullYear() &&
-                   d1.getUTCMonth() === d2.getUTCMonth() &&
-                   d1.getUTCDate() === d2.getUTCDate();
-        };
+        this.emaSeries = this.tvChart.addLineSeries({ color: '#d946ef', lineWidth: 2, crosshairMarkerVisible: false, priceLineVisible: false });
+        this.emaSeries.setData(emaData);
 
-        // 1. Find Entry Candle
-        // Loop through candles to find the one matching the Log Date
-        const entryCandle = candles.find(c => isSameDay(c.time, log.date));
-        
-        if (entryCandle) {
-            markers.push({
-                time: entryCandle.time,
-                position: log.direction === 'LONG' ? 'belowBar' : 'aboveBar',
-                color: '#fbbf24', // Amber
-                shape: log.direction === 'LONG' ? 'arrowUp' : 'arrowDown',
-                text: `ENTRY @ ${log.entry}`,
-                size: 2
-            });
-        } else {
-            console.warn("Could not match Entry Date to a Candle:", log.date);
-        }
-
-        // 2. Find Exit Candles (if exits exist)
-        if (log.exits && log.exits.length > 0) {
-            log.exits.forEach(exit => {
-                // If exit has a date, use it. If not, we skip (or guess).
-                // Assuming your exit object has a date field now, or we rely on log.date + 1 day?
-                // For now, let's try to map if exit.date exists:
-                if (exit.date) {
-                     const exitCandle = candles.find(c => isSameDay(c.time, exit.date));
-                     if(exitCandle) {
-                        markers.push({
-                            time: exitCandle.time,
-                            position: log.direction === 'LONG' ? 'aboveBar' : 'belowBar',
-                            color: '#f472b6', // Pink
-                            shape: log.direction === 'LONG' ? 'arrowDown' : 'arrowUp',
-                            text: `EXIT @ ${exit.price}`,
-                            size: 2
-                        });
-                     }
-                }
-            });
-        }
-
-        mainSeries.setMarkers(markers);
-        
-        // D. Resize & Fit
-        new ResizeObserver(entries => {
-            if (entries.length === 0 || entries[0].target !== container) return;
-            const newRect = entries[0].contentRect;
-            this.tvChart.applyOptions({ width: newRect.width, height: newRect.height });
-        }).observe(container);
-
+        new ResizeObserver(e => { if(e.length) this.tvChart.applyOptions({ width: e[0].contentRect.width, height: e[0].contentRect.height }); }).observe(container);
         this.tvChart.timeScale().fitContent();
-    }
+    },
+
+    // --- 3. ANIMATION CONTROLS (Updated Logic) ---
+    playReplay() {
+        const p = this.player;
+        if(!p || p.isPlaying) return;
+
+        p.isPlaying = true;
+        document.getElementById('btnPlay').classList.add('hidden');
+        document.getElementById('btnPause').classList.remove('hidden');
+        document.getElementById('tvSubtitle').innerText = "Replaying...";
+
+        // RESET TO START
+        p.currentIndex = p.startIndex;
+        
+        const initialCandles = p.data.candles.slice(0, p.currentIndex + 1);
+        const initialEma = p.data.emaData.filter(d => d.time <= initialCandles[initialCandles.length-1].time);
+        const initialMarkers = p.data.markers.filter(m => m.time <= initialCandles[initialCandles.length-1].time);
+
+        this.mainSeries.setData(initialCandles);
+        this.emaSeries.setData(initialEma);
+        this.mainSeries.setMarkers(initialMarkers);
+        
+        this.tvChart.timeScale().fitContent();
+
+        // Start Recursive Loop
+        this.stepReplay();
+    },
+
+    pauseReplay() {
+        if(!this.player) return;
+        this.player.isPlaying = false;
+        if(this.player.timer) clearTimeout(this.player.timer);
+        document.getElementById('btnPlay').classList.remove('hidden');
+        document.getElementById('btnPause').classList.add('hidden');
+    },
+
+    stepReplay() {
+        const p = this.player;
+        if(!p || !p.isPlaying) return;
+
+        p.currentIndex++;
+
+        if(p.currentIndex >= p.data.candles.length) {
+            this.pauseReplay();
+            document.getElementById('tvSubtitle').innerText = "Replay Finished";
+            return;
+        }
+
+        // Update Data
+        const candle = p.data.candles[p.currentIndex];
+        this.mainSeries.update(candle);
+
+        const emaPoint = p.data.emaData.find(d => d.time === candle.time);
+        if(emaPoint) this.emaSeries.update(emaPoint);
+
+        const visibleMarkers = p.data.markers.filter(m => m.time <= candle.time);
+        this.mainSeries.setMarkers(visibleMarkers);
+
+        // Schedule Next Step (Recursive Timeout allows changing speed)
+        p.timer = setTimeout(() => this.stepReplay(), p.speed);
+    },
+
+    toggleSpeed() {
+        const p = this.player;
+        const btn = document.getElementById('btnSpeed');
+        
+        // SPEED SETTINGS:
+        // 500ms = 1x (Slow/Standard)
+        // 250ms = 2x (Medium)
+        // 50ms  = 5x (Fast)
+        
+        if (p.speed === 500) { p.speed = 250; btn.innerText = '2x'; }
+        else if (p.speed === 250) { p.speed = 50; btn.innerText = '5x'; }
+        else { p.speed = 500; btn.innerText = '1x'; }
+        
+        // If running, restart the timer with new speed immediately
+        if (p.isPlaying) {
+            if(p.timer) clearTimeout(p.timer);
+            this.stepReplay();
+        }
+    },
+
+    closeTvModal() {
+        if(this.player && this.player.timer) clearTimeout(this.player.timer);
+        this.player = null; 
+        
+        const modal = document.getElementById('tvModal');
+        modal.classList.add('opacity-0');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            if(this.tvChart) { this.tvChart.remove(); this.tvChart = null; }
+            document.getElementById('tvContainer').innerHTML = '';
+        }, 300);
+    },
 }; // <--- This is the end of the app object
 	
 
@@ -7150,10 +7130,26 @@ app.drawConsistencyHeatmap = function(logs) {
 </div>
 <div id="tvModal" class="fixed inset-0 z-[100] bg-slate-950/90 hidden flex flex-col opacity-0 transition-opacity duration-300">
     <div class="h-14 border-b border-slate-800 bg-slate-900 flex items-center justify-between px-4 shrink-0 relative z-50">
-        <div class="flex items-center gap-3">
-            <h3 id="tvTitle" class="font-bold text-white text-lg">Trade Replay</h3>
-            <span id="tvSubtitle" class="text-xs text-slate-400 font-mono bg-slate-800 px-2 py-1 rounded"></span>
+        <div class="flex items-center gap-4">
+            <div class="hidden sm:block">
+                <h3 id="tvTitle" class="font-bold text-white text-lg">Replay</h3>
+                <span id="tvSubtitle" class="text-xs text-slate-400 font-mono"></span>
+            </div>
+
+            <div class="flex items-center gap-1 bg-slate-800 rounded p-1 border border-slate-700">
+                <button onclick="app.playReplay()" id="btnPlay" class="p-1.5 rounded hover:bg-blue-600 hover:text-white text-blue-400 transition-colors" title="Play">
+                    <i data-lucide="play" class="w-4 h-4 fill-current"></i>
+                </button>
+                <button onclick="app.pauseReplay()" id="btnPause" class="hidden p-1.5 rounded hover:bg-slate-700 text-slate-400 transition-colors" title="Pause">
+                    <i data-lucide="pause" class="w-4 h-4 fill-current"></i>
+                </button>
+                
+                <div class="w-px h-4 bg-slate-700 mx-1"></div>
+                
+                <button onclick="app.toggleSpeed()" id="btnSpeed" class="text-[10px] font-mono font-bold px-2 py-1 rounded bg-slate-900 text-slate-400 hover:text-white min-w-[3rem]">1x</button>
+            </div>
         </div>
+
         <button onclick="app.closeTvModal()" class="p-2 hover:bg-slate-800 rounded-full text-slate-400 hover:text-white transition-colors">
             <i data-lucide="x" class="w-6 h-6"></i>
         </button>
