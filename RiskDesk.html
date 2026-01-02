@@ -1485,6 +1485,7 @@ const app = {
         // 2. Load Settings
         const savedSettings = localStorage.getItem('appSettings');
         if (savedSettings) this.data.settings = {...this.data.settings, ...JSON.parse(savedSettings)};
+		if (!this.data.settings.replayBarStyle) this.data.settings.replayBarStyle = 'candlestick';
         
         // --- FORCE RISK DEFAULTS (User Request) ---
         // Overwrite any saved risk preferences on every load
@@ -5461,9 +5462,14 @@ const app = {
 
         container.innerHTML = squares;
     },
-	// --- JOURNAL: CORE LOGIC ---
-    saveJournal() {
-        this.data.journal.philosophy = document.getElementById('jPhilosophy').value;
+	saveJournal() {
+        // PATCH: Only update philosophy from DOM if the Rules tab is actually visible.
+        // Prevents overwriting data with empty string when saving from Daily Log tab.
+        const rulesTab = document.getElementById('jtab-rules');
+        if (rulesTab && !rulesTab.classList.contains('hidden')) {
+            this.data.journal.philosophy = document.getElementById('jPhilosophy').value;
+        }
+        
         localStorage.setItem('tradeJournal', JSON.stringify(this.data.journal));
     },
 
@@ -6788,6 +6794,8 @@ const app = {
         document.getElementById('btnPlay').classList.remove('hidden');
         document.getElementById('btnPause').classList.add('hidden');
         document.getElementById('btnSpeed').innerText = '1x';
+		const styleBtn = document.getElementById('btnTvStyle');
+		if(styleBtn) styleBtn.innerText = (this.data.settings.replayBarStyle === 'bar') ? 'Bars' : 'Candles';
 
         try {
             // A. FETCH DATA
@@ -6972,7 +6980,25 @@ const app = {
             timeScale: { timeVisible: true, secondsVisible: false },
         });
         
-        this.mainSeries = this.tvChart.addCandlestickSeries({ upColor: '#10b981', downColor: '#ef4444', borderVisible: false, wickUpColor: '#10b981', wickDownColor: '#ef4444' });
+        // PATCH: Select Series Type
+        const style = this.data.settings.replayBarStyle || 'candlestick';
+        
+        if (style === 'bar') {
+            this.mainSeries = this.tvChart.addBarSeries({ 
+                upColor: '#10b981', 
+                downColor: '#ef4444', 
+                thinBars: true // CHANGED: Set to true for thinner bars
+            });
+        } else {
+            this.mainSeries = this.tvChart.addCandlestickSeries({ 
+                upColor: '#10b981', 
+                downColor: '#ef4444', 
+                borderVisible: false, 
+                wickUpColor: '#10b981', 
+                wickDownColor: '#ef4444' 
+            });
+        }
+
         this.mainSeries.setData(candles);
         if(markers && markers.length > 0) this.mainSeries.setMarkers(markers);
 
@@ -7061,6 +7087,21 @@ const app = {
         if (p.isPlaying) {
             if(p.timer) clearTimeout(p.timer);
             this.stepReplay();
+        }
+    },
+	
+	toggleTvStyle() {
+        const current = this.data.settings.replayBarStyle;
+        const next = current === 'bar' ? 'candlestick' : 'bar';
+        this.data.settings.replayBarStyle = next;
+        this.saveSettings();
+        
+        const btn = document.getElementById('btnTvStyle');
+        if(btn) btn.innerText = next === 'bar' ? 'Bars' : 'Candles';
+        
+        if(this.player && this.player.data) {
+             const p = this.player;
+             this.renderTvChart(p.data.candles, p.data.emaData, p.data.markers);
         }
     },
 
@@ -7236,6 +7277,7 @@ app.drawConsistencyHeatmap = function(logs) {
                 </button>
                 
                 <button onclick="app.toggleSpeed()" id="btnSpeed" class="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-900 text-slate-400 hover:text-white min-w-[2rem]">1x</button>
+				<button onclick="app.toggleTvStyle()" id="btnTvStyle" class="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-900 text-slate-400 hover:text-white min-w-[3rem] ml-1">Candles</button>
             </div>
             
             <span id="tvSubtitle" class="hidden sm:inline-block text-[10px] text-slate-500 font-mono"></span>
