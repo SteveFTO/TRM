@@ -6761,7 +6761,7 @@ const app = {
 	// --- TRADINGVIEW REPLAY ENGINE ---
     
     tvChart: null, // Stores the chart instance
-	// --- REPLAY SETUP (Fixed Layout) ---
+	// --- REPLAY SETUP (Fixes Partial Label & Open Status) ---
     async openReplay(id) {
         const log = this.data.logs.find(l => l.id === id);
         if(!log) return;
@@ -6771,7 +6771,7 @@ const app = {
         modal.classList.remove('hidden');
         requestAnimationFrame(() => modal.classList.remove('opacity-0'));
         
-        // Header Updates (Ticker & Subtitle)
+        // Header Updates
         document.getElementById('tvTitle').innerText = log.ticker;
         document.getElementById('tvSubtitle').innerText = "Loading...";
         document.getElementById('tvContainer').innerHTML = '<div class="absolute inset-0 flex items-center justify-center"><div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div></div>';
@@ -6795,7 +6795,12 @@ const app = {
                 });
             }
 
-            const isOpen = log.status === 'OPEN' || log.isOpen === true || (log.exits && log.exits.some(e => e.type === 'OPEN'));
+            // --- CRITICAL FIX: ROBUST OPEN CHECK ---
+            // We check outcome OR if shares remaining > 0
+            const totalSold = log.exits ? log.exits.reduce((a,b)=>a+b.qty, 0) : 0;
+            const isOpen = log.outcome === 'open' || (log.initialQty > totalSold);
+            
+            // If open, we analyze up to TODAY, not the last partial exit
             const analysisEndDate = isOpen ? new Date() : lastExitDate;
 
             const ONE_DAY = 86400 * 1000;
@@ -6824,6 +6829,8 @@ const app = {
             // --- C. METRICS (Result % in Header) ---
             const entryTs = Math.floor(entryDate.getTime() / 1000);
             const endTs = Math.floor(analysisEndDate.getTime() / 1000);
+            
+            // Hold Window: Candles from Entry to (Last Exit OR Today)
             const holdWindow = candles.filter(c => c.time >= entryTs && c.time <= endTs);
             
             let mfeStr = "0.00%", maeStr = "0.00%", posStr = "0.00%";
@@ -6852,13 +6859,13 @@ const app = {
                 posColor = posPct >= 0 ? "text-emerald-400" : "text-red-400";
             }
 
-            // INJECT RESULT INTO HEADER (Top Right)
+            // INJECT RESULT INTO HEADER
             const headerRes = document.getElementById('tvHeaderResult');
             if(headerRes) {
                 headerRes.innerHTML = `Result: <span class="${posColor}">${posStr}</span>`;
             }
 
-            // INJECT MFE/MAE INTO FOOTER (Bottom Right)
+            // INJECT MFE/MAE INTO FOOTER
             const footerStats = document.getElementById('tvFooterStats');
             if(footerStats) {
                 footerStats.innerHTML = `
@@ -6882,7 +6889,7 @@ const app = {
                 }
             }
 
-            // E. MARKERS
+            // E. MARKERS (Fixed Logic)
             let markers = [];
             const findClosest = (dStr) => {
                 if(!dStr) return null;
@@ -6904,6 +6911,7 @@ const app = {
                     const x = findClosest(ex.date);
                     if(x) {
                         const isLast = index === sortedExits.length - 1;
+                        // FIX: Only label CLOSE if it's last AND trade is NOT open
                         const label = (isLast && !isOpen) ? "CLOSE" : "PARTIAL";
                         markers.push({ 
                             time: x.time, 
