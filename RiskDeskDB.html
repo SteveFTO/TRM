@@ -398,7 +398,7 @@
                 </p>
             </div>
             
-            <a href="https://stephenhood.gumroad.com/l/jepcya" target="_blank" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-indigo-900/50 transition-all active:scale-95 text-xs uppercase tracking-wide">
+            <a href="https://riskdesk.gumroad.com/l/jepcya" target="_blank" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-indigo-900/50 transition-all active:scale-95 text-xs uppercase tracking-wide">
                 <i data-lucide="heart" class="w-4 h-4 text-pink-300 fill-pink-300/50"></i>
                 Leave a Tip
             </a>
@@ -1485,6 +1485,7 @@ const app = {
         // 2. Load Settings
         const savedSettings = localStorage.getItem('appSettings');
         if (savedSettings) this.data.settings = {...this.data.settings, ...JSON.parse(savedSettings)};
+		if (!this.data.settings.replayBarStyle) this.data.settings.replayBarStyle = 'candlestick';
         
         // --- FORCE RISK DEFAULTS (User Request) ---
         // Overwrite any saved risk preferences on every load
@@ -1958,12 +1959,12 @@ const app = {
         const accountSize = masterAcc ? masterAcc.size : 10000;
 
         let metrics = {
-            ner: 0,           // Net Exposure Risk 
-            nep: 0,           // New Exposure Profit (Traction)
-            delta: 0,         // NEP - NER
-            openProfit: 0,    // Total Portfolio P&L
-            openHeat: 0,      // Total Portfolio Heat
-            secured: 0        // Banked (Worst Case)
+            ner: 0,           // Net Exposure Risk (Based on Principal)
+            nep: 0,           // Net Exposure Profit (Based on Principal)
+            delta: 0,         
+            openProfit: 0,    // Unrealized P&L
+            openHeatOER: 0,   // Risk at Current Price (The Display Value)
+            secured: 0        // Banked Profit covering Principal Risk
         };
 
         openTrades.forEach(log => {
@@ -1982,8 +1983,10 @@ const app = {
             // 2. FLOATING (Unrealized)
             const totalSold = log.exits ? log.exits.reduce((a,b) => a + b.qty, 0) : 0;
             const currentQty = (log.initialQty || 0) - totalSold;
+            
             let floatingPnl = 0;
-            let currentPrice = log.currentPrice || log.entry;
+            const currentPrice = log.currentPrice || log.entry;
+            const activeStop = (typeof log.currentStop === 'number') ? log.currentStop : log.stop;
             
             if(currentQty > 0) {
                 const diff = (log.direction === 'SHORT' ? log.entry - currentPrice : currentPrice - log.entry);
@@ -1991,43 +1994,46 @@ const app = {
             }
             const floatingBase = floatingPnl / rate;
 
-            // 3. GROSS RISK (The Fix)
-            const activeStop = (typeof log.currentStop === 'number') ? log.currentStop : log.stop;
+            // 3. RISK CALCS
             
-            // --- FIX START: Directional Risk Logic ---
-            let riskPerShare = 0;
+            // A. PRINCIPAL RISK (For Stats: NER / Secured)
+            // Measures risk from the Entry point. Stable.
+            let riskDistPrincipal = 0;
             if (log.direction === 'SHORT') {
-                // For Short: Risk is (Stop - Entry). If Stop < Entry, Risk is 0.
-                riskPerShare = Math.max(0, activeStop - log.entry);
+                riskDistPrincipal = Math.max(0, activeStop - log.entry);
             } else {
-                // For Long: Risk is (Entry - Stop). If Stop > Entry, Risk is 0.
-                riskPerShare = Math.max(0, log.entry - activeStop);
+                riskDistPrincipal = Math.max(0, log.entry - activeStop);
             }
-            // --- FIX END ---
+            const principalRiskBase = (riskDistPrincipal * currentQty) / rate;
 
-            const grossRiskBase = (riskPerShare * currentQty) / rate;
-
-
-            // 4. PRIMETRADING LOGIC (Unfinanced Filter)
-            const remainingRisk = grossRiskBase - bankedBase;
-
-            if (remainingRisk > 0) {
-                // Trade is UNFINANCED (Risky)
-                metrics.ner += remainingRisk; 
-                metrics.nep += floatingBase;   // Add Traction
+            // B. OER RISK (For Display: Open Heat)
+            // Measures risk from Current Price. Dynamic.
+            let riskDistOpen = 0;
+            if (log.direction === 'SHORT') {
+                riskDistOpen = Math.max(0, activeStop - currentPrice);
             } else {
-                // Trade is FINANCED (Free Roll)
-                // We do NOT add to NEP/NER.
-                // We add the "Overflow Safety" to Secured.
-                // Secured = Banked - Risk. Since Risk is 0 (or covered), Secured = The Profit we keep.
-                metrics.secured += Math.abs(remainingRisk); 
+                riskDistOpen = Math.max(0, currentPrice - activeStop);
+            }
+            const oerBase = (riskDistOpen * currentQty) / rate;
+
+            // 4. AGGREGATION
+            metrics.openHeatOER += oerBase;
+
+            // Use PRINCIPAL Risk for determining if a trade is "Secured" or "Exposed"
+            const remainingPrincipalRisk = principalRiskBase - bankedBase;
+
+            if (remainingPrincipalRisk > 0) {
+                // UNFINANCED
+                metrics.ner += remainingPrincipalRisk; 
+                metrics.nep += floatingBase;   
+            } else {
+                // FINANCED (Free Roll)
+                metrics.secured += Math.abs(remainingPrincipalRisk); 
             }
 
-            metrics.openProfit += (bankedBase + floatingBase);
-            metrics.openHeat += grossRiskBase;
+            metrics.openProfit += floatingBase; // Unrealized Only
         });
 
-        // Delta
         metrics.delta = metrics.nep - metrics.ner;
 
         return {
@@ -2036,7 +2042,7 @@ const app = {
             delta: (metrics.delta / accountSize) * 100,
             
             profitVal: metrics.openProfit,
-            heatVal: metrics.openHeat,
+            oerVal: metrics.openHeatOER, // The only Heat value we return
             securedVal: metrics.secured
         };
     },
@@ -2064,7 +2070,7 @@ const app = {
         if (!container) return;
 
         // 1. Calculate Metrics
-        const data = this.calculatePortfolioRisk ? this.calculatePortfolioRisk() : {nerPct:0, nepPct:0, profitVal:0, heatVal:0, securedVal:0};
+        const data = this.calculatePortfolioRisk ? this.calculatePortfolioRisk() : {nerPct:0, nepPct:0, profitVal:0, oerVal:0, securedVal:0};
         
         const sym = this.getSymbol ? this.getSymbol(this.data.settings.baseCurrency) : "";
         const isMobile = window.innerWidth < 768;
@@ -2076,34 +2082,34 @@ const app = {
         const fmtPct = (v) => `${v>0?'+':''}${v.toFixed(2)}%`;
         const fmtMoney = (v) => `${v<0?'-':''}${sym}${Math.abs(v).toFixed(0)}`;
 
-        // 2. RENDER: DESKTOP (Full Bar)
+        // 2. RENDER: DESKTOP
         if (!isMobile) {
             if(drawer) drawer.classList.add('hidden');
             container.innerHTML = `
                 <div class="flex items-center gap-3 text-xs font-mono bg-slate-800/50 px-4 py-1.5 rounded-full border border-slate-700/50">
-                    <div class="flex flex-col items-center leading-none" title="Net Equity Risk">
+                    <div class="flex flex-col items-center leading-none" title="Net Exposure Risk">
                         <span class="text-[9px] text-slate-500 font-bold">NER</span>
                         <span class="${data.nerPct < -0.5 ? 'text-red-400' : 'text-slate-300'} font-bold">${data.nerPct.toFixed(2)}%</span>
                     </div>
                     <div class="w-px h-6 bg-slate-700"></div>
-                    <div class="flex flex-col items-center leading-none" title="Net Equity Profit">
+                    <div class="flex flex-col items-center leading-none" title="Net Exposure Profit">
                         <span class="text-[9px] text-slate-500 font-bold">NEP</span>
                         <span class="${color(data.nepPct)} font-bold">${fmtPct(data.nepPct)}</span>
                     </div>
                     <div class="w-px h-6 bg-slate-700"></div>
-                    <div class="flex flex-col items-center leading-none" title="Delta (NEP + NER)">
+                    <div class="flex flex-col items-center leading-none" title="Delta">
                         <span class="text-[9px] text-blue-400 font-bold">DELTA</span>
                         <span class="${(data.nepPct+data.nerPct)>0?'text-blue-400':'text-slate-400'} font-bold">${fmtPct(data.nepPct+data.nerPct)}</span>
                     </div>
                     <div class="w-px h-6 bg-slate-700"></div>
-                    <div class="flex flex-col items-center leading-none" title="Open Profit">
+                    <div class="flex flex-col items-center leading-none" title="Open P&L (Unrealized)">
                         <span class="text-[9px] text-slate-500 font-bold">OPEN P&L</span>
                         <span class="${color(data.profitVal)} font-bold">${fmtMoney(data.profitVal)}</span>
                     </div>
                     <div class="w-px h-6 bg-slate-700"></div>
-                    <div class="flex flex-col items-center leading-none" title="Open Heat">
-                        <span class="text-[9px] text-slate-500 font-bold">HEAT</span>
-                        <span class="${data.heatVal > 0 ? 'text-red-400' : 'text-emerald-400'} font-bold">${fmtMoney(data.heatVal)}</span>
+                    <div class="flex flex-col items-center leading-none" title="Open Exposure Risk (Current vs Stop)">
+                        <span class="text-[9px] text-slate-500 font-bold">OPEN HEAT (OER)</span>
+                        <span class="${data.oerVal > 0 ? 'text-red-400' : 'text-emerald-400'} font-bold">${fmtMoney(data.oerVal)}</span>
                     </div>
                     <div class="w-px h-6 bg-slate-700"></div>
                     <div class="flex flex-col items-center leading-none" title="Secured Profit">
@@ -2116,22 +2122,19 @@ const app = {
                 </div>`;
         } 
         
-        // 3. RENDER: MOBILE (Carousel Pill)
+        // 3. RENDER: MOBILE
         else {
             const delta = data.nepPct + data.nerPct;
             const deltaColor = delta > 0 ? 'text-blue-400' : 'text-slate-400';
             
-            // FIX: Added Heat and Secured to this list
             const slides = [
                 { label: 'Delta', val: fmtPct(delta), col: deltaColor },
                 { label: 'NER', val: data.nerPct.toFixed(2)+'%', col: data.nerPct < -0.5 ? 'text-red-400' : 'text-slate-300' },
                 { label: 'NEP', val: fmtPct(data.nepPct), col: color(data.nepPct) },
-                { label: 'Open P&L', val: fmtMoney(data.profitVal), col: color(data.profitVal) },
-                { label: 'Heat', val: fmtMoney(data.heatVal), col: data.heatVal > 0 ? 'text-red-400' : 'text-emerald-400' },
+                { label: 'OER', val: fmtMoney(data.oerVal), col: data.oerVal > 0 ? 'text-red-400' : 'text-emerald-400' },
                 { label: 'Secured', val: fmtMoney(data.securedVal), col: color(data.securedVal) }
             ];
 
-            // Generate Slide HTML
             const slidesHtml = slides.map(s => `
                 <div class="w-full flex-shrink-0 snap-center flex flex-col items-start justify-center px-2">
                     <span class="text-[8px] text-slate-500 font-bold uppercase leading-none whitespace-nowrap">${s.label}</span>
@@ -2174,8 +2177,8 @@ const app = {
                         <div class="text-xs font-mono font-bold ${color(data.profitVal)}">${fmtMoney(data.profitVal)}</div>
                     </div>
                     <div class="bg-slate-800 p-2 rounded text-center border border-slate-700">
-                        <div class="text-[9px] text-slate-500 font-bold uppercase">Heat</div>
-                        <div class="text-xs font-mono font-bold ${data.heatVal > 0 ? 'text-red-400' : 'text-emerald-400'}">${fmtMoney(data.heatVal)}</div>
+                        <div class="text-[9px] text-slate-500 font-bold uppercase">OER (Heat)</div>
+                        <div class="text-xs font-mono font-bold ${data.oerVal > 0 ? 'text-red-400' : 'text-emerald-400'}">${fmtMoney(data.oerVal)}</div>
                     </div>
                     <div class="bg-slate-800 p-2 rounded text-center border border-slate-700">
                         <div class="text-[9px] text-slate-500 font-bold uppercase">Secured</div>
@@ -5461,9 +5464,14 @@ const app = {
 
         container.innerHTML = squares;
     },
-	// --- JOURNAL: CORE LOGIC ---
-    saveJournal() {
-        this.data.journal.philosophy = document.getElementById('jPhilosophy').value;
+	saveJournal() {
+        // PATCH: Only update philosophy from DOM if the Rules tab is actually visible.
+        // Prevents overwriting data with empty string when saving from Daily Log tab.
+        const rulesTab = document.getElementById('jtab-rules');
+        if (rulesTab && !rulesTab.classList.contains('hidden')) {
+            this.data.journal.philosophy = document.getElementById('jPhilosophy').value;
+        }
+        
         localStorage.setItem('tradeJournal', JSON.stringify(this.data.journal));
     },
 
@@ -6788,6 +6796,8 @@ const app = {
         document.getElementById('btnPlay').classList.remove('hidden');
         document.getElementById('btnPause').classList.add('hidden');
         document.getElementById('btnSpeed').innerText = '1x';
+		const styleBtn = document.getElementById('btnTvStyle');
+		if(styleBtn) styleBtn.innerText = (this.data.settings.replayBarStyle === 'bar') ? 'Bars' : 'Candles';
 
         try {
             // A. FETCH DATA
@@ -6972,7 +6982,25 @@ const app = {
             timeScale: { timeVisible: true, secondsVisible: false },
         });
         
-        this.mainSeries = this.tvChart.addCandlestickSeries({ upColor: '#10b981', downColor: '#ef4444', borderVisible: false, wickUpColor: '#10b981', wickDownColor: '#ef4444' });
+        // PATCH: Select Series Type
+        const style = this.data.settings.replayBarStyle || 'candlestick';
+        
+        if (style === 'bar') {
+            this.mainSeries = this.tvChart.addBarSeries({ 
+                upColor: '#10b981', 
+                downColor: '#ef4444', 
+                thinBars: true // CHANGED: Set to true for thinner bars
+            });
+        } else {
+            this.mainSeries = this.tvChart.addCandlestickSeries({ 
+                upColor: '#10b981', 
+                downColor: '#ef4444', 
+                borderVisible: false, 
+                wickUpColor: '#10b981', 
+                wickDownColor: '#ef4444' 
+            });
+        }
+
         this.mainSeries.setData(candles);
         if(markers && markers.length > 0) this.mainSeries.setMarkers(markers);
 
@@ -7061,6 +7089,21 @@ const app = {
         if (p.isPlaying) {
             if(p.timer) clearTimeout(p.timer);
             this.stepReplay();
+        }
+    },
+	
+	toggleTvStyle() {
+        const current = this.data.settings.replayBarStyle;
+        const next = current === 'bar' ? 'candlestick' : 'bar';
+        this.data.settings.replayBarStyle = next;
+        this.saveSettings();
+        
+        const btn = document.getElementById('btnTvStyle');
+        if(btn) btn.innerText = next === 'bar' ? 'Bars' : 'Candles';
+        
+        if(this.player && this.player.data) {
+             const p = this.player;
+             this.renderTvChart(p.data.candles, p.data.emaData, p.data.markers);
         }
     },
 
@@ -7236,6 +7279,7 @@ app.drawConsistencyHeatmap = function(logs) {
                 </button>
                 
                 <button onclick="app.toggleSpeed()" id="btnSpeed" class="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-900 text-slate-400 hover:text-white min-w-[2rem]">1x</button>
+				<button onclick="app.toggleTvStyle()" id="btnTvStyle" class="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-900 text-slate-400 hover:text-white min-w-[3rem] ml-1">Candles</button>
             </div>
             
             <span id="tvSubtitle" class="hidden sm:inline-block text-[10px] text-slate-500 font-mono"></span>
@@ -7269,6 +7313,7 @@ app.drawConsistencyHeatmap = function(logs) {
 </div>
 </body>
 </html>
+
 
 
 
