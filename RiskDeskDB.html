@@ -1959,18 +1959,19 @@ const app = {
         const accountSize = masterAcc ? masterAcc.size : 10000;
 
         let metrics = {
-            ner: 0,           // Net Exposure Risk (Based on Principal)
-            nep: 0,           // Net Exposure Profit (Based on Principal)
+            ner: 0,           // Net Exposure Risk (Principal)
+            nep: 0,           // Net Exposure Profit (Principal)
             delta: 0,         
-            openProfit: 0,    // Unrealized P&L
-            openHeatOER: 0,   // Risk at Current Price (The Display Value)
+            openProfit: 0,    // NOW: Total Campaign P&L (Banked + Floating)
+            unrealizedRaw: 0, // NEW: Just the floating part (for Tooltips)
+            openHeatOER: 0,   // Risk at Current Price
             secured: 0        // Banked Profit covering Principal Risk
         };
 
         openTrades.forEach(log => {
             const rate = log.exchangeRate || 1;
             
-            // 1. BANKED (Realized)
+            // 1. BANKED
             let bankedPnl = 0;
             if(log.exits) {
                 log.exits.forEach(ex => {
@@ -1980,7 +1981,7 @@ const app = {
             }
             const bankedBase = bankedPnl / rate;
 
-            // 2. FLOATING (Unrealized)
+            // 2. FLOATING
             const totalSold = log.exits ? log.exits.reduce((a,b) => a + b.qty, 0) : 0;
             const currentQty = (log.initialQty || 0) - totalSold;
             
@@ -1996,8 +1997,7 @@ const app = {
 
             // 3. RISK CALCS
             
-            // A. PRINCIPAL RISK (For Stats: NER / Secured)
-            // Measures risk from the Entry point. Stable.
+            // A. PRINCIPAL (Stats)
             let riskDistPrincipal = 0;
             if (log.direction === 'SHORT') {
                 riskDistPrincipal = Math.max(0, activeStop - log.entry);
@@ -2006,8 +2006,7 @@ const app = {
             }
             const principalRiskBase = (riskDistPrincipal * currentQty) / rate;
 
-            // B. OER RISK (For Display: Open Heat)
-            // Measures risk from Current Price. Dynamic.
+            // B. OER (Heat)
             let riskDistOpen = 0;
             if (log.direction === 'SHORT') {
                 riskDistOpen = Math.max(0, activeStop - currentPrice);
@@ -2016,22 +2015,20 @@ const app = {
             }
             const oerBase = (riskDistOpen * currentQty) / rate;
 
-            // 4. AGGREGATION
+            // 4. AGGREGATE
             metrics.openHeatOER += oerBase;
 
-            // Use PRINCIPAL Risk for determining if a trade is "Secured" or "Exposed"
-            const remainingPrincipalRisk = principalRiskBase - bankedBase;
+            // PATCH: Open Profit is now TOTAL Campaign P&L (Banked + Floating)
+            metrics.openProfit += (bankedBase + floatingBase);
+            metrics.unrealizedRaw += floatingBase; // Store this separately for display
 
+            const remainingPrincipalRisk = principalRiskBase - bankedBase;
             if (remainingPrincipalRisk > 0) {
-                // UNFINANCED
                 metrics.ner += remainingPrincipalRisk; 
                 metrics.nep += floatingBase;   
             } else {
-                // FINANCED (Free Roll)
                 metrics.secured += Math.abs(remainingPrincipalRisk); 
             }
-
-            metrics.openProfit += floatingBase; // Unrealized Only
         });
 
         metrics.delta = metrics.nep - metrics.ner;
@@ -2041,9 +2038,10 @@ const app = {
             nepPct: (metrics.nep / accountSize) * 100,
             delta: (metrics.delta / accountSize) * 100,
             
-            profitVal: metrics.openProfit,
-            oerVal: metrics.openHeatOER, // The only Heat value we return
-            securedVal: metrics.secured
+            profitPct: (metrics.openProfit / accountSize) * 100,
+            unrealizedVal: metrics.unrealizedRaw, // Passing the money value
+            oerPct: -(metrics.openHeatOER / accountSize) * 100, 
+            securedPct: (metrics.secured / accountSize) * 100
         };
     },
 	
@@ -2069,8 +2067,9 @@ const app = {
         const drawerContent = document.getElementById('riskDrawerContent');
         if (!container) return;
 
-        // 1. Calculate Metrics
-        const data = this.calculatePortfolioRisk ? this.calculatePortfolioRisk() : {nerPct:0, nepPct:0, profitVal:0, oerVal:0, securedVal:0};
+        // 1. Calculate
+        const data = this.calculatePortfolioRisk ? this.calculatePortfolioRisk() : 
+            {nerPct:0, nepPct:0, delta:0, profitPct:0, unrealizedVal:0, oerPct:0, securedPct:0};
         
         const sym = this.getSymbol ? this.getSymbol(this.data.settings.baseCurrency) : "";
         const isMobile = window.innerWidth < 768;
@@ -2079,10 +2078,11 @@ const app = {
              if(Math.abs(val) < 0.01) return 'text-slate-400';
              return (reverse ? val < 0 : val > 0) ? 'text-emerald-400' : 'text-red-400';
         };
-        const fmtPct = (v) => `${v>0?'+':''}${v.toFixed(2)}%`;
+        
+        const fmt = (v) => `${v>0?'+':''}${v.toFixed(2)}%`;
         const fmtMoney = (v) => `${v<0?'-':''}${sym}${Math.abs(v).toFixed(0)}`;
 
-        // 2. RENDER: DESKTOP
+        // 2. DESKTOP
         if (!isMobile) {
             if(drawer) drawer.classList.add('hidden');
             container.innerHTML = `
@@ -2094,27 +2094,29 @@ const app = {
                     <div class="w-px h-6 bg-slate-700"></div>
                     <div class="flex flex-col items-center leading-none" title="Net Exposure Profit">
                         <span class="text-[9px] text-slate-500 font-bold">NEP</span>
-                        <span class="${color(data.nepPct)} font-bold">${fmtPct(data.nepPct)}</span>
+                        <span class="${color(data.nepPct)} font-bold">${fmt(data.nepPct)}</span>
                     </div>
                     <div class="w-px h-6 bg-slate-700"></div>
                     <div class="flex flex-col items-center leading-none" title="Delta">
                         <span class="text-[9px] text-blue-400 font-bold">DELTA</span>
-                        <span class="${(data.nepPct+data.nerPct)>0?'text-blue-400':'text-slate-400'} font-bold">${fmtPct(data.nepPct+data.nerPct)}</span>
+                        <span class="${data.delta>0?'text-blue-400':'text-slate-400'} font-bold">${fmt(data.delta)}</span>
                     </div>
                     <div class="w-px h-6 bg-slate-700"></div>
-                    <div class="flex flex-col items-center leading-none" title="Open P&L (Unrealized)">
+                    
+                    <div class="flex flex-col items-center leading-none" title="Total P&L Unrealized: ${fmtMoney(data.unrealizedVal)})">
                         <span class="text-[9px] text-slate-500 font-bold">OPEN P&L</span>
-                        <span class="${color(data.profitVal)} font-bold">${fmtMoney(data.profitVal)}</span>
+                        <span class="${color(data.profitPct)} font-bold">${fmt(data.profitPct)}</span>
+                    </div>
+                    
+                    <div class="w-px h-6 bg-slate-700"></div>
+                    <div class="flex flex-col items-center leading-none" title="Open Exposure Risk %">
+                        <span class="text-[9px] text-slate-500 font-bold">OER</span>
+                        <span class="${data.oerPct < 0 ? 'text-red-400' : 'text-emerald-400'} font-bold">${data.oerPct.toFixed(2)}%</span>
                     </div>
                     <div class="w-px h-6 bg-slate-700"></div>
-                    <div class="flex flex-col items-center leading-none" title="Open Exposure Risk (Current vs Stop)">
-                        <span class="text-[9px] text-slate-500 font-bold">OPEN HEAT (OER)</span>
-                        <span class="${data.oerVal > 0 ? 'text-red-400' : 'text-emerald-400'} font-bold">${fmtMoney(data.oerVal)}</span>
-                    </div>
-                    <div class="w-px h-6 bg-slate-700"></div>
-                    <div class="flex flex-col items-center leading-none" title="Secured Profit">
+                    <div class="flex flex-col items-center leading-none" title="Secured Profit %">
                         <span class="text-[9px] text-slate-500 font-bold">SECURED</span>
-                        <span class="${color(data.securedVal)} font-bold">${fmtMoney(data.securedVal)}</span>
+                        <span class="${color(data.securedPct)} font-bold">${fmt(data.securedPct)}</span>
                     </div>
                     <button onclick="app.fetchCurrentPrices()" class="ml-2 p-1.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white shadow-lg transition-all hover:scale-105" title="Fetch Prices">
                         <i data-lucide="refresh-cw" class="w-3 h-3"></i>
@@ -2122,17 +2124,16 @@ const app = {
                 </div>`;
         } 
         
-        // 3. RENDER: MOBILE
+        // 3. MOBILE
         else {
-            const delta = data.nepPct + data.nerPct;
-            const deltaColor = delta > 0 ? 'text-blue-400' : 'text-slate-400';
+            const deltaColor = data.delta > 0 ? 'text-blue-400' : 'text-slate-400';
             
             const slides = [
-                { label: 'Delta', val: fmtPct(delta), col: deltaColor },
+                { label: 'Delta', val: fmt(data.delta), col: deltaColor },
                 { label: 'NER', val: data.nerPct.toFixed(2)+'%', col: data.nerPct < -0.5 ? 'text-red-400' : 'text-slate-300' },
-                { label: 'NEP', val: fmtPct(data.nepPct), col: color(data.nepPct) },
-                { label: 'OER', val: fmtMoney(data.oerVal), col: data.oerVal > 0 ? 'text-red-400' : 'text-emerald-400' },
-                { label: 'Secured', val: fmtMoney(data.securedVal), col: color(data.securedVal) }
+                { label: 'NEP', val: fmt(data.nepPct), col: color(data.nepPct) },
+                { label: 'OER', val: data.oerPct.toFixed(2)+'%', col: data.oerPct < 0 ? 'text-red-400' : 'text-emerald-400' },
+                { label: 'Secured', val: fmt(data.securedPct), col: color(data.securedPct) }
             ];
 
             const slidesHtml = slides.map(s => `
@@ -2166,23 +2167,24 @@ const app = {
                     </div>
                     <div class="bg-slate-800 p-2 rounded text-center border border-slate-700">
                         <div class="text-[9px] text-slate-500 font-bold uppercase">NEP</div>
-                        <div class="text-sm font-mono font-bold ${color(data.nepPct)}">${fmtPct(data.nepPct)}</div>
+                        <div class="text-sm font-mono font-bold ${color(data.nepPct)}">${fmt(data.nepPct)}</div>
                     </div>
                     <div class="bg-slate-800 p-2 rounded text-center border border-blue-900/50 bg-blue-900/10">
                         <div class="text-[9px] text-blue-400 font-bold uppercase">Delta</div>
-                        <div class="text-sm font-mono font-bold ${deltaColor}">${fmtPct(delta)}</div>
+                        <div class="text-sm font-mono font-bold ${deltaColor}">${fmt(data.delta)}</div>
                     </div>
                     <div class="bg-slate-800 p-2 rounded text-center border border-slate-700">
                         <div class="text-[9px] text-slate-500 font-bold uppercase">Open P&L</div>
-                        <div class="text-xs font-mono font-bold ${color(data.profitVal)}">${fmtMoney(data.profitVal)}</div>
+                        <div class="text-xs font-mono font-bold ${color(data.profitPct)}">${fmt(data.profitPct)}</div>
+                        <div class="text-[8px] text-slate-500 mt-1">Unrealized: ${fmtMoney(data.unrealizedVal)}</div>
                     </div>
                     <div class="bg-slate-800 p-2 rounded text-center border border-slate-700">
                         <div class="text-[9px] text-slate-500 font-bold uppercase">OER (Heat)</div>
-                        <div class="text-xs font-mono font-bold ${data.oerVal > 0 ? 'text-red-400' : 'text-emerald-400'}">${fmtMoney(data.oerVal)}</div>
+                        <div class="text-xs font-mono font-bold ${data.oerPct < 0 ? 'text-red-400' : 'text-emerald-400'}">${data.oerPct.toFixed(2)}%</div>
                     </div>
                     <div class="bg-slate-800 p-2 rounded text-center border border-slate-700">
                         <div class="text-[9px] text-slate-500 font-bold uppercase">Secured</div>
-                        <div class="text-xs font-mono font-bold ${color(data.securedVal)}">${fmtMoney(data.securedVal)}</div>
+                        <div class="text-xs font-mono font-bold ${color(data.securedPct)}">${fmt(data.securedPct)}</div>
                     </div>
                     <div class="col-span-3 mt-1">
                         <button onclick="app.fetchCurrentPrices()" class="w-full bg-blue-600 hover:bg-blue-500 py-2 rounded flex items-center justify-center text-white shadow-lg shadow-blue-500/20 active:scale-95 transition-transform gap-2">
