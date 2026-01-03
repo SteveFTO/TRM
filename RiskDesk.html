@@ -403,6 +403,25 @@
                 Leave a Tip
             </a>
         </div>
+		<div class="bg-slate-800 p-4 rounded-xl border border-slate-700 mb-6">
+    <h3 class="text-xs font-bold text-blue-400 uppercase mb-2 flex items-center gap-2">
+        <i data-lucide="cloud" class="w-4 h-4"></i> Google Cloud Sync
+    </h3>
+    <p class="text-[10px] text-slate-400 mb-3 leading-relaxed">
+        Sync your data across devices using your own Google Drive. 
+        <a href="#" onclick="alert('SETUP INSTRUCTIONS:\n1. Create a new Google Sheet\n2. Go to Extensions > Apps Script\n3. Paste the RiskDesk Sync Script\n4. Click Deploy > New Deployment\n5. Select Type: Web App\n6. Set Access: Anyone\n7. Paste the Web App URL below.')" class="underline text-slate-300 hover:text-white">Click for Setup Instructions</a>
+    </p>
+    <div class="flex gap-2">
+        <input type="text" id="settingCloudUrl" 
+            placeholder="Paste your Google Web App URL here..." 
+            class="flex-1 bg-slate-900 border border-slate-600 rounded p-2 text-xs text-white focus:border-blue-500 outline-none"
+            onchange="app.data.settings.cloudSyncUrl = this.value; app.saveSettings(); app.pullFromCloud();">
+        <button id="btnCloudSync" onclick="app.pushToCloud()" class="bg-slate-700 px-3 rounded text-slate-400 hover:text-white hover:bg-slate-600 transition-colors" title="Force Sync Now">
+            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+        </button>
+    </div>
+    <p class="text-[9px] text-slate-500 mt-2 italic">Note: Pasted Images are stored on this device only to keep sync fast.</p>
+	</div>
         <div class="bg-slate-800 rounded-xl p-4 border border-slate-700 mb-6">
             <h2 class="text-sm font-bold text-emerald-400 mb-4 uppercase flex items-center gap-2">
                 <i data-lucide="save" class="w-4 h-4"></i> Data Backup
@@ -1496,7 +1515,13 @@ const app = {
         if (!this.data.settings.strategies) {
             this.data.settings.strategies = ['FB Breakout', '21d Pullback', 'Gap & Go', 'Reversal', 'Other'];
         }
-
+		
+		// PATCH: Cloud Sync Init
+        if (!this.data.settings.cloudSyncUrl) this.data.settings.cloudSyncUrl = '';
+        if(this.data.settings.cloudSyncUrl) {
+            await this.pullFromCloud();
+        }
+		
         // 3. Load Accounts
         const savedAccs = localStorage.getItem('accounts');
         if (savedAccs) {
@@ -1545,7 +1570,9 @@ const app = {
 		
         // 5. UI Init
         document.getElementById('settingsBaseCurrency').value = this.data.settings.baseCurrency;
-        
+        if(document.getElementById('settingCloudUrl')) {
+            document.getElementById('settingCloudUrl').value = this.data.settings.cloudSyncUrl || '';
+        }
         this.populateDefaultTradeCurrencySettings();
         document.getElementById('settingsDefaultTradeCurrency').value = this.data.settings.defaultTradeCurrency || 'USD';
 
@@ -1574,6 +1601,7 @@ const app = {
         window.addEventListener('resize', () => {
             if(this.updateRiskBar) this.updateRiskBar();
         });
+		
         
     },
     
@@ -1597,13 +1625,13 @@ const app = {
                 // 2. Existing Trade: Exit Chart
                 if(type === 'exit' && logId) {
                     const log = this.data.logs.find(l => l.id === logId);
-                    if(log) { log.exitImg = id; localStorage.setItem('tradeLogs', JSON.stringify(this.data.logs)); this.openManageView(logId); }
+                    if(log) { log.exitImg = id; this.saveLogs(); this.openManageView(logId); }
                 }
 
                 // 3. NEW: Existing Trade: Entry Chart
                 if(type === 'entry-update' && logId) {
                     const log = this.data.logs.find(l => l.id === logId);
-                    if(log) { log.entryImg = id; localStorage.setItem('tradeLogs', JSON.stringify(this.data.logs)); this.openManageView(logId); }
+                    if(log) { log.entryImg = id; this.saveLogs(); this.openManageView(logId); }
                 }
                 return;
             }
@@ -1642,6 +1670,9 @@ const app = {
         localStorage.setItem('appSettings', JSON.stringify(this.data.settings));
         localStorage.setItem('accounts', JSON.stringify(this.data.accounts));
         document.getElementById('dispBaseCcy').textContent = this.data.settings.baseCurrency;
+        
+        // PATCH: Trigger Cloud Sync
+        this.pushToCloud();
     },
 
     generateInsights(logs) {
@@ -1777,17 +1808,43 @@ const app = {
         const file = input.files[0];
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = (e) => {
+        
+        // PATCH: Made async to handle Cloud Push
+        reader.onload = async (e) => { 
             try {
                 const json = JSON.parse(e.target.result);
                 if (json.logs && json.accounts) {
                     const jCount = json.journal ? Object.keys(json.journal.entries).length : 0;
+                    
                     if(confirm(`Restore Data?\n• ${json.logs.length} Trade Logs\n• ${json.accounts.length} Accounts\n• ${jCount} Journal Entries\n\nOverwrite current data?`)) {
-                        localStorage.setItem('tradeLogs', JSON.stringify(json.logs));
-                        localStorage.setItem('accounts', JSON.stringify(json.accounts));
-                        if(json.settings) localStorage.setItem('appSettings', JSON.stringify(json.settings));
-                        if(json.journal) localStorage.setItem('tradeJournal', JSON.stringify(json.journal));
-                        alert("Restore Successful. App will reload.");
+                        
+                        // 1. Preserve Cloud URL (If backup is old and doesn't have it)
+                        const currentUrl = this.data.settings.cloudSyncUrl;
+                        
+                        // 2. Update Memory with Backup Data
+                        this.data.logs = json.logs;
+                        this.data.accounts = json.accounts;
+                        if(json.settings) this.data.settings = json.settings;
+                        if(json.journal) this.data.journal = json.journal;
+
+                        // Restore the URL if the backup was missing it
+                        if(currentUrl && !this.data.settings.cloudSyncUrl) {
+                            this.data.settings.cloudSyncUrl = currentUrl;
+                        }
+
+                        // 3. Update Local Storage
+                        localStorage.setItem('tradeLogs', JSON.stringify(this.data.logs));
+                        localStorage.setItem('accounts', JSON.stringify(this.data.accounts));
+                        localStorage.setItem('appSettings', JSON.stringify(this.data.settings));
+                        localStorage.setItem('tradeJournal', JSON.stringify(this.data.journal));
+
+                        // 4. CRITICAL: Push to Cloud NOW (Make this the new Truth)
+                        if(this.pushToCloud) {
+                            console.log("Pushing restored data to cloud...");
+                            await this.pushToCloud();
+                        }
+
+                        alert("Restore Successful. Cloud Updated.");
                         location.reload();
                     }
                 } else { alert("Invalid Backup File."); }
@@ -1874,7 +1931,7 @@ const app = {
         }
 
         // 4. Save & Render
-        localStorage.setItem('tradeLogs', JSON.stringify(this.data.logs));
+        this.saveLogs();
         this.renderLogs();
        
         
@@ -2903,7 +2960,7 @@ const app = {
             setTimeout(() => toast.remove(), 2000);
         }
 
-        localStorage.setItem('tradeLogs', JSON.stringify(this.data.logs));
+        this.saveLogs();
         this.updateStrategyFilter(); 
         
         // Refresh smart insights if needed
@@ -3352,7 +3409,7 @@ const app = {
         }
     },
     saveAndRefresh(id) {
-        localStorage.setItem('tradeLogs', JSON.stringify(this.data.logs));
+        this.saveLogs();
         this.renderLogs();
         if(this.updateRiskBar) this.updateRiskBar();
         // Since we are in Page View, we just re-open the page
@@ -3399,7 +3456,7 @@ const app = {
         const newTotalSold = totalSold + qty;
         if(newTotalSold >= log.initialQty) log.outcome = 'profit'; 
 
-        localStorage.setItem('tradeLogs', JSON.stringify(this.data.logs));
+        this.saveLogs();
         this.openManageView(this.data.editingId); 
         this.renderLogs(); 
        
@@ -3434,7 +3491,7 @@ const app = {
         log.exits.splice(idx, 1);
         if(log.exits.reduce((a,b)=>a+b.qty,0) < log.initialQty) log.outcome = 'open';
 
-        localStorage.setItem('tradeLogs', JSON.stringify(this.data.logs));
+        this.saveLogs();
         this.openManageView(this.data.editingId);
        
         this.renderLogs();
@@ -3462,7 +3519,7 @@ const app = {
         }
 
         this.data.logs = this.data.logs.filter(l => l.id !== id);
-        localStorage.setItem('tradeLogs', JSON.stringify(this.data.logs));
+        this.saveLogs();
         this.renderLogs();
         
     },
@@ -4930,7 +4987,7 @@ const app = {
         
         // Save
         log.currentStop = val;
-        localStorage.setItem('tradeLogs', JSON.stringify(this.data.logs));
+        this.saveLogs();
         
         // Refresh UI
         
@@ -4961,7 +5018,7 @@ const app = {
             log.riskVal = parseFloat(((totalRiskBase / masterAcc.size) * 100).toFixed(2));
         }
 
-        localStorage.setItem('tradeLogs', JSON.stringify(this.data.logs));
+        this.saveLogs();
         this.openManageView(id);
         this.renderLogs();
         
@@ -5468,16 +5525,24 @@ const app = {
         container.innerHTML = squares;
     },
 	saveJournal() {
-        // PATCH: Only update philosophy from DOM if the Rules tab is actually visible.
-        // Prevents overwriting data with empty string when saving from Daily Log tab.
         const rulesTab = document.getElementById('jtab-rules');
         if (rulesTab && !rulesTab.classList.contains('hidden')) {
             this.data.journal.philosophy = document.getElementById('jPhilosophy').value;
         }
-        
         localStorage.setItem('tradeJournal', JSON.stringify(this.data.journal));
+        
+        // PATCH: Trigger Cloud Sync
+        this.pushToCloud(); 
     },
-
+	
+	saveLogs() {
+        // CORRECT: Use the raw command here, NOT this.saveLogs()
+        localStorage.setItem('tradeLogs', JSON.stringify(this.data.logs)); 
+        
+        // PATCH: Trigger Cloud Sync
+        this.pushToCloud();
+    },
+	
     switchJournalTab(tab) {
         document.getElementById('jtab-log').classList.add('hidden');
         document.getElementById('jtab-rules').classList.add('hidden');
@@ -5889,7 +5954,7 @@ const app = {
             stopMeta: { mode: 'single', price: stop } 
         });
         
-        localStorage.setItem('tradeLogs', JSON.stringify(this.data.logs));
+        this.saveLogs();
         document.getElementById('manualLogModal').classList.add('hidden');
         
         // Reset Button
@@ -6378,7 +6443,7 @@ const app = {
         const log = this.data.logs.find(l => l.id === id);
         if(log) {
             log.strategy = val;
-            localStorage.setItem('tradeLogs', JSON.stringify(this.data.logs));
+            this.saveLogs();
             // No need to re-render the whole view, just save it.
             // But we do need to re-render Logs list in background if filtering
             this.renderLogs();
@@ -6496,7 +6561,7 @@ const app = {
         if(finalSold >= log.initialQty) log.outcome = 'profit'; // Simplified outcome logic
         else log.outcome = 'open';
 
-        localStorage.setItem('tradeLogs', JSON.stringify(this.data.logs));
+        this.saveLogs();
         this.saveSettings(); // Save account size
         
         this.openManageView(this.data.editingId); 
@@ -6772,7 +6837,7 @@ const app = {
     },
 
     saveAndRefresh(id) {
-        localStorage.setItem('tradeLogs', JSON.stringify(this.data.logs));
+        this.saveLogs();
         this.renderLogs();     // Update Grid
         this.updateRiskBar();  // Update Header
         this.openManageView(id); // Refresh Modal to show new calculations
@@ -7122,6 +7187,104 @@ const app = {
             document.getElementById('tvContainer').innerHTML = '';
         }, 300);
     },
+	// --- SMART CLOUD SYNC ENGINE ---
+    async pushToCloud() {
+        const url = this.data.settings.cloudSyncUrl;
+        if (!url) return;
+
+        const btn = document.getElementById('btnCloudSync');
+        if(btn) btn.innerHTML = '<i data-lucide="refresh-cw" class="w-4 h-4 animate-spin"></i>';
+
+        try {
+            if(!this.data.journal || !this.data.journal.entries) return;
+
+            // 1. DEEP CLONE: Create a copy of data to modify safely
+            const payloadData = JSON.parse(JSON.stringify(this.data));
+
+            // 2. STRIP IMAGES: Remove heavy images from the payload
+            if (payloadData.journal && payloadData.journal.entries) {
+                Object.values(payloadData.journal.entries).forEach(entry => {
+                    if (entry.images) entry.images = [];
+                });
+            }
+            // Strip Trade Log Images too
+            if (payloadData.logs) {
+                payloadData.logs.forEach(l => {
+                    if(l.entryImg) delete l.entryImg;
+                    if(l.exitImg) delete l.exitImg;
+                });
+            }
+
+            // 3. UPLOAD
+            await fetch(url, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payloadData)
+            });
+
+            if(btn) {
+                btn.innerHTML = '<i data-lucide="cloud-off" class="w-4 h-4 text-emerald-400"></i>';
+                setTimeout(() => { if(btn) btn.innerHTML = '<i data-lucide="refresh-cw" class="w-4 h-4"></i>'; }, 2000);
+            }
+            console.log("Smart Sync Sent (Text Only)");
+
+        } catch (e) {
+            console.error("Cloud Sync Error", e);
+            if(btn) btn.innerHTML = '<i data-lucide="alert-circle" class="w-4 h-4 text-red-500"></i>';
+        }
+    },
+
+    async pullFromCloud() {
+        const url = this.data.settings.cloudSyncUrl;
+        if (!url) return;
+
+        try {
+            const cacheBuster = `${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`;
+            const response = await fetch(cacheBuster);
+            const cloudData = await response.json();
+
+            if (cloudData && cloudData.journal) {
+                
+                // SMART MERGE: Restore Local Images (Journal)
+                if (this.data.journal && this.data.journal.entries) {
+                    Object.entries(this.data.journal.entries).forEach(([date, localEntry]) => {
+                        if (localEntry.images && localEntry.images.length > 0) {
+                            if (cloudData.journal.entries[date]) {
+                                cloudData.journal.entries[date].images = localEntry.images;
+                            }
+                        }
+                    });
+                }
+                
+                // SMART MERGE: Restore Local Images (Logs)
+                if (this.data.logs) {
+                    this.data.logs.forEach(localLog => {
+                        const cloudLog = cloudData.logs.find(l => l.id === localLog.id);
+                        if (cloudLog) {
+                            if (localLog.entryImg) cloudLog.entryImg = localLog.entryImg;
+                            if (localLog.exitImg) cloudLog.exitImg = localLog.exitImg;
+                        }
+                    });
+                }
+
+                this.data = cloudData;
+                
+                localStorage.setItem('tradeJournal', JSON.stringify(this.data.journal));
+                this.saveLogs();
+                localStorage.setItem('appSettings', JSON.stringify(this.data.settings));
+                localStorage.setItem('accounts', JSON.stringify(this.data.accounts));
+                
+                console.log("Cloud Data Loaded & Images Merged");
+                
+                if(this.renderJournalEntry) this.renderJournalEntry();
+                if(this.renderLogs) this.renderLogs();
+                if(this.renderSettings) this.renderSettings();
+            }
+        } catch (e) {
+            console.error("Cloud Fetch Error", e);
+        }
+    },
 }; // <--- This is the end of the app object
 	
 
@@ -7316,7 +7479,6 @@ app.drawConsistencyHeatmap = function(logs) {
 </div>
 </body>
 </html>
-
 
 
 
