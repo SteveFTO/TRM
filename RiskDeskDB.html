@@ -1962,10 +1962,10 @@ const app = {
             ner: 0,           // Net Exposure Risk (Principal)
             nep: 0,           // Net Exposure Profit (Principal)
             delta: 0,         
-            openProfit: 0,    // NOW: Total Campaign P&L (Banked + Floating)
-            unrealizedRaw: 0, // NEW: Just the floating part (for Tooltips)
-            openHeatOER: 0,   // Risk at Current Price
-            secured: 0        // Banked Profit covering Principal Risk
+            openProfit: 0,    // Total Campaign P&L
+            unrealizedRaw: 0, // Floating Only
+            openHeatOER: 0,   // OER
+            secured: 0        // NOW: Net Financing (Banked - Principal Risk)
         };
 
         openTrades.forEach(log => {
@@ -2017,18 +2017,19 @@ const app = {
 
             // 4. AGGREGATE
             metrics.openHeatOER += oerBase;
-
-            // PATCH: Open Profit is now TOTAL Campaign P&L (Banked + Floating)
             metrics.openProfit += (bankedBase + floatingBase);
-            metrics.unrealizedRaw += floatingBase; // Store this separately for display
+            metrics.unrealizedRaw += floatingBase;
 
+            // NER Calculation (Still floors at 0 for Risk)
             const remainingPrincipalRisk = principalRiskBase - bankedBase;
             if (remainingPrincipalRisk > 0) {
                 metrics.ner += remainingPrincipalRisk; 
                 metrics.nep += floatingBase;   
-            } else {
-                metrics.secured += Math.abs(remainingPrincipalRisk); 
-            }
+            } 
+            
+            // PATCH: Secured is now "Net Financing" (Can be negative)
+            // Formula: Banked - Principal Risk
+            metrics.secured += (bankedBase - principalRiskBase);
         });
 
         metrics.delta = metrics.nep - metrics.ner;
@@ -2039,9 +2040,9 @@ const app = {
             delta: (metrics.delta / accountSize) * 100,
             
             profitPct: (metrics.openProfit / accountSize) * 100,
-            unrealizedVal: metrics.unrealizedRaw, // Passing the money value
+            unrealizedVal: metrics.unrealizedRaw, 
             oerPct: -(metrics.openHeatOER / accountSize) * 100, 
-            securedPct: (metrics.secured / accountSize) * 100
+            securedPct: (metrics.secured / accountSize) * 100 // Returns negative if risk > banked
         };
     },
 	
