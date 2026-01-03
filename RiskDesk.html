@@ -398,7 +398,7 @@
                 </p>
             </div>
             
-            <a href="https://riskdesk.gumroad.com/l/jepcya" target="_blank" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-indigo-900/50 transition-all active:scale-95 text-xs uppercase tracking-wide">
+            <a href="https://stephenhood.gumroad.com/l/jepcya" target="_blank" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-indigo-900/50 transition-all active:scale-95 text-xs uppercase tracking-wide">
                 <i data-lucide="heart" class="w-4 h-4 text-pink-300 fill-pink-300/50"></i>
                 Leave a Tip
             </a>
@@ -1995,19 +1995,16 @@ const app = {
             // 3. GROSS RISK (The Fix)
             const activeStop = (typeof log.currentStop === 'number') ? log.currentStop : log.stop;
             
-            // --- PATCH: Open Exposure Risk (OER) ---
-            // Formula: (Current Price - Stop Price) * Shares
-            // Measures total potential drawdown from *current* equity if stops are hit.
+            // --- FIX START: Directional Risk Logic ---
             let riskPerShare = 0;
             if (log.direction === 'SHORT') {
-                // Short: You lose if Price rises to Stop. 
-                // Distance = Stop - Current.
-                riskPerShare = Math.max(0, activeStop - currentPrice);
+                // For Short: Risk is (Stop - Entry). If Stop < Entry, Risk is 0.
+                riskPerShare = Math.max(0, activeStop - log.entry);
             } else {
-                // Long: You lose if Price falls to Stop.
-                // Distance = Current - Stop.
-                riskPerShare = Math.max(0, currentPrice - activeStop);
+                // For Long: Risk is (Entry - Stop). If Stop > Entry, Risk is 0.
+                riskPerShare = Math.max(0, log.entry - activeStop);
             }
+            // --- FIX END ---
 
             const grossRiskBase = (riskPerShare * currentQty) / rate;
 
@@ -2106,7 +2103,7 @@ const app = {
                     </div>
                     <div class="w-px h-6 bg-slate-700"></div>
                     <div class="flex flex-col items-center leading-none" title="Open Heat">
-                        <span class="text-[9px] text-slate-500 font-bold">OPEN HEAT (OER)</span>
+                        <span class="text-[9px] text-slate-500 font-bold">HEAT</span>
                         <span class="${data.heatVal > 0 ? 'text-red-400' : 'text-emerald-400'} font-bold">${fmtMoney(data.heatVal)}</span>
                     </div>
                     <div class="w-px h-6 bg-slate-700"></div>
@@ -2131,7 +2128,7 @@ const app = {
                 { label: 'NER', val: data.nerPct.toFixed(2)+'%', col: data.nerPct < -0.5 ? 'text-red-400' : 'text-slate-300' },
                 { label: 'NEP', val: fmtPct(data.nepPct), col: color(data.nepPct) },
                 { label: 'Open P&L', val: fmtMoney(data.profitVal), col: color(data.profitVal) },
-                { label: 'Heat(OER)', val: fmtMoney(data.heatVal), col: data.heatVal > 0 ? 'text-red-400' : 'text-emerald-400' },
+                { label: 'Heat', val: fmtMoney(data.heatVal), col: data.heatVal > 0 ? 'text-red-400' : 'text-emerald-400' },
                 { label: 'Secured', val: fmtMoney(data.securedVal), col: color(data.securedVal) }
             ];
 
@@ -2178,7 +2175,7 @@ const app = {
                         <div class="text-xs font-mono font-bold ${color(data.profitVal)}">${fmtMoney(data.profitVal)}</div>
                     </div>
                     <div class="bg-slate-800 p-2 rounded text-center border border-slate-700">
-                        <div class="text-[9px] text-slate-500 font-bold uppercase">Open Heat (OER)</div>
+                        <div class="text-[9px] text-slate-500 font-bold uppercase">Heat</div>
                         <div class="text-xs font-mono font-bold ${data.heatVal > 0 ? 'text-red-400' : 'text-emerald-400'}">${fmtMoney(data.heatVal)}</div>
                     </div>
                     <div class="bg-slate-800 p-2 rounded text-center border border-slate-700">
