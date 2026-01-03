@@ -1854,12 +1854,29 @@ const app = {
     },
 
     wipeAllData() {
-        if(confirm("CRITICAL WARNING: This will delete ALL trades, journal entries, and settings. No undo.")) {
-            if(confirm("Are you absolutely sure? Have you taken a backup using the Backup Data function?")) {
-                localStorage.removeItem('tradeJournal');
-                localStorage.clear();
-                location.reload();
-            }
+        // 1. Check if Cloud Sync is configured
+        const hasCloud = this.data.settings.cloudSyncUrl && this.data.settings.cloudSyncUrl.length > 0;
+        
+        let msg = "";
+        
+        if (hasCloud) {
+            // SCENARIO A: Cloud User (Safe Reset)
+            msg = "☁️ RE-SYNC FROM CLOUD?\n\nSince Cloud Sync is active, this will only wipe your LOCAL text data to force a fresh download from Google Drive.\n\n• Your Cloud Backup is SAFE.\n• Your Images are SAFE.\n\nProceed with Re-Sync?";
+        } else {
+            // SCENARIO B: Local User (Danger!)
+            msg = "⚠️ CRITICAL WARNING (NO CLOUD DETECTED)\n\nYou do NOT have Google Cloud Sync set up.\n\nThis will PERMANENTLY DELETE all trades, journal entries, and settings from this device.\n\nThere is NO UNDO.\n\nAre you absolutely sure?";
+        }
+        
+        if(confirm(msg)) {
+            // 2. Perform the Surgical Wipe (Safe for both scenarios)
+            // We remove specific keys instead of clear() to protect the License Key and potential Image DB refs
+            localStorage.removeItem('tradeLogs');
+            localStorage.removeItem('tradeJournal');
+            localStorage.removeItem('accounts');
+            localStorage.removeItem('appSettings');
+            
+            alert("Local data cleared. Reloading...");
+            location.reload();
         }
     },
 
@@ -7479,6 +7496,7 @@ app.drawConsistencyHeatmap = function(logs) {
 </div>
 </body>
 </html>
+
 
 
 
