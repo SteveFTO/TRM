@@ -1596,6 +1596,11 @@ const licenseService = {
         }
     }
 };
+// --- TELEMETRY CONFIG ---
+// Replace the URL below with the one you just copied in PHASE 1, Step 3.
+const GLOBAL_TELEMETRY_URL = "https://script.google.com/macros/s/AKfycbwoZPFUtRUwovAYxFjj95rPnMNlFNYoncbpD4AM6GUFUif0RXQwOAV9NnVFHr9aKF9R/exec";
+// ------------------------
+
 // --- PATCH 3: IMAGE DATABASE ENGINE ---
 const imgDB = {
     db: null,
@@ -1664,7 +1669,58 @@ const app = {
     
     charts: {},
 
-	// --- INITIALIZATION ---
+// --- TELEMETRY HELPER FUNCTIONS ---
+
+    // Generates or retrieves a persistent, anonymous ID for this browser/device
+    getDeviceId() {
+        let id = localStorage.getItem('rd_device_id');
+        if (!id) {
+            // Generate a random UUID if one doesn't exist
+            if (crypto && crypto.randomUUID) {
+                 id = crypto.randomUUID();
+            } else {
+                // Fallback for older browsers
+                id = 'dev_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
+            }
+            localStorage.setItem('rd_device_id', id);
+            // console.log("New Device ID Generated for Telemetry");
+        }
+        return id;
+    },
+
+    // Sends a "Fire-and-Forget" ping to the developer server
+        sendTelemetryPing() {
+            // Safety check: Don't fire if no URL is configured
+            if (!GLOBAL_TELEMETRY_URL || GLOBAL_TELEMETRY_URL.includes("YOUR_LONG_SCRIPT_ID")) return;
+
+            const deviceId = this.getDeviceId();
+            
+            // --- FIX: Retrieve key from Local Storage directly ---
+            const rawLicense = localStorage.getItem('rd_license') || "";
+            // ----------------------------------------------------
+
+            // Mask the license for privacy (only show first 8 chars)
+            const maskedLicense = rawLicense.length > 8 ? rawLicense.substring(0, 8) + "..." : (rawLicense || "no_license");
+
+            const payload = {
+                deviceId: deviceId,
+                licenseKey: maskedLicense,
+                version: 'v10.1' 
+            };
+
+            // THE FIRE-AND-FORGET FETCH
+            fetch(GLOBAL_TELEMETRY_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).then(() => {}).catch(e => {});
+        },
+    
+    // ----------------------------------
+
+    // --- INITIALIZATION ---
+	
     async init() { 
         await licenseService.init(); 
         await imgDB.open();
@@ -1708,6 +1764,8 @@ const app = {
         if(this.data.settings.cloudSyncUrl) {
             await this.pullFromCloud();
         }
+		
+		this.sendTelemetryPing();
 		
         // 3. Load Accounts
         const savedAccs = localStorage.getItem('accounts');
