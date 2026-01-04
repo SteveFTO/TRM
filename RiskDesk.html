@@ -494,337 +494,524 @@
         <div class="h-24"></div>
     </div>
 
-	<div id="view-help" class="hidden fixed inset-0 z-50 bg-slate-900 overflow-y-auto pb-20 animate-in fade-in slide-in-from-bottom-4 duration-300">
-            
-            <div class="sticky top-0 bg-slate-900/95 backdrop-blur z-20 border-b border-slate-800 p-4 flex items-center gap-3 shadow-lg">
-                <button onclick="app.switchView('calculator')" class="bg-slate-800 hover:bg-slate-700 p-2 rounded-lg text-slate-400 hover:text-white transition-colors">
-                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
-                </button>
-                <h2 class="text-lg font-black text-white uppercase tracking-wider">User Guide</h2>
+<div id="view-help" class="hidden fixed inset-0 z-50 bg-slate-900 overflow-y-auto pb-20 animate-in fade-in slide-in-from-bottom-4 duration-300">
+    
+    <div class="sticky top-0 bg-slate-900/95 backdrop-blur z-20 border-b border-slate-800 p-4 flex items-center gap-3 shadow-lg">
+        <button onclick="app.switchView('calculator')" class="bg-slate-800 hover:bg-slate-700 p-2 rounded-lg text-slate-400 hover:text-white transition-colors">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+        </button>
+        <h2 class="text-lg font-black text-white uppercase tracking-wider">User Guide v10</h2>
+    </div>
+
+    <div class="max-w-2xl mx-auto p-4 space-y-4">
+
+        <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 mb-6">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="p-2 bg-blue-500/10 rounded-lg"><i data-lucide="book-open" class="w-5 h-5 text-blue-400"></i></div>
+                <h2 class="text-xl font-bold text-white">Core Philosophy</h2>
             </div>
-
-            <div class="max-w-2xl mx-auto p-4 space-y-4">
-
-                <details class="group bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
-                    <summary class="flex items-center justify-between p-4 cursor-pointer list-none bg-slate-800 hover:bg-slate-700/50 transition-colors">
-                        <h3 class="text-amber-400 font-bold uppercase text-xs tracking-widest flex items-center gap-2">
-                            <i data-lucide="settings" class="w-4 h-4"></i> Setup & Configuration
-                        </h3>
-                        <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 transition-transform group-open:rotate-180"></i>
-                    </summary>
-                    <div class="p-4 pt-0 text-sm text-slate-300 leading-relaxed border-t border-slate-700/50 mt-2 space-y-4">
-                        
-                        <div>
-                            <strong class="text-white block mb-1">Accounts & Fund Manager</strong>
-                            <p class="text-xs text-slate-400 mb-2">Define your trading accounts in Settings. You must select one as the <strong>Master Account</strong>.</p>
-                            <p class="text-xs text-slate-400">
-                                <span class="text-white font-bold">New:</span> Tap the <i data-lucide="wallet" class="w-3 h-3 inline text-emerald-400"></i> **Wallet Icon** on any account to open the **Fund Manager**. Here you can log Deposits/Withdrawals or configure a recurring **Monthly Auto-Contribution** (e.g., salary injection) to automate your growth tracking.
-                            </p>
-                        </div>
-
-                        <div>
-                            <strong class="text-white block mb-1">Currency & Live Prices</strong>
-                            <p class="text-xs text-slate-400 mb-2">Set your Global Base Currency (e.g., GBP, USD). The app uses a live FX API to normalize risk across different trade currencies.</p>
-                            <div class="bg-blue-900/20 p-2 rounded border border-blue-500/30">
-                                <strong class="text-blue-300 text-[10px] uppercase block mb-1">Live Price Integration</strong>
-                                <p class="text-[10px] text-slate-400">
-                                    Get a free API Key from <a href="https://finnhub.io" target="_blank" class="text-blue-400 hover:underline">finnhub.io</a> and enter it in **Settings > App Preferences**. 
-                                    This enables the <i data-lucide="refresh-cw" class="w-3 h-3 inline"></i> **Fetch Prices** button in the top Risk Bar, automatically updating your Open P&L and Heat.
-                                </p>
-                            </div>
-                        </div>
-
-                        <div>
-                            <strong class="text-white block mb-1">Strategy Manager</strong>
-                            <p class="text-xs text-slate-400">Create custom tags for your setups (e.g., "Gap & Go", "Reversal"). These tags are used to filter Logs and analyze performance.</p>
-                        </div>
-
-                        <div class="bg-slate-900/50 p-3 rounded border border-slate-600">
-                            <strong class="text-white block mb-2 text-xs uppercase">Stats Configuration: Partials Impact</strong>
-                            <p class="text-[10px] text-slate-400 mb-3">Found in Settings. This toggle controls how your statistics are calculated.</p>
-                            
-                            <div class="overflow-hidden rounded border border-slate-700">
-                                <table class="w-full text-left text-[10px]">
-                                    <thead class="bg-slate-700 text-slate-200 font-bold uppercase">
-                                        <tr>
-                                            <th class="p-2 border-r border-slate-600">Feature</th>
-                                            <th class="p-2 border-r border-slate-600 text-emerald-400">OFF (Strict Mode)</th>
-                                            <th class="p-2 text-blue-400">ON (Dynamic Mode)</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="divide-y divide-slate-700 bg-slate-800">
-                                        <tr>
-                                            <td class="p-2 font-bold text-slate-400 border-r border-slate-700">Math</td>
-                                            <td class="p-2 border-r border-slate-700">Calculates averages using ONLY fully closed trades.</td>
-                                            <td class="p-2">Includes Realized P&L from active trades (Partials).</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="p-2 font-bold text-slate-400 border-r border-slate-700">Use Case</td>
-                                            <td class="p-2 border-r border-slate-700">Conservative. "What is my proven, banked edge?"</td>
-                                            <td class="p-2">Cashflow. "How is my account growing right now?"</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        <div>
-                            <strong class="text-white block mb-1">Data Management</strong>
-                            <ul class="list-disc ml-4 text-xs text-slate-400 space-y-1">
-                                <li><strong>Backup & Restore:</strong> Download your entire history as a JSON file. Do this regularly.</li>
-                                <li><strong>Factory Reset:</strong> Located in Settings. <span class="text-red-400">Deletes all data permanently.</span></li>
-                            </ul>
-                        </div>
-                    </div>
-                </details>
-
-                <details class="group bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
-                    <summary class="flex items-center justify-between p-4 cursor-pointer list-none bg-slate-800 hover:bg-slate-700/50 transition-colors">
-                        <h3 class="text-blue-400 font-bold uppercase text-xs tracking-widest flex items-center gap-2">
-                            <i data-lucide="calculator" class="w-4 h-4"></i> Using The Calculator
-                        </h3>
-                        <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 transition-transform group-open:rotate-180"></i>
-                    </summary>
-                    <div class="p-4 pt-0 text-sm text-slate-300 leading-relaxed border-t border-slate-700/50 mt-2 space-y-4">
-                        
-                        <div>
-                            <strong class="text-white block mb-1">Defining Risk</strong>
-                            <p class="text-xs text-slate-400 mb-2">RiskDesk calculates position size based on the distance between your Entry and Stop Loss.</p>
-                            <ul class="list-disc ml-4 text-xs text-slate-400 space-y-1">
-                                <li><strong>Equity Risk %:</strong> "I want to risk 1.0% of my account." The app adjusts share size so that if you hit your stop, you lose exactly that amount.</li>
-                                <li><strong>Position Size %:</strong> "I want to invest 10% of my cash." The app fixes the share count, and your Risk % fluctuates based on the stop width.</li>
-                                <li><strong>Trade Currency:</strong> Change your default Trade currency if necessary. The app handles FX conversion automatically.</li>
-                            </ul>
-                        </div>
-
-                        <div>
-                            <strong class="text-white block mb-1">Context & Logging</strong>
-                            <p class="text-xs text-slate-400">Select a <strong>Strategy</strong> tag and add context notes (e.g., "Market choppy") before logging. This data feeds the Insights engine.</p>
-                        </div>
-
-                        <div>
-                            <strong class="text-white block mb-1">Chart Capture</strong>
-                            <p class="text-xs text-slate-400">Paste a chart image from your clipboard directly into the "Paste Zone" to save it with the trade.</p>
-                        </div>
-                    </div>
-                </details>
-
-                <details class="group bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
-                    <summary class="flex items-center justify-between p-4 cursor-pointer list-none bg-slate-800 hover:bg-slate-700/50 transition-colors">
-                        <h3 class="text-emerald-400 font-bold uppercase text-xs tracking-widest flex items-center gap-2">
-                            <i data-lucide="list" class="w-4 h-4"></i> Logs & Viewing Modes
-                        </h3>
-                        <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 transition-transform group-open:rotate-180"></i>
-                    </summary>
-                    <div class="p-4 pt-0 text-sm text-slate-300 leading-relaxed border-t border-slate-700/50 mt-2 space-y-4">
-                        
-                        <div>
-                            <strong class="text-white block mb-1">Manual Log & Tools</strong>
-                            <p class="text-xs text-slate-400 mb-2">Use the <i data-lucide="plus" class="w-3 h-3 inline"></i> button to manually record past trades. The header also contains Search, Filters, CSV Export, and Sharing tools.</p>
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div class="bg-slate-900 p-3 rounded border border-slate-600">
-                                <strong class="text-white block mb-1 text-xs uppercase border-b border-slate-700 pb-1">Portrait Mode (Mobile)</strong>
-                                <p class="text-[10px] text-slate-400 mb-2">Optimized for quick scanning.</p>
-                                <ul class="text-[10px] text-slate-500 list-disc ml-3 space-y-0.5">
-                                    <li>Date, Ticker & Direction</li>
-                                    <li>Risk % & R-Multiple outcome</li>
-                                    <li><strong>Current Price</strong> (Live/Manual)</li>
-                                    <li>P&L Status Badge</li>
-                                </ul>
-                            </div>
-                            <div class="bg-slate-900 p-3 rounded border border-slate-600">
-                                <strong class="text-white block mb-1 text-xs uppercase border-b border-slate-700 pb-1">Landscape Mode (Pro View)</strong>
-                                <p class="text-[10px] text-slate-400 mb-2">Rotate your phone to reveal the full data tape.</p>
-                                <ul class="text-[10px] text-slate-500 list-disc ml-3 space-y-0.5">
-                                    <li><strong class="text-slate-300">Position Size:</strong> Total value exposed.</li>
-                                    <li><strong class="text-slate-300">Entry vs Current:</strong> Exact price levels.</li>
-                                    <li><strong class="text-slate-300">Stop:</strong> Weighted avg active stop.</li>
-                                    <li><strong class="text-slate-300">EC%:</strong> Equity Contribution % (Impact).</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                </details>
-
-                <details class="group bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
-                    <summary class="flex items-center justify-between p-4 cursor-pointer list-none bg-slate-800 hover:bg-slate-700/50 transition-colors">
-                        <h3 class="text-purple-400 font-bold uppercase text-xs tracking-widest flex items-center gap-2">
-                            <i data-lucide="layers" class="w-4 h-4"></i> Management & Exits
-                        </h3>
-                        <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 transition-transform group-open:rotate-180"></i>
-                    </summary>
-                    <div class="p-4 pt-0 text-sm text-slate-300 leading-relaxed border-t border-slate-700/50 mt-2 space-y-4">
-                        <p class="text-xs text-slate-400">Tap any Log entry to open the Management View.</p>
-
-                        <div>
-                            <strong class="text-white block mb-1">Manual Price Override</strong>
-                            <p class="text-xs text-slate-400">If the Live API price is incorrect (or for illiquid assets), you can manually type a price into the blue "Manual Live Price" box to instantly update your Position Value and P&L.</p>
-                        </div>
-
-                        <div>
-                            <strong class="text-white block mb-1">Stop Adjustments</strong>
-                            <p class="text-xs text-slate-400">Update your "Current Stop" as the trade moves in your favor. This automatically updates your "Open Heat" and "NER" metrics.</p>
-                        </div>
-
-                        <div>
-                            <strong class="text-white block mb-1">Partial Exits</strong>
-                            <p class="text-xs text-slate-400">Record partial sells by specifying Price and Quantity. The system calculates Realized P&L for that chunk and reduces your exposure. You can view the full history of exits at the bottom of the page.</p>
-                        </div>
-                    </div>
-                </details>
-
-                <details class="group bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
-                    <summary class="flex items-center justify-between p-4 cursor-pointer list-none bg-slate-800 hover:bg-slate-700/50 transition-colors">
-                        <h3 class="text-cyan-400 font-bold uppercase text-xs tracking-widest flex items-center gap-2">
-                            <i data-lucide="bar-chart-2" class="w-4 h-4"></i> Stats & Insights
-                        </h3>
-                        <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 transition-transform group-open:rotate-180"></i>
-                    </summary>
-                    <div class="p-4 pt-0 text-sm text-slate-300 leading-relaxed border-t border-slate-700/50 mt-2 space-y-4">
-                        
-                        <div class="bg-slate-900/50 p-3 rounded border border-slate-600">
-                            <strong class="text-white block mb-2 text-xs uppercase text-blue-400">Live Risk Monitor (Top Bar)</strong>
-                            <p class="text-[10px] text-slate-400 mb-2 italic">Based on the PrimeTrading "Progressive Exposure" Model.</p>
-                            <ul class="list-disc ml-4 text-[10px] text-slate-400 space-y-3">
-                                <li>
-                                    <strong class="text-slate-200">NER (Net Exposure Risk):</strong> "Naked Risk."<br>
-                                    The % of account at risk from <strong>unfinanced</strong> positions only.<br>
-                                    <span class="font-mono text-xs text-slate-500">Formula: (Open Heat - Banked Profit)</span><br>
-                                    <span class="text-slate-500 italic">*If Banked Profit > Open Heat, the trade is "Financed" and removed from NER.</span>
-                                </li>
-                                <li>
-                                    <strong class="text-slate-200">NEP (New Exposure Profit):</strong> "Traction."<br>
-                                    The <strong>Unrealized (Paper) Profit</strong> of your unfinanced positions.<br>
-                                    <span class="text-slate-500">If Positive: Your new, trades are working immediately. Safer to add exposure.</span><br>
-                                    <span class="text-slate-500">If Negative: Your new trades are not working. Reduce exposure.</span>
-                                </li>
-                                <li>
-                                    <strong class="text-slate-200">Delta:</strong> "Net Traction."<br>
-                                    The relationship between your Traction (NEP) and your Risk (NER).<br>
-                                    <span class="font-mono text-xs text-slate-500">Formula: NEP - NER</span>
-                                </li>
-                            </ul>
-                        </div>
-
-                        <div>
-                            <strong class="text-white block mb-1">Trading Insights</strong>
-                            <p class="text-xs text-slate-400">An automated engine that highlights patterns (e.g., "Best Strategy", "Negative Skew") based on your data.</p>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-3 text-xs">
-                            <div>
-                                <strong class="text-white block">Financial Health</strong>
-                                <span class="text-slate-500">Avg Win vs Avg Loss ($). Largest wins/losses.</span>
-                            </div>
-                            <div>
-                                <strong class="text-white block">Edge & Efficiency</strong>
-                                <span class="text-slate-500">Performance in R-Multiples. Risk/Reward Ratio.</span>
-                            </div>
-                        </div>
-
-                        <div>
-                            <strong class="text-white block mb-2 text-xs uppercase text-purple-400">Visual Analytics (Charts)</strong>
-                            <div class="grid grid-cols-2 gap-2 text-[10px] text-slate-400">
-                                <div class="bg-slate-900/50 p-2 rounded border border-slate-700">
-                                    <strong class="text-slate-200 block">Account Growth</strong>
-                                    Equity curve visualizing your total capital growth over time.
-                                </div>
-                                <div class="bg-slate-900/50 p-2 rounded border border-slate-700">
-                                    <strong class="text-slate-200 block">Drawdown Depth</strong>
-                                    Visualizes the cumulative pain/depth of losing streaks.
-                                </div>
-                                <div class="bg-slate-900/50 p-2 rounded border border-slate-700">
-                                    <strong class="text-slate-200 block">Strategy Performance</strong>
-                                    Compares Win Rate and P&L across your different setups.
-                                </div>
-                                <div class="bg-slate-900/50 p-2 rounded border border-slate-700">
-                                    <strong class="text-slate-200 block">Time Analysis</strong>
-                                    Breakdowns by Day of Week and Time of Day to find your "Zone".
-                                </div>
-                                <div class="bg-slate-900/50 p-2 rounded border border-slate-700 col-span-2">
-                                    <strong class="text-slate-200 block">Consistency Heatmap</strong>
-                                    A GitHub-style calendar view showing your daily trading frequency and results.
-                                </div>
-                            </div>
-                        </div>
-
-                        <div>
-                            <strong class="text-white block mb-1">Smart Filters</strong>
-                            <p class="text-xs text-slate-400">Slice your data by Strategy, Recency (e.g., Last 50 trades), or Timeframe (e.g., **This Month, YTD, or Custom Dates**). The stats update instantly.</p>
-                        </div>
-                    </div>
-                </details>
-
-                <details class="group bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
-                    <summary class="flex items-center justify-between p-4 cursor-pointer list-none bg-slate-800 hover:bg-slate-700/50 transition-colors">
-                        <h3 class="text-pink-400 font-bold uppercase text-xs tracking-widest flex items-center gap-2">
-                            <i data-lucide="book-open" class="w-4 h-4"></i> The Journal
-                        </h3>
-                        <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 transition-transform group-open:rotate-180"></i>
-                    </summary>
-                    <div class="p-4 pt-0 text-sm text-slate-300 leading-relaxed border-t border-slate-700/50 mt-2 space-y-4">
-                        
-                        <div>
-                            <strong class="text-white block mb-1">Rules & Philosophy</strong>
-                            <p class="text-xs text-slate-400">Define your "Golden Rules" in the Journal settings. These persist and serve as your daily checklist.</p>
-                        </div>
-
-                        <div>
-                            <strong class="text-white block mb-1">Daily Log</strong>
-                            <p class="text-xs text-slate-400">The Journal automatically pulls in every trade and P&L event for the selected date.</p>
-                        </div>
-
-                        <div class="bg-slate-900/50 p-3 rounded border border-slate-600">
-                            <strong class="text-white block mb-2 text-xs uppercase">Discipline Tracking</strong>
-                            <p class="text-xs text-slate-400">You must answer: <strong>"Did you follow your rules today?"</strong></p>
-                            <ul class="list-disc ml-4 text-xs text-slate-400 mt-2 space-y-1">
-                                <li><strong>YES:</strong> Marks the day Green on the heatmap.</li>
-                                <li><strong>NO:</strong> Marks the day Red. A checklist appears to track exactly <em>which</em> rules were broken.</li>
-                            </ul>
-                        </div>
-                    </div>
-                </details>
-
-                <details class="group bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
-                    <summary class="flex items-center justify-between p-4 cursor-pointer list-none bg-slate-800 hover:bg-slate-700/50 transition-colors">
-                        <h3 class="text-slate-400 font-bold uppercase text-xs tracking-widest flex items-center gap-2">
-                            <i data-lucide="shield" class="w-4 h-4"></i> Privacy & Sharing
-                        </h3>
-                        <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 transition-transform group-open:rotate-180"></i>
-                    </summary>
-                    <div class="p-4 pt-0 text-sm text-slate-300 leading-relaxed border-t border-slate-700/50 mt-2 space-y-3">
-                         <div class="flex gap-3">
-                            <i data-lucide="eye" class="w-5 h-5 text-slate-500 shrink-0"></i>
-                            <div>
-                                <strong class="text-white text-xs block">Privacy Mode</strong>
-                                <span class="text-xs text-slate-400">Tap the Eye icon to blur all dollar/currency values. Ideal for working in public.</span>
-                            </div>
-                        </div>
-                        <div class="flex gap-3">
-                            <i data-lucide="share-2" class="w-5 h-5 text-slate-500 shrink-0"></i>
-                            <div>
-                                <strong class="text-white text-xs block">Social Sharing</strong>
-                                <span class="text-xs text-slate-400">Tap the Camera icon to generate a clean, branded image of your trades or stats, formatted for X/Discord.</span>
-                            </div>
-                        </div>
-                    </div>
-                </details>
-
-                <div class="p-4 text-[10px] text-slate-500 text-center leading-relaxed opacity-75 border-t border-slate-800 mt-4">
-                    <p><strong>Local Data Only:</strong> RiskDesk is Offline-First. Data is stored in your browser. Clearing cache deletes your data. Back up regularly.</p>
-                    <p class="mt-2">
-                        <strong>Disclaimer:</strong> This tool is for educational and journaling purposes only and does not constitute financial advice. 
-                        <strong>Market Data:</strong> Live prices are provided by third-party services, may be delayed, and should be used for estimation purposes only. 
-                        The developers are not responsible for data accuracy. Always verify real-time prices with your broker before executing trades.
-                    </p>
-                </div>
-                
-                <div class="h-10"></div>
-
-            </div>
+            <p class="mb-4 leading-relaxed text-sm text-slate-300">RiskDesk is not just a calculator; it is a discipline engine. It is built on the premise that <strong>Capital Preservation</strong> is the primary job of a trader.</p>
+            <p class="mb-4 leading-relaxed text-sm text-slate-300">RiskDesk delivers <strong>dynamic, risk-first, multi-account position sizing</strong> paired with seamless trade logging. It combines <strong>comprehensive statistical analysis</strong> with a powerful journaling engine to help you trade with precision.</p>
         </div>
+
+        <details class="group bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+            <summary class="flex items-center justify-between p-4 cursor-pointer list-none bg-slate-800 hover:bg-slate-700/50 transition-colors">
+                <h3 class="text-purple-400 font-bold uppercase text-xs tracking-widest flex items-center gap-2">
+                    <i data-lucide="settings" class="w-4 h-4"></i> 1. Initial Setup
+                </h3>
+                <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 transition-transform group-open:rotate-180"></i>
+            </summary>
+            <div class="p-4 pt-0 text-sm text-slate-300 leading-relaxed border-t border-slate-700/50 mt-2">
+                <h4 class="text-white font-bold mt-4 mb-2">Account Configuration</h4>
+                <p class="mb-4 text-slate-400">Go to <strong>Settings</strong> to define your trading environment. You can add multiple accounts (e.g., "Main Swing", "Day Trading").</p>
+                <ul class="list-disc pl-5 space-y-2 mb-4 text-xs text-slate-400">
+                    <li><strong>Master Account:</strong> You must select one account as "Master" using the radio button. This account's size is used as the denominator for "Equity Contribution (EC%)" calculations.</li>
+                    <li><strong>Base Currency:</strong> Set your Global Base Currency (e.g., GBP). All portfolio stats will be normalized to this currency via the built-in FX API.</li>
+                </ul>
+
+                <h4 class="text-white font-bold mt-4 mb-2">The Fund Manager</h4>
+                <p class="mb-4 text-slate-400">Tap the <i data-lucide="wallet" class="w-3 h-3 inline text-emerald-400"></i> <strong>Wallet Icon</strong> on any account in the Settings or Calculator view to open the Fund Manager.</p>
+                <ul class="list-disc pl-5 space-y-2 mb-4 text-xs text-slate-400">
+                    <li><strong>Deposits & Withdrawals:</strong> Log capital injections or withdrawals. These are tracked separately from trading P&L so they don't skew your performance stats.</li>
+                    <li><strong>Monthly Auto-Deposit:</strong> Configure a recurring contribution (e.g., $500 on the 1st of every month). The app will automatically add this to your balance when you open it, allowing you to simulate salary injections and track realistic account growth.</li>
+                </ul>
+
+                <h4 class="text-white font-bold mt-4 mb-2">Data Management</h4>
+                <p class="mb-2 text-slate-400">RiskDesk offers two modes of data storage:</p>
+                <div class="grid grid-cols-1 gap-4 mb-4">
+                    <div class="bg-slate-900 p-3 rounded border border-slate-700">
+                        <strong class="text-white text-xs block mb-1">Local Mode (Default)</strong>
+                        <p class="text-[10px] text-slate-400">Data lives in your browser's local storage. Private and fast, but data does not sync between devices. Clearing browser cache deletes data.</p>
+                    </div>
+                    <div class="bg-slate-900 p-3 rounded border border-slate-700">
+                        <strong class="text-white text-xs block mb-1">Cloud Sync</strong>
+                        <p class="text-[10px] text-slate-400">Syncs data to your own Google Drive using a secure script. Private and allows trading across Phone/Laptop. See Section 9.</p>
+                    </div>
+                </div>
+
+                <h4 class="text-white font-bold mt-4 mb-2">Stats Configuration: Partials Impact</h4>
+                <p class="mb-4 text-slate-400">Found in Settings, this toggle controls how your statistics are calculated.</p>
+                <div class="overflow-hidden rounded-lg border border-slate-700 my-4">
+                    <table class="w-full text-left text-xs">
+                        <thead>
+                            <tr>
+                                <th class="p-2 bg-slate-900 text-slate-400 uppercase">Feature</th>
+                                <th class="p-2 bg-slate-900 text-emerald-400 uppercase">OFF (Strict)</th>
+                                <th class="p-2 bg-slate-900 text-blue-400 uppercase">ON (Dynamic)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-slate-800">
+                            <tr class="border-b border-slate-700">
+                                <td class="p-2 font-bold text-slate-400">Math</td>
+                                <td class="p-2 text-slate-300">Closed trades only.</td>
+                                <td class="p-2 text-slate-300">Includes active partials.</td>
+                            </tr>
+                            <tr>
+                                <td class="p-2 font-bold text-slate-400">Use Case</td>
+                                <td class="p-2 text-slate-300">Proven, banked edge.</td>
+                                <td class="p-2 text-slate-300">Current Cashflow growth.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </details>
+
+        <details class="group bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+            <summary class="flex items-center justify-between p-4 cursor-pointer list-none bg-slate-800 hover:bg-slate-700/50 transition-colors">
+                <h3 class="text-amber-400 font-bold uppercase text-xs tracking-widest flex items-center gap-2">
+                    <i data-lucide="zap" class="w-4 h-4"></i> 2. Live Data & Prices
+                </h3>
+                <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 transition-transform group-open:rotate-180"></i>
+            </summary>
+            <div class="p-4 pt-0 text-sm text-slate-300 leading-relaxed border-t border-slate-700/50 mt-2">
+                <p class="mb-4 text-slate-400">RiskDesk connects to APIs to keep your risk data accurate without requiring a monthly subscription.</p>
+                <h4 class="text-white font-bold mt-4 mb-2">Live Price Integration (Finnhub)</h4>
+                <p class="mb-4 text-slate-400">To enable the <strong class="text-white"><i data-lucide="refresh-cw" class="w-3 h-3 inline"></i> Fetch Prices</strong> button in the top Risk Bar, you need a free API key.</p>
+                <ol class="list-decimal pl-5 space-y-2 mb-4 text-xs text-slate-400">
+                    <li>Go to <a href="https://finnhub.io" target="_blank" class="text-blue-400 underline">finnhub.io</a> and register for a free account.</li>
+                    <li>Copy your default API Key from their dashboard.</li>
+                    <li>Paste it into <strong>Settings > App Preferences > Finnhub API Key</strong>.</li>
+                </ol>
+                <p class="text-xs text-amber-500 border-l-2 border-amber-500 pl-3 py-1">
+                    <strong>Note for UK/Intl Stocks:</strong> The API uses standard exchange suffixes. For London stocks, ensure your tickers end in <code>.L</code> (e.g., <code>VOD.L</code>). For Toronto, use <code>.TO</code>.
+                </p>
+            </div>
+        </details>
+
+        <details class="group bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+            <summary class="flex items-center justify-between p-4 cursor-pointer list-none bg-slate-800 hover:bg-slate-700/50 transition-colors">
+                <h3 class="text-emerald-400 font-bold uppercase text-xs tracking-widest flex items-center gap-2">
+                    <i data-lucide="calculator" class="w-4 h-4"></i> 3. Calculator Engine
+                </h3>
+                <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 transition-transform group-open:rotate-180"></i>
+            </summary>
+            <div class="p-4 pt-0 text-sm text-slate-300 leading-relaxed border-t border-slate-700/50 mt-2">
+                <p class="mb-4 text-slate-400">The calculator determines your position size based on your risk tolerance. It offers three distinct mathematical models:</p>
+
+                <div class="grid grid-cols-1 gap-4 my-4">
+                    <div class="bg-slate-900 p-3 rounded border border-slate-700">
+                        <h4 class="text-white font-bold mb-1 text-xs">Equity Risk %</h4>
+                        <p class="text-[10px] text-slate-400 mb-2">"Lose max 1.0% of account."</p>
+                        <div class="p-2 bg-slate-950 border border-slate-800 rounded text-[10px] font-mono text-emerald-400">Shares = (Account * Risk%) / (Entry - Stop)</div>
+                    </div>
+                    <div class="bg-slate-900 p-3 rounded border border-slate-700">
+                        <h4 class="text-white font-bold mb-1 text-xs">Position Size %</h4>
+                        <p class="text-[10px] text-slate-400 mb-2">"Invest 10% of total cash."</p>
+                        <div class="p-2 bg-slate-950 border border-slate-800 rounded text-[10px] font-mono text-blue-400">Shares = (Account * Alloc%) / Entry</div>
+                    </div>
+                    <div class="bg-slate-900 p-3 rounded border border-slate-700">
+                        <h4 class="text-white font-bold mb-1 text-xs">Cash Risk $</h4>
+                        <p class="text-[10px] text-slate-400 mb-2">"Lose exactly $100."</p>
+                        <div class="p-2 bg-slate-950 border border-slate-800 rounded text-[10px] font-mono text-amber-400">Shares = CashRisk / (Entry - Stop)</div>
+                    </div>
+                </div>
+
+                <h4 class="text-white font-bold mt-4 mb-2">Key Features</h4>
+                <ul class="list-disc pl-5 space-y-2 mb-4 text-xs text-slate-400">
+                    <li><strong>Trade Currency:</strong> Ensure you select the currency of the asset you are trading (e.g. USD for Apple). If it differs from your Base Currency (e.g. GBP), the FX API will handle the conversion to ensure your risk sizing is accurate in your home currency.</li>
+                    <li><strong>Staggered Stops:</strong> You are not limited to a single stop price. Toggle "Staggered" to set multiple weighted stop levels. The system calculates a weighted average stop to determine true risk per share.</li>
+                    <li><strong>Chart Capture:</strong> Paste a chart image directly from your clipboard (Ctrl+V) into the "Paste Zone" to save the setup chart permanently with the trade.</li>
+                </ul>
+            </div>
+        </details>
+
+        <details class="group bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+            <summary class="flex items-center justify-between p-4 cursor-pointer list-none bg-slate-800 hover:bg-slate-700/50 transition-colors">
+                <h3 class="text-emerald-400 font-bold uppercase text-xs tracking-widest flex items-center gap-2">
+                    <i data-lucide="activity" class="w-4 h-4"></i> 4. Risk Metrics
+                </h3>
+                <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 transition-transform group-open:rotate-180"></i>
+            </summary>
+            <div class="p-4 pt-0 text-sm text-slate-300 leading-relaxed border-t border-slate-700/50 mt-2">
+                <p class="mb-4 text-slate-400">The <strong>Live Risk Bar</strong> monitors your "Progressive Exposure". It answers: "Have I earned the right to take more risk?"</p>
+
+                <div class="space-y-4 mt-4">
+                    <div class="bg-slate-800/50 p-3 rounded border border-slate-700">
+                        <dt class="font-bold text-emerald-400 text-xs flex justify-between items-center">
+                            <span>NER (Net Exposure Risk)</span>
+                            <span class="text-[9px] uppercase tracking-wider text-slate-500 font-bold">Principal Protection</span>
+                        </dt>
+                        <dd class="text-xs text-slate-300 mt-2">
+                            The percentage of your account currently at risk that is <strong>NOT financed</strong> by banked profits. If NER is 0%, your open risk is fully covered by realized gains—you are trading on "House Money".
+                            <div class="bg-slate-950 p-2 my-2 rounded border border-slate-800 font-mono text-[10px] text-emerald-400 overflow-x-auto">NER = ( Σ(Open Risk) - Σ(Banked Profit) ) / Account Size</div>
+                            <p class="text-[10px] text-slate-500 italic">*Floored at 0%. If Banked Profit > Open Risk, NER is 0.</p>
+                        </dd>
+                    </div>
+
+                    <div class="bg-slate-800/50 p-3 rounded border border-slate-700">
+                        <dt class="font-bold text-blue-400 text-xs flex justify-between items-center">
+                            <span>NEP (Net Exposure Profit)</span>
+                            <span class="text-[9px] uppercase tracking-wider text-slate-500 font-bold">Traction</span>
+                        </dt>
+                        <dd class="text-xs text-slate-300 mt-2">
+                            The Unrealized (Floating) Profit of your <strong>risk-bearing</strong> trades. It tells you if your *new* exposure is working immediately.
+                            <div class="bg-slate-950 p-2 my-2 rounded border border-slate-800 font-mono text-[10px] text-blue-400 overflow-x-auto">NEP = Floating P&L of Unfinanced Trades / Account Size</div>
+                        </dd>
+                    </div>
+
+                    <div class="bg-slate-800/50 p-3 rounded border border-slate-700">
+                        <dt class="font-bold text-slate-200 text-xs flex justify-between items-center">
+                            <span>OER (Open Exposure Risk)</span>
+                            <span class="text-[9px] uppercase tracking-wider text-slate-500 font-bold">Total Heat</span>
+                        </dt>
+                        <dd class="text-xs text-slate-300 mt-2">
+                            Your gross total risk based on <strong>current active stops</strong>. If you move stops to Breakeven, OER drops to 0%.
+                            <div class="bg-slate-950 p-2 my-2 rounded border border-slate-800 font-mono text-[10px] text-slate-400 overflow-x-auto">OER = Σ( (Entry - CurrentStop) * Qty ) / Account Size</div>
+                        </dd>
+                    </div>
+
+                    <div class="bg-slate-800/50 p-3 rounded border border-slate-700">
+                        <dt class="font-bold text-amber-400 text-xs flex justify-between items-center">
+                            <span>Secured (Net Financing)</span>
+                            <span class="text-[9px] uppercase tracking-wider text-slate-500 font-bold">The Buffer</span>
+                        </dt>
+                        <dd class="text-xs text-slate-300 mt-2">
+                            The amount of Banked Profit that exceeds your Principal Risk. If positive, you cannot lose principal capital even if all stops hit.
+                            <div class="bg-slate-950 p-2 my-2 rounded border border-slate-800 font-mono text-[10px] text-amber-400 overflow-x-auto">Secured = (Total Banked Profit - Total Open Risk) / Account Size</div>
+                        </dd>
+                    </div>
+                </div>
+            </div>
+        </details>
+
+        <details class="group bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+            <summary class="flex items-center justify-between p-4 cursor-pointer list-none bg-slate-800 hover:bg-slate-700/50 transition-colors">
+                <h3 class="text-amber-400 font-bold uppercase text-xs tracking-widest flex items-center gap-2">
+                    <i data-lucide="list" class="w-4 h-4"></i> 5. Logs & Views
+                </h3>
+                <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 transition-transform group-open:rotate-180"></i>
+            </summary>
+            <div class="p-4 pt-0 text-sm text-slate-300 leading-relaxed border-t border-slate-700/50 mt-2">
+                <h4 class="text-white font-bold mt-2 mb-2">Viewing Modes (Responsive)</h4>
+                <p class="mb-4 text-slate-400">RiskDesk changes the data it displays based on your device orientation to prevent information overload.</p>
+                <div class="grid grid-cols-1 gap-4 my-4">
+                    <div class="bg-slate-900 p-3 rounded border border-slate-700">
+                        <h4 class="text-white font-bold mb-2 uppercase text-xs border-b border-slate-700 pb-1">Portrait Mode (Mobile)</h4>
+                        <p class="text-[10px] text-slate-400 mb-2">Optimized for quick scanning.</p>
+                        <ul class="text-[10px] text-slate-500 list-disc pl-4 space-y-1">
+                            <li>Date & Time</li>
+                            <li>Ticker & Direction</li>
+                            <li>Risk % & R-Multiple</li>
+                            <li>P&L / Status Badge</li>
+                        </ul>
+                    </div>
+                    <div class="bg-slate-900 p-3 rounded border border-slate-700">
+                        <h4 class="text-white font-bold mb-2 uppercase text-xs border-b border-slate-700 pb-1">Landscape Mode (Pro View)</h4>
+                        <p class="text-[10px] text-slate-400 mb-2">Rotate your phone to reveal the professional data tape.</p>
+                        <ul class="text-[10px] text-slate-500 list-disc pl-4 space-y-1">
+                            <li><strong>Position Size:</strong> Total value of the position in trade currency.</li>
+                            <li><strong>Live Price:</strong> Real-time current price (if enabled).</li>
+                            <li><strong>Qty:</strong> Original vs Current shares held.</li>
+                            <li><strong>EC%:</strong> Equity Contribution % (Impact on Net Worth).</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </details>
+
+        <details class="group bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+            <summary class="flex items-center justify-between p-4 cursor-pointer list-none bg-slate-800 hover:bg-slate-700/50 transition-colors">
+                <h3 class="text-rose-400 font-bold uppercase text-xs tracking-widest flex items-center gap-2">
+                    <i data-lucide="layers" class="w-4 h-4"></i> 6. Trade Management
+                </h3>
+                <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 transition-transform group-open:rotate-180"></i>
+            </summary>
+            <div class="p-4 pt-0 text-sm text-slate-300 leading-relaxed border-t border-slate-700/50 mt-2">
+                <p class="mb-4 text-slate-400">Tap any log entry to open the Management Console.</p>
+                <ul class="space-y-4 mb-6 list-disc pl-5 text-xs text-slate-400">
+                    <li>
+                        <strong class="text-white">Stop Adjustments:</strong> Update your "Current Stop" as the trade moves in your favor. This automatically updates your <strong>Open Heat</strong> metric on the dashboard.
+                    </li>
+                    <li>
+                        <strong class="text-white">Partial Exits:</strong> Record partial sells by specifying Price, Quantity, and Date. The system calculates the realized P&L for that specific chunk and reduces your NER.
+                    </li>
+                    <li>
+                        <strong class="text-white">Chart Gallery:</strong> Stores all images associated with the trade (Entry Chart, Exit Chart, and any Journal updates). Tap any image to view it full screen.
+                    </li>
+                </ul>
+
+                <h4 class="text-white font-bold mt-4 mb-2">Dynamic De-Risking</h4>
+                <div class="bg-indigo-900/10 border-l-4 border-indigo-500 p-4 my-4 rounded-r-lg">
+                    <strong class="text-white block mb-2 text-xs">The "Risk Free" Formula</strong>
+                    <p class="text-xs text-slate-400 mb-2">RiskDesk uses a dynamic equation to tell you exactly where to take partial profits to eliminate risk. Unlike static rules (e.g., "Sell 1/3 at 2R"), RiskDesk adapts to your <strong>Adjusted Stop</strong>.</p>
+                    <div class="bg-slate-950 p-2 rounded border border-slate-800 font-mono text-[10px] text-indigo-400 overflow-x-auto">Target = Entry + ( (CurrentNER / SharesToSell) - CurrentRiskPerShare )</div>
+                </div>
+            </div>
+        </details>
+
+        <details class="group bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+            <summary class="flex items-center justify-between p-4 cursor-pointer list-none bg-slate-800 hover:bg-slate-700/50 transition-colors">
+                <h3 class="text-cyan-400 font-bold uppercase text-xs tracking-widest flex items-center gap-2">
+                    <i data-lucide="bar-chart-2" class="w-4 h-4"></i> 7. Stats & Insights
+                </h3>
+                <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 transition-transform group-open:rotate-180"></i>
+            </summary>
+            <div class="p-4 pt-0 text-sm text-slate-300 leading-relaxed border-t border-slate-700/50 mt-2">
+                <h4 class="text-white font-bold mt-4 mb-2">Smart Filters (Time Slicing)</h4>
+                <p class="mb-4 text-slate-400">The Stats engine now supports powerful time-slicing. You can filter your entire dashboard by:</p>
+                <ul class="flex flex-wrap gap-2 text-[10px] font-mono text-slate-300 mb-6">
+                    <li class="bg-slate-800 px-2 py-1 rounded border border-slate-700">Last 20 Trades</li>
+                    <li class="bg-slate-800 px-2 py-1 rounded border border-slate-700">This Week</li>
+                    <li class="bg-slate-800 px-2 py-1 rounded border border-slate-700">This Month</li>
+                    <li class="bg-slate-800 px-2 py-1 rounded border border-slate-700">YTD</li>
+                    <li class="bg-slate-800 px-2 py-1 rounded border border-slate-700">Custom Range</li>
+                </ul>
+
+                <h4 class="text-white font-bold mt-4 mb-2">Core Metrics</h4>
+                <div class="grid grid-cols-1 gap-4 mb-6">
+                    <div class="bg-slate-900 p-3 rounded border border-slate-700">
+                        <strong class="text-white block text-xs">Financial Health</strong>
+                        <p class="text-[10px] text-slate-400">Win Rate, Profit Factor, Expectancy.</p>
+                    </div>
+                    <div class="bg-slate-900 p-3 rounded border border-slate-700">
+                        <strong class="text-white block text-xs">Strategy Edge</strong>
+                        <p class="text-[10px] text-slate-400">Performance breakdown by Strategy tag.</p>
+                    </div>
+                </div>
+
+                <h4 class="text-white font-bold mt-4 mb-2">Consistency Heatmap</h4>
+                <p class="mb-4 text-slate-400">This GitHub-style grid visualizes your trading frequency and quality. Use the toggle buttons to switch modes:</p>
+                <ul class="list-disc pl-5 space-y-2 mb-4 text-xs text-slate-400">
+                    <li><strong>By Entry:</strong> Highlights days where you <em>initiated</em> winning trades. Measures Origination Quality.</li>
+                    <li><strong>By Exit:</strong> Highlights days where you <em>banked</em> profit. Measures Cashflow.</li>
+                    <li><strong>By Discipline:</strong> Green = Rules Followed. Red = Rules Broken. Measures Behavioral Consistency.</li>
+                </ul>
+
+                <h4 class="text-white font-bold mt-4 mb-2">Key Formulas</h4>
+                <div class="space-y-4">
+                    <div>
+                        <strong class="text-slate-200 block text-xs">Expectancy</strong>
+                        <div class="bg-slate-950 p-2 my-1 rounded border border-slate-800 font-mono text-[10px] text-amber-400 overflow-x-auto">Expectancy = (Win% × AvgWinR) - (Loss% × AvgLossR)</div>
+                    </div>
+                    <div>
+                        <strong class="text-slate-200 block text-xs">Profit Factor</strong>
+                        <div class="bg-slate-950 p-2 my-1 rounded border border-slate-800 font-mono text-[10px] text-amber-400 overflow-x-auto">PF = (Gross Profit $) / (Gross Loss $)</div>
+                    </div>
+                </div>
+            </div>
+        </details>
+
+        <details class="group bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+            <summary class="flex items-center justify-between p-4 cursor-pointer list-none bg-slate-800 hover:bg-slate-700/50 transition-colors">
+                <h3 class="text-pink-400 font-bold uppercase text-xs tracking-widest flex items-center gap-2">
+                    <i data-lucide="book-open" class="w-4 h-4"></i> 8. The Journal
+                </h3>
+                <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 transition-transform group-open:rotate-180"></i>
+            </summary>
+            <div class="p-4 pt-0 text-sm text-slate-300 leading-relaxed border-t border-slate-700/50 mt-2">
+                <p class="mb-4 text-slate-400">The Journal tab is your daily accountability partner.</p>
+                <ul class="list-disc pl-5 space-y-3 text-xs text-slate-400">
+                    <li><strong>Golden Rules:</strong> Define your rules in the "Philosophy" tab. They persist daily.</li>
+                    <li><strong>Automated Feed:</strong> The Journal automatically pulls in every trade entry and exit for the selected date, creating an instant timeline of your day.</li>
+                    <li><strong>Discipline Tracking:</strong> You must answer: <em>"Did you follow your rules today?"</em>
+                        <ul class="list-disc pl-5 mt-2 text-[10px] text-slate-500">
+                            <li><strong>YES:</strong> Marks the heatmap Green.</li>
+                            <li><strong>NO:</strong> Marks the heatmap Red. A checklist of your rules appears, forcing you to check off exactly <em>which</em> rules you broke.</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </details>
+
+        <details class="group bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+            <summary class="flex items-center justify-between p-4 cursor-pointer list-none bg-slate-800 hover:bg-slate-700/50 transition-colors">
+                <h3 class="text-blue-400 font-bold uppercase text-xs tracking-widest flex items-center gap-2">
+                    <i data-lucide="cloud" class="w-4 h-4"></i> 9. Google Cloud Sync
+                </h3>
+                <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 transition-transform group-open:rotate-180"></i>
+            </summary>
+            <div class="p-4 pt-0 text-sm text-slate-300 leading-relaxed border-t border-slate-700/50 mt-2">
+                <p class="mb-4 text-slate-400">RiskDesk can sync data between devices using your personal Google Drive as the database. You own the infrastructure.</p>
+
+                <div class="bg-slate-900 p-4 rounded-xl border border-slate-700 mb-6">
+                    <h4 class="text-white font-bold mb-4 text-xs">Setup Instructions</h4>
+                    <ol class="list-decimal pl-5 space-y-3 text-xs text-slate-300">
+                        <li>Create a new <strong>Google Sheet</strong> at <a href="https://sheets.google.com" target="_blank" class="text-blue-400 underline">sheets.google.com</a>.</li>
+                        <li>Go to <strong>Extensions > Apps Script</strong>.</li>
+                        <li>Paste the RiskDesk Sync Script:</li>
+                    </ol>
+                    
+                    <div class="my-4 bg-slate-950 border border-slate-800 rounded-lg overflow-hidden">
+                        <div class="flex justify-between items-center px-4 py-2 bg-slate-900 border-b border-slate-800">
+                            <span class="text-[10px] text-slate-500 font-mono">Apps Script Code</span>
+                            <button onclick="navigator.clipboard.writeText(document.getElementById('appScript').innerText).then(()=>alert('Copied!'))" class="text-[10px] bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded transition-colors">Copy</button>
+                        </div>
+                        <pre class="p-4 text-[9px] font-mono text-slate-400 overflow-x-auto"><code id="appScript">function doPost(e) {
+  try {
+    var data = e.postData.contents;
+    var fileName = "riskdesk_data.json";
+    var files = DriveApp.getFilesByName(fileName);
+
+    if (files.hasNext()) {
+      files.next().setContent(data);
+    } else {
+      DriveApp.createFile(fileName, data, MimeType.PLAIN_TEXT);
+    }
+
+    return ContentService.createTextOutput("Saved").setMimeType(ContentService.MimeType.TEXT);
+  } catch (err) {
+    return ContentService.createTextOutput("Error: " + err.toString());
+  }
+}
+
+function doGet(e) {
+  try {
+    var fileName = "riskdesk_data.json";
+    var files = DriveApp.getFilesByName(fileName);
+
+    if (files.hasNext()) {
+      var data = files.next().getBlob().getDataAsString();
+      return ContentService.createTextOutput(data).setMimeType(ContentService.MimeType.JSON);
+    } else {
+      return ContentService.createTextOutput("{}").setMimeType(ContentService.MimeType.JSON);
+    }
+  } catch (err) {
+    return ContentService.createTextOutput("Error: " + err.toString());
+  }
+}</code></pre>
+                    </div>
+
+                    <ol class="list-decimal pl-5 space-y-3 text-xs text-slate-300" start="4">
+                        <li>Click <strong>Deploy > New Deployment</strong>.</li>
+                        <li>Select type: <strong>Web App</strong>.</li>
+                        <li>Set "Execute as: <strong>Me</strong>".</li>
+                        <li>Set "Who has access: <strong>Anyone</strong>". (Crucial).</li>
+                        <li>Click <strong>Deploy</strong>.</li>
+                        <li>Authorize permissions when prompted (Select Account > Advanced > Go to (unsafe) > Allow).</li>
+                        <li>Copy the <strong>Web App URL</strong> and paste it into RiskDesk Settings.</li>
+                    </ol>
+                </div>
+
+				<div class="bg-blue-900/10 border-l-4 border-blue-500 p-4 my-6 rounded-r">
+    <h4 class="text-blue-400 font-bold text-xs uppercase mb-2 flex items-center gap-2">
+        <i data-lucide="lock" class="w-4 h-4"></i> Security: Is this Safe?
+    </h4>
+    
+    <p class="text-[10px] text-slate-300 mb-3 leading-relaxed">
+        <strong>Yes.</strong> You might see a Google warning saying <em>"This app isn't verified"</em> or <em>"Go to (unsafe)"</em>. This is expected because <strong>YOU are the developer</strong>.
+    </p>
+
+    <div class="space-y-3">
+        <div>
+            <strong class="text-white text-[10px] block">1. Why "Unverified"?</strong>
+            <p class="text-[10px] text-slate-400">Google flags any private script as "unverified" until you pay to have it professionally audited. Since you created this for personal use, you are simply authorizing your own code.</p>
+        </div>
+        
+        <div>
+            <strong class="text-white text-[10px] block">2. Why "Access to Anyone"?</strong>
+            <p class="text-[10px] text-slate-400">This does <strong>not</strong> make your data public. "Anyone" means "Anyone with the <strong>secret URL</strong>" (which is only you). This setting is required technically so your browser can send data to Google without being blocked by security firewalls (CORS).</p>
+        </div>
+
+        <div>
+            <strong class="text-white text-[10px] block">3. Can it delete my files?</strong>
+            <p class="text-[10px] text-slate-400">The permission asks to "See, edit, create and delete files" because that is the standard Google permission group. However, the script you pasted explicitly looks for <strong>only one file</strong>: <code>riskdesk_data.json</code>. It does not touch anything else in your Drive.</p>
+        </div>
+    </div>
+</div>
+
+                <h4 class="text-white font-bold mt-6 mb-4 border-b border-slate-800 pb-2">Cloud Setup Scenarios</h4>
+
+                <div class="bg-slate-900 p-4 rounded-xl border border-slate-700 mb-6">
+                    <h5 class="text-blue-400 font-bold text-sm mb-2">Scenario A: Brand New User (No Data)</h5>
+                    <p class="text-xs text-slate-400 italic mb-4">Follow this if you are just starting and have no trade history logged yet.</p>
+                    <ol class="list-decimal pl-5 space-y-3 text-xs text-slate-300">
+                        <li><strong class="text-white">Paste</strong> the Web App URL into RiskDesk Settings on your first device.</li>
+                        <li><strong class="text-white">Click</strong> Sync.</li>
+                        <li><strong class="text-white">Repeat</strong> on any other devices (Laptop, Tablet, etc.).</li>
+                        <li><strong class="text-white">You are ready!</strong> Any trade you log on one device will now appear on the others.</li>
+                    </ol>
+                </div>
+
+                <div class="bg-slate-900 p-4 rounded-xl border border-slate-700 mb-8">
+                    <h5 class="text-blue-400 font-bold text-sm mb-4">Scenario B: Existing User (Migrating Data)</h5>
+                    <div class="bg-red-900/10 border-l-4 border-red-500 p-3 my-4 rounded-r">
+                        <h5 class="text-red-400 font-bold uppercase text-[10px] mb-1">⚠️ Critical Warning</h5>
+                        <p class="text-[10px] text-red-300/80 leading-relaxed">
+                            You must establish the "Master" copy of your data first. Failure to follow this order could result in data overwrites.
+                        </p>
+                    </div>
+                    <ol class="list-decimal pl-5 space-y-3 text-xs text-slate-300">
+                        <li>Open RiskDesk on the <strong>device that holds your current data</strong> (e.g., your Phone).</li>
+                        <li><strong class="text-white">Paste</strong> the Web App URL into Settings.</li>
+                        <li><strong class="text-white">Click Sync.</strong> (This uploads your data to create the "Master File" in Google Drive).</li>
+                        <li><strong class="text-white">Only after step 3</strong>, open RiskDesk on your other devices (e.g., Laptop).</li>
+                        <li>Paste the URL and <strong class="text-white">Click Sync</strong>. (This will download the data from the cloud).</li>
+                    </ol>
+                </div>
+
+                <h4 class="text-white font-bold mt-4 mb-2">Important Caveats</h4>
+                <ul class="list-disc pl-5 space-y-3 text-xs text-slate-400">
+                    <li><strong>The "Open Tab" Rule:</strong> If you leave RiskDesk open on your Laptop while you trade on your Phone, the Laptop won't know about the Phone's trades. <strong>Always refresh</strong> or click Sync when switching devices.</li>
+                    <li><strong>Images are Local:</strong> To keep sync fast and free, chart screenshots are stored on your specific device, not in Google Drive.</li>
+                    <li><strong>Offline Mode:</strong> You can trade offline. When you return online, click Sync to push your changes to the cloud.</li>
+                </ul>
+            </div>
+        </details>
+
+        <details class="group bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+            <summary class="flex items-center justify-between p-4 cursor-pointer list-none bg-slate-800 hover:bg-slate-700/50 transition-colors">
+                <h3 class="text-slate-500 font-bold uppercase text-xs tracking-widest flex items-center gap-2">
+                    <i data-lucide="shield" class="w-4 h-4"></i> 10. Privacy & Sharing
+                </h3>
+                <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 transition-transform group-open:rotate-180"></i>
+            </summary>
+            <div class="p-4 pt-0 text-sm text-slate-300 leading-relaxed border-t border-slate-700/50 mt-2">
+                <h4 class="text-white font-bold mt-2 mb-2">Data Sovereignty</h4>
+                <ul class="space-y-3 text-xs text-slate-400 mb-8">
+                    <li><strong>You Own Your Data:</strong> RiskDesk is a "Serverless" application. We do not have a database. We cannot see your trades, account balance, or strategies.</li>
+                    <li><strong>Storage:</strong> Your data lives in your browser's Local Storage (on your actual device) or in <strong>YOUR</strong> personal Google Drive (if Cloud Sync is active).</li>
+                    <li><strong>No Recovery:</strong> Because we don't have your data, we cannot recover it if you delete it. Maintain regular backups.</li>
+                </ul>
+
+                <h4 class="text-white font-bold mt-2 mb-2">Sharing Features</h4>
+                <ul class="space-y-4">
+                    <li class="flex gap-3">
+                        <i data-lucide="eye" class="w-5 h-5 text-slate-500 shrink-0"></i>
+                        <div>
+                            <strong class="text-white text-xs">Privacy Mode</strong>
+                            <p class="text-xs text-slate-400">Tap the Eye icon in the top header. This blurs all dollar/currency values across the Logs, Stats, and Journal. Ideal for working in public or sharing screens.</p>
+                        </div>
+                    </li>
+                    <li class="flex gap-3">
+                        <i data-lucide="share-2" class="w-5 h-5 text-slate-500 shrink-0"></i>
+                        <div>
+                            <strong class="text-white text-xs">Social Sharing</strong>
+                            <p class="text-xs text-slate-400">Tap the Camera icon on any Log row, Stats card, or Journal page to generate a clean, branded image formatted for X (Twitter) and Discord.</p>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </details>
+
+        <div class="bg-red-900/10 border-l-4 border-red-500 p-4 rounded-r text-center text-[10px] text-red-300 mb-10">
+            <p class="mb-2"><strong>Disclaimer:</strong> This tool is for educational and journaling purposes only. It is not financial advice. Trading involves significant risk.</p>
+            <p><strong>Data Warning:</strong> Live prices are provided by third-party services (e.g., Finnhub) and may be delayed or inaccurate. Never execute trades based solely on these prices; always verify with your broker.</p>
+        </div>
+
+        <div class="h-10"></div>
+    </div>
+</div>
 
 
     <div id="view-logs" class="hidden p-4 max-w-4xl mx-auto h-full flex flex-col">
