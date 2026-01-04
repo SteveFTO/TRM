@@ -18,7 +18,6 @@
         .formula-box { background: #1e293b; padding: 1rem; border-radius: 0.5rem; font-family: monospace; color: #fbbf24; overflow-x: auto; margin: 1rem 0; font-size: 0.85rem; }
         .toc-link:hover { color: #60a5fa; padding-left: 4px; }
         .toc-link { transition: all 0.2s; display: block; padding: 4px 0; color: #94a3b8; font-size: 0.9rem; }
-        .toc-active { color: #60a5fa; font-weight: bold; border-left: 2px solid #60a5fa; padding-left: 10px; }
         
         /* Custom Table Styles */
         .guide-table th { text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; padding: 0.75rem; background: #1e293b; color: #e2e8f0; border-bottom: 1px solid #334155; }
@@ -30,9 +29,14 @@
 
     <nav class="fixed w-full z-50 bg-slate-900/95 backdrop-blur border-b border-slate-800">
         <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-            <a href="index.html" class="flex items-center gap-2 group">
-                <i data-lucide="arrow-left" class="w-5 h-5 text-slate-500 group-hover:text-white transition-colors"></i>
-                <span class="font-bold text-lg tracking-tight">RISK<span class="text-slate-400">DESK</span> <span class="text-xs bg-slate-800 px-2 py-1 rounded text-blue-400 ml-2">GUIDE</span></span>
+            <div class="flex items-center gap-2 group">
+                <i data-lucide="book" class="w-5 h-5 text-blue-500"></i>
+                <span class="font-bold text-lg tracking-tight">RISK<span class="text-slate-400">DESK</span> <span class="text-xs bg-slate-800 px-2 py-1 rounded text-blue-400 ml-2 border border-slate-700">DOCS v10</span></span>
+            </div>
+            
+            <a href="https://riskdesk.io" class="flex items-center gap-2 text-sm font-medium text-slate-400 hover:text-white transition-colors group">
+                <span class="hidden md:inline">Back to Main Site</span>
+                <i data-lucide="arrow-right" class="w-4 h-4 group-hover:translate-x-1 transition-transform"></i>
             </a>
         </div>
     </nav>
@@ -43,26 +47,27 @@
             <div class="sticky top-24">
                 <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">Contents</h4>
                 <nav class="space-y-1">
-                    <a href="#philosophy" class="toc-link">Philosophy</a>
+                    <a href="#philosophy" class="toc-link">Core Philosophy</a>
                     <a href="#setup" class="toc-link">1. Initial Setup</a>
                     <a href="#live-data" class="toc-link">2. Live Data & Prices</a>
-                    <a href="#calculator" class="toc-link">3. The Calculator</a>
+                    <a href="#calculator" class="toc-link">3. Calculator Engine</a>
                     <a href="#metrics" class="toc-link">4. Risk Metrics</a>
                     <a href="#logs" class="toc-link">5. Logs & Views</a>
                     <a href="#management" class="toc-link">6. Trade Management</a>
                     <a href="#statistics" class="toc-link">7. Stats & Insights</a>
                     <a href="#journal" class="toc-link">8. The Journal</a>
-                    <a href="#privacy" class="toc-link">9. Privacy & Sharing</a>
-                    <a href="#glossary" class="toc-link">Glossary & Disclaimer</a>
+                    <a href="#cloud" class="toc-link text-blue-400 font-bold">9. Google Cloud Sync</a>
+                    <a href="#privacy" class="toc-link">10. Privacy & Sharing</a>
+                    <a href="#glossary" class="toc-link mt-4 text-xs opacity-50">Disclaimer</a>
                 </nav>
             </div>
         </aside>
 
         <main class="flex-1 max-w-3xl">
             
-            <section id="header" class="mb-16">
+            <section id="header" class="mb-16 border-b border-slate-800 pb-10">
                 <h1 class="text-4xl font-extrabold text-white mb-4">The Professional Guide</h1>
-                <p class="text-lg text-slate-400">Master your risk, manage your psychology, and understand the mathematics behind RiskDesk v10.</p>
+                <p class="text-lg text-slate-400 leading-relaxed">Master your risk, manage your psychology, and understand the mathematics behind RiskDesk v10.</p>
             </section>
 
             <section id="philosophy" class="mb-20">
@@ -97,11 +102,17 @@
                     </ul>
 
                     <h3 class="prose-h3">Data Management</h3>
-                    <p class="prose-p">RiskDesk is <strong>Offline-First</strong>. Your data lives in your browser cache.</p>
-                    <ul class="list-disc pl-5 space-y-2 mb-4 text-sm">
-                        <li><strong>Backup & Restore:</strong> Regularly download your full history as a JSON file using the buttons in Settings. This is your only insurance against clearing browser cache.</li>
-                        <li><strong>Factory Reset:</strong> Located in the "Danger Zone". This wipes all data permanently.</li>
-                    </ul>
+                    <p class="prose-p text-sm">RiskDesk offers two modes of data storage:</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div class="bg-slate-800 p-4 rounded-lg border border-slate-700">
+                            <strong class="text-white text-sm block mb-1">Local Mode (Default)</strong>
+                            <p class="text-xs text-slate-400">Data lives in your browser's local storage. Private and fast, but data does not sync between devices. Clearing browser cache deletes data.</p>
+                        </div>
+                        <div class="bg-slate-800 p-4 rounded-lg border border-slate-700">
+                            <strong class="text-white text-sm block mb-1">Cloud Sync</strong>
+                            <p class="text-xs text-slate-400">Syncs data to your own Google Drive using a secure script. Private and allows trading across Phone/Laptop. See <a href="#cloud" class="text-blue-400 hover:underline">Section 9</a>.</p>
+                        </div>
+                    </div>
 
                     <h3 class="prose-h3">Stats Configuration: Partials Impact</h3>
                     <p class="prose-p">Found in Settings, this toggle controls how your statistics are calculated.</p>
@@ -138,7 +149,7 @@
                     <h2 class="text-2xl font-bold text-white">2. Live Data & Prices</h2>
                 </div>
                 <div class="prose-slate">
-                    <p class="prose-p">RiskDesk connects to professional APIs to keep your risk data accurate without requiring a monthly subscription.</p>
+                    <p class="prose-p">RiskDesk connects to APIs to keep your risk data accurate without requiring a monthly subscription.</p>
 
                     <h3 class="prose-h3">Live Price Integration (Finnhub)</h3>
                     <p class="prose-p">To enable the <strong class="text-white"><i data-lucide="refresh-cw" class="w-3 h-3 inline"></i> Fetch Prices</strong> button in the top Risk Bar, you need a free API key.</p>
@@ -156,7 +167,7 @@
             <section id="calculator" class="mb-20">
                 <div class="flex items-center gap-3 mb-6">
                     <div class="p-2 bg-emerald-500/10 rounded-lg"><i data-lucide="calculator" class="w-6 h-6 text-emerald-400"></i></div>
-                    <h2 class="text-2xl font-bold text-white">3. The Calculator Engine</h2>
+                    <h2 class="text-2xl font-bold text-white">3. Calculator Engine</h2>
                 </div>
                 
                 <div class="prose-slate">
@@ -191,69 +202,78 @@
 
             <section id="metrics" class="mb-20">
                 <div class="flex items-center gap-3 mb-6">
-                    <div class="p-2 bg-rose-500/10 rounded-lg"><i data-lucide="activity" class="w-6 h-6 text-rose-400"></i></div>
+                    <div class="p-2 bg-slate-800 rounded-lg border border-slate-700"><i data-lucide="activity" class="w-6 h-6 text-emerald-400"></i></div>
                     <h2 class="text-2xl font-bold text-white">4. Risk Metrics</h2>
                 </div>
                 
                 <div class="prose-slate">
-                    <p class="prose-p">The top "Risk Bar" provides a real-time health check of your portfolio. Understanding these acronyms is vital for professional risk management.</p>
+                    <p class="prose-p text-sm">The <strong>Live Risk Bar</strong> monitors your "Progressive Exposure". It answers: "Have I earned the right to take more risk?"</p>
 
                     <dl class="space-y-6 mt-6">
                         <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
-                            <dt class="font-bold text-emerald-400 flex justify-between">
-                                <span>NER (New Exposure Risk)</span>
-                                <span class="text-xs opacity-50 font-mono text-white">The "Worst Case"</span>
+                            <dt class="font-bold text-emerald-400 flex justify-between items-center">
+                                <span>NER (Net Exposure Risk)</span>
+                                <span class="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Principal Protection</span>
                             </dt>
                             <dd class="text-sm text-slate-300 mt-2">
-                                The amount of open risk that is <strong>NOT</strong> yet financed by realized profits. If every single trade hit its stop loss right now, this is how much your account balance would drop from its starting point.
-                                <div class="formula-box mt-3">NER = (Gross Open Risk - Banked Profits) / Account Size</div>
+                                The percentage of your account currently at risk that is <strong>NOT financed</strong> by banked profits. If NER is 0%, your open risk is fully covered by realized gains—you are trading on "House Money".
+                                <div class="formula-box">NER = ( Σ(Open Risk) - Σ(Banked Profit) ) / Account Size</div>
+                                <p class="text-xs text-slate-500 italic">*Floored at 0%. If Banked Profit > Open Risk, NER is 0.</p>
                             </dd>
                         </div>
 
                         <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
-                            <dt class="font-bold text-blue-400 flex justify-between">
-                                <span>NEP (New Exposure Profit)</span>
-                                <span class="text-xs opacity-50 font-mono text-white">The "Traction"</span>
+                            <dt class="font-bold text-blue-400 flex justify-between items-center">
+                                <span>NEP (Net Exposure Profit)</span>
+                                <span class="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Traction</span>
                             </dt>
                             <dd class="text-sm text-slate-300 mt-2">
-                                Measures the floating profit of your "Fresh" trades (trades where you haven't taken partials yet). Positive NEP means your new ideas are working.
-                                <div class="formula-box mt-3">NEP = (Floating P&L of Fresh Trades) / Account Size</div>
+                                The Unrealized (Floating) Profit of your <strong>risk-bearing</strong> trades. It tells you if your *new* exposure is working immediately.
+                                <div class="formula-box">NEP = Floating P&L of Unfinanced Trades / Account Size</div>
                             </dd>
                         </div>
-
+                        
                         <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
                             <dt class="font-bold text-blue-400 flex justify-between">
                                 <span>Delta</span>
-                                <span class="text-xs opacity-50 font-mono text-white">Your Net Traction"</span>
+                                <span class="text-xs opacity-50 font-mono text-white">Your Net Traction</span>
                             </dt>
                             <dd class="text-sm text-slate-300 mt-2">
                                 The relationship between your Traction (NEP) and your Risk (NER).
                             </dd>
                         </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
-                                <dt class="font-bold text-white text-sm">Open Heat</dt>
-                                <dd class="text-xs text-slate-400 mt-1">
-                                    The gross sum of risk across all positions. If you have 4 trades, each risking 1% of equity, your Heat is 4%.
-                                </dd>
-                            </div>
-                            <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
-                                <dt class="font-bold text-white text-sm">Secured</dt>
-                                <dd class="text-xs text-slate-400 mt-1">
-                                    The "Risk Free" profit. This is money banked that exceeds all current open risk. It is yours to keep, no matter what happens next.
-                                </dd>
-                            </div>
+                        <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                            <dt class="font-bold text-slate-200 flex justify-between items-center">
+                                <span>OER (Open Exposure Risk)</span>
+                                <span class="text-[10px] uppercase tracking-wider text-slate-500 font-bold">Total Heat</span>
+                            </dt>
+                            <dd class="text-sm text-slate-300 mt-2">
+                                Your gross total risk based on <strong>current active stops</strong>. If you move stops to Breakeven, OER drops to 0%.
+                                <div class="formula-box">OER = Σ( (Entry - CurrentStop) * Qty ) / Account Size</div>
+                            </dd>
+                        </div>
+
+                        <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                            <dt class="font-bold text-amber-400 flex justify-between items-center">
+                                <span>Secured (Net Financing)</span>
+                                <span class="text-[10px] uppercase tracking-wider text-slate-500 font-bold">The Buffer</span>
+                            </dt>
+                            <dd class="text-sm text-slate-300 mt-2">
+                                The amount of Banked Profit that exceeds your Principal Risk. If positive, you cannot lose principal capital even if all stops hit.
+                                <div class="formula-box">Secured = (Total Banked Profit - Total Open Risk) / Account Size</div>
+                            </dd>
                         </div>
                     </dl>
                 </div>
             </section>
-
+            
             <section id="logs" class="mb-20">
                 <div class="flex items-center gap-3 mb-6">
                     <div class="p-2 bg-amber-500/10 rounded-lg"><i data-lucide="list" class="w-6 h-6 text-amber-400"></i></div>
                     <h2 class="text-2xl font-bold text-white">5. Logs & Views</h2>
                 </div>
+                
                 <div class="prose-slate">
                     <h3 class="prose-h3">Viewing Modes (Responsive)</h3>
                     <p class="prose-p">RiskDesk changes the data it displays based on your device orientation to prevent information overload.</p>
@@ -386,26 +406,142 @@
                 </div>
             </section>
 
-            <section id="privacy" class="mb-20">
+            <section id="cloud" class="mb-20">
                 <div class="flex items-center gap-3 mb-6">
-                    <div class="p-2 bg-slate-700/50 rounded-lg"><i data-lucide="shield" class="w-6 h-6 text-slate-300"></i></div>
-                    <h2 class="text-2xl font-bold text-white">9. Privacy & Sharing</h2>
+                    <div class="p-2 bg-slate-800 rounded-lg border border-slate-700"><i data-lucide="cloud" class="w-6 h-6 text-blue-400"></i></div>
+                    <h2 class="text-2xl font-bold text-white">9. Google Cloud Sync</h2>
                 </div>
                 
                 <div class="prose-slate">
+                    <p class="prose-p text-sm">RiskDesk can sync data between devices using your personal Google Drive as the database. You own the infrastructure.</p>
+
+                    <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 mb-6">
+                        <h4 class="text-white font-bold mb-4">Setup Instructions</h4>
+                        <ol class="list-decimal pl-5 space-y-3 text-sm text-slate-300">
+                            <li>Create a new <strong>Google Sheet</strong> at <a href="https://sheets.google.com" target="_blank" class="text-blue-400 underline">sheets.google.com</a>.</li>
+                            <li>Go to <strong>Extensions > Apps Script</strong>.</li>
+                            <li>Paste the RiskDesk Sync Script:</li>
+                            
+                            <div class="my-4 bg-slate-950 border border-slate-800 rounded-lg overflow-hidden">
+                                <div class="flex justify-between items-center px-4 py-2 bg-slate-900 border-b border-slate-800">
+                                    <span class="text-xs text-slate-500 font-mono">Apps Script Code</span>
+                                    <button onclick="copyToClipboard()" class="text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded transition-colors">Copy</button>
+                                </div>
+                                <pre class="p-4 text-xs font-mono text-slate-400 overflow-x-auto"><code id="appScript">function doPost(e) {
+  try {
+    var data = e.postData.contents;
+    var fileName = "riskdesk_data.json";
+    var files = DriveApp.getFilesByName(fileName);
+
+    if (files.hasNext()) {
+      files.next().setContent(data);
+    } else {
+      DriveApp.createFile(fileName, data, MimeType.PLAIN_TEXT);
+    }
+
+    return ContentService.createTextOutput("Saved").setMimeType(ContentService.MimeType.TEXT);
+  } catch (err) {
+    return ContentService.createTextOutput("Error: " + err.toString());
+  }
+}
+
+function doGet(e) {
+  try {
+    var fileName = "riskdesk_data.json";
+    var files = DriveApp.getFilesByName(fileName);
+
+    if (files.hasNext()) {
+      var data = files.next().getBlob().getDataAsString();
+      return ContentService.createTextOutput(data).setMimeType(ContentService.MimeType.JSON);
+    } else {
+      return ContentService.createTextOutput("{}").setMimeType(ContentService.MimeType.JSON);
+    }
+  } catch (err) {
+    return ContentService.createTextOutput("Error: " + err.toString());
+  }
+}</code></pre>
+                            </div>
+
+                            <li>Click <strong>Deploy > New Deployment</strong>.</li>
+                            <li>Select type: <strong>Web App</strong>.</li>
+                            <li>Set "Execute as: <strong>Me</strong>".</li>
+                            <li>Set "Who has access: <strong>Anyone</strong>". (Crucial).</li>
+                            <li>Click <strong>Deploy</strong>.</li>
+                            <li>Authorize permissions when prompted (Select Account > Advanced > Go to (unsafe) > Allow).</li>
+                            <li>Copy the <strong>Web App URL</strong> and paste it into RiskDesk Settings.</li>
+                        </ol>
+                    </div>
+
+                    <h3 class="prose-h3 border-b border-slate-800 pb-4 mb-6">Cloud Setup Scenarios</h3>
+
+                    <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 mb-6">
+                        <h4 class="text-blue-400 font-bold text-lg mb-2">Scenario A: Brand New User (No Data)</h4>
+                        <p class="text-sm text-slate-400 italic mb-4">Follow this if you are just starting and have no trade history logged yet.</p>
+                        
+                        <ol class="list-decimal pl-5 space-y-3 text-sm text-slate-300">
+                            <li><strong class="text-white">Paste</strong> the Web App URL into RiskDesk Settings on your first device.</li>
+                            <li><strong class="text-white">Click</strong> Sync.</li>
+                            <li><strong class="text-white">Repeat</strong> on any other devices (Laptop, Tablet, etc.).</li>
+                            <li><strong class="text-white">You are ready!</strong> Any trade you log on one device will now appear on the others.</li>
+                        </ol>
+                    </div>
+
+                    <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 mb-8">
+                        <h4 class="text-blue-400 font-bold text-lg mb-4">Scenario B: Existing User (Migrating Data)</h4>
+
+                        <div class="danger-box my-4">
+                            <h5 class="text-red-400 font-bold uppercase text-xs mb-2">⚠️ Critical Warning</h5>
+                            <p class="text-xs text-red-300/80 leading-relaxed">
+                                You must establish the "Master" copy of your data first. Failure to follow this order could result in data overwrites.
+                            </p>
+                        </div>
+
+                        <ol class="list-decimal pl-5 space-y-3 text-sm text-slate-300">
+                            <li>Open RiskDesk on the <strong>device that holds your current data</strong> (e.g., your Phone).</li>
+                            <li><strong class="text-white">Paste</strong> the Web App URL into Settings.</li>
+                            <li><strong class="text-white">Click Sync.</strong> (This uploads your data to create the "Master File" in Google Drive).</li>
+                            <li><strong class="text-white">Only after step 3</strong>, open RiskDesk on your other devices (e.g., Laptop).</li>
+                            <li>Paste the URL and <strong class="text-white">Click Sync</strong>. (This will download the data from the cloud).</li>
+                        </ol>
+                    </div>
+
+                    <h3 class="prose-h3">Important Caveats</h3>
+                    <ul class="list-disc pl-5 space-y-3 text-sm text-slate-400">
+                        <li><strong>The "Open Tab" Rule:</strong> If you leave RiskDesk open on your Laptop while you trade on your Phone, the Laptop won't know about the Phone's trades. <strong>Always refresh</strong> or click Sync when switching devices.</li>
+                        <li><strong>Images are Local:</strong> To keep sync fast and free, chart screenshots are stored on your specific device, not in Google Drive.</li>
+                        <li><strong>Offline Mode:</strong> You can trade offline. When you return online, click Sync to push your changes to the cloud.</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section id="privacy" class="mb-20">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="p-2 bg-slate-800 rounded-lg border border-slate-700"><i data-lucide="shield" class="w-6 h-6 text-slate-300"></i></div>
+                    <h2 class="text-2xl font-bold text-white">10. Privacy & Sharing</h2>
+                </div>
+                
+                <div class="prose-slate">
+                    <h3 class="prose-h3">Data Sovereignty</h3>
+                    <ul class="space-y-3 text-sm text-slate-400 mb-8">
+                        <li><strong>You Own Your Data:</strong> RiskDesk is a "Serverless" application. We do not have a database. We cannot see your trades, account balance, or strategies.</li>
+                        <li><strong>Storage:</strong> Your data lives in your browser's Local Storage (on your actual device) or in <strong>YOUR</strong> personal Google Drive (if Cloud Sync is active).</li>
+                        <li><strong>No Recovery:</strong> Because we don't have your data, we cannot recover it if you delete it. Maintain regular backups.</li>
+                    </ul>
+
+                    <h3 class="prose-h3">Sharing Features</h3>
                     <ul class="space-y-4">
                         <li class="flex gap-3">
                             <i data-lucide="eye" class="w-6 h-6 text-slate-500 shrink-0"></i>
                             <div>
                                 <strong class="text-white">Privacy Mode</strong>
-                                <p class="text-sm">Tap the Eye icon in the top header. This blurs all dollar/currency values across the Logs, Stats, and Journal. Ideal for working in public or sharing screens.</p>
+                                <p class="text-sm text-slate-400">Tap the Eye icon in the top header. This blurs all dollar/currency values across the Logs, Stats, and Journal. Ideal for working in public or sharing screens.</p>
                             </div>
                         </li>
                         <li class="flex gap-3">
                             <i data-lucide="share-2" class="w-6 h-6 text-slate-500 shrink-0"></i>
                             <div>
                                 <strong class="text-white">Social Sharing</strong>
-                                <p class="text-sm">Tap the Camera icon on any Log row, Stats card, or Journal page to generate a clean, branded image formatted for X (Twitter) and Discord.</p>
+                                <p class="text-sm text-slate-400">Tap the Camera icon on any Log row, Stats card, or Journal page to generate a clean, branded image formatted for X (Twitter) and Discord.</p>
                             </div>
                         </li>
                     </ul>
@@ -413,8 +549,6 @@
             </section>
 
             <section id="glossary" class="mb-24 pt-10 border-t border-slate-800">
-                
-                
                 <div class="danger-box mt-10 text-center text-xs text-red-300">
                     <p class="mb-2"><strong>Disclaimer:</strong> This tool is for educational and journaling purposes only. It is not financial advice. Trading involves significant risk.</p>
                     <p><strong>Data Warning:</strong> Live prices are provided by third-party services (e.g., Finnhub) and may be delayed or inaccurate. Never execute trades based solely on these prices; always verify with your broker.</p>
@@ -430,6 +564,12 @@
 
     <script>
         lucide.createIcons();
+        function copyToClipboard() {
+            var copyText = document.getElementById("appScript").innerText;
+            navigator.clipboard.writeText(copyText).then(() => {
+                alert("Script copied to clipboard!");
+            });
+        }
     </script>
 </body>
 </html>
