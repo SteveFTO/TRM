@@ -2425,7 +2425,7 @@ const app = {
                     
                     <div class="flex flex-col items-center leading-none" title="Total P&L Unrealized: ${fmtMoney(data.unrealizedVal)})">
                         <span class="text-[9px] text-slate-500 font-bold">OPEN P&L</span>
-                        <span class="${color(data.profitPct)} font-bold">${fmt(data.profitPct)}</span>
+                        <span class="${color(data.profitPct)} font-bold">${fmtMoney(data.unrealizedVal)}</span>
                     </div>
                     
                     <div class="w-px h-6 bg-slate-700"></div>
@@ -2495,8 +2495,8 @@ const app = {
                     </div>
                     <div class="bg-slate-800 p-2 rounded text-center border border-slate-700">
                         <div class="text-[9px] text-slate-500 font-bold uppercase">Open P&L</div>
-                        <div class="text-xs font-mono font-bold ${color(data.profitPct)}">${fmt(data.profitPct)}</div>
-                        <div class="text-[8px] text-slate-500 mt-1">Unrealized: ${fmtMoney(data.unrealizedVal)}</div>
+                        <div class="text-xs font-mono font-bold ${color(data.profitPct)}">${fmtMoney(data.unrealizedVal)}</div>
+                        <div class="text-[8px] text-slate-500 mt-1">OEP: ${fmt(data.profitPct)}</div>
                     </div>
                     <div class="bg-slate-800 p-2 rounded text-center border border-slate-700">
                         <div class="text-[9px] text-slate-500 font-bold uppercase">OER (Heat)</div>
