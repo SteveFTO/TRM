@@ -4931,51 +4931,87 @@ const app = {
     },
    
     drawStrategyChart(logs) {
-    const ctx = document.getElementById('chartStrategy');
-    const container = document.getElementById('strategyChartContainer'); // Get the new container
-    
-    if(this.charts.strategy) this.charts.strategy.destroy();
+        const ctx = document.getElementById('chartStrategy');
+        const container = document.getElementById('strategyChartContainer');
+        
+        if(this.charts.strategy) this.charts.strategy.destroy();
 
-    // ... (Your existing data aggregation logic remains the same) ...
-    const stratMap = {};
-    logs.forEach(l => { 
-        /* ... existing aggregation code ... */ 
-    });
+        // 1. DATA AGGREGATION (Restored Logic)
+        const stratMap = {};
 
-    const labels = Object.keys(stratMap);
-    const data = Object.values(stratMap);
-    
-    // --- NEW DYNAMIC HEIGHT LOGIC ---
-    if (container && labels.length > 0) {
-        // Calculate: 40px per bar + 50px buffer for axis labels
-        const newHeight = (labels.length * 40) + 50;
-        container.style.height = `${newHeight}px`;
-    }
-    // --------------------------------
+        logs.forEach(l => {
+            // Skip open trades that haven't been realized yet, or use "Unlabeled" if strategy missing
+            if (l.outcome === 'open' && (!l.exits || l.exits.length === 0)) return;
+            const strategyName = l.strategy || "Unlabeled";
 
-    const colors = data.map(v => v >= 0 ? 'rgba(52, 211, 153, 0.6)' : 'rgba(248, 113, 113, 0.6)');
+            // Calculate R for this trade
+            let r = 0;
+            const refStop = (typeof l.initialStop !== 'undefined') ? l.initialStop : l.stop;
+            const riskPerShare = Math.abs(l.entry - refStop);
 
-    this.charts.strategy = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Total R',
-                data: data,
-                backgroundColor: colors,
-                borderRadius: 4,
-                barThickness: 20 // Enforce a nice thickness
-            }]
-        },
-        options: {
-            indexAxis: 'y', 
-            responsive: true,
-            maintainAspectRatio: false, // Critical: Allows the canvas to fill the new custom height
-            plugins: { legend: { display: false } },
-            scales: { x: { grid: { color: '#334155' } }, y: { grid: { display: false } } }
+            if(l.exits && l.exits.length > 0) {
+                 const totalRisk = l.initialQty * riskPerShare;
+                 let pnl = 0;
+                 l.exits.forEach(ex => {
+                     pnl += (l.direction === 'SHORT' ? (l.entry - ex.price) : (ex.price - l.entry)) * ex.qty;
+                 });
+                 if(totalRisk > 0) r = pnl / totalRisk;
+            } else if (l.exitPrice) {
+                 // Fallback for older legacy logs without exits array
+                 r = ((l.direction==='SHORT'?l.entry-l.exitPrice:l.exitPrice-l.entry)/riskPerShare);
+            }
+
+            // Accumulate R
+            if (r !== 0) {
+                if (!stratMap[strategyName]) stratMap[strategyName] = 0;
+                stratMap[strategyName] += r;
+            }
+        });
+
+        // 2. SORTING (Best to Worst Performance)
+        const entries = Object.entries(stratMap).sort((a,b) => b[1] - a[1]);
+        const labels = entries.map(e => e[0]);
+        const data = entries.map(e => e[1]);
+        
+        // 3. DYNAMIC HEIGHT LOGIC (Responsive to # of Strategies)
+        if (container && labels.length > 0) {
+            // 40px per bar + 50px buffer for X-axis labels
+            const newHeight = (labels.length * 40) + 50;
+            container.style.height = `${newHeight}px`;
         }
-    });
-},
+
+        const colors = data.map(v => v >= 0 ? 'rgba(52, 211, 153, 0.6)' : 'rgba(248, 113, 113, 0.6)');
+
+        this.charts.strategy = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Total R',
+                    data: data,
+                    backgroundColor: colors,
+                    borderRadius: 4,
+                    barThickness: 20 // Consistent thickness
+                }]
+            },
+            options: {
+                indexAxis: 'y', 
+                responsive: true,
+                maintainAspectRatio: false, // Critical for dynamic height
+                plugins: { legend: { display: false } },
+                scales: { 
+                    x: { 
+                        grid: { color: '#334155' },
+                        ticks: { color: '#94a3b8' } 
+                    }, 
+                    y: { 
+                        grid: { display: false },
+                        ticks: { color: '#e2e8f0', font: { weight: 'bold' } }
+                    } 
+                }
+            }
+        });
+    },
 
     drawDayOfWeekChart(logs) {
         const ctx = document.getElementById('chartDayOfWeek');
